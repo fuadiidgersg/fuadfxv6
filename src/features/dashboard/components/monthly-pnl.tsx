@@ -66,7 +66,7 @@ export function MonthlyPnl() {
             borderRadius: 6,
             fontSize: 12,
           }}
-          formatter={(v: number) => [`$${v.toLocaleString()}`, 'P&L']}
+          formatter={(v) => typeof v === 'number' ? [`$${v.toLocaleString()}`, 'P&L'] : ['$0', 'P&L']}
         />
         <Bar dataKey='pnl' radius={[4, 4, 0, 0]}>
           {data.map((d) => (

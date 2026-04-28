@@ -49,8 +49,8 @@ export function AnalyticsChart() {
             borderRadius: 6,
             fontSize: 12,
           }}
-          formatter={(v: number, n: string) =>
-            n === 'pnl' ? [`$${v.toFixed(2)}`, 'P&L'] : [`${v}`, 'Trades']
+          formatter={(v, n) =>
+            n === 'pnl' && typeof v === 'number' ? [`$${v.toFixed(2)}`, 'P&L'] : [`${v}`, 'Trades']
           }
         />
         <Bar
