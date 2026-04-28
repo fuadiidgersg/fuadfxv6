@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/images/favicon.svg"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/images/favicon_light.svg"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicon.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicon_light.png"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>Fuadfx</title>
+    <meta name="title" content="Fuadfx" />
+    <meta
+      name="description"
+      content="Fuadfx - a forex trading journal for serious traders."
+    />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Fuadfx" />
+    <meta
+      property="og:description"
+      content="Fuadfx - a forex trading journal for serious traders."
+    />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Fuadfx" />
+    <meta
+      property="twitter:description"
+      content="Fuadfx - a forex trading journal for serious traders."
+    />
+
+    <!-- font family -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta name="theme-color" content="#0a0a0a" />
+    <script>
+      ;(function () {
+        try {
+          var m = document.cookie.match(/(?:^|; )vite-ui-theme=([^;]+)/)
+          var t = m ? decodeURIComponent(m[1]) : 'dark'
+          var resolved =
+            t === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : t
+          document.documentElement.classList.add(resolved)
+          document.documentElement.style.colorScheme = resolved
+        } catch (_) {
+          document.documentElement.classList.add('dark')
+        }
+      })()
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
