@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -42,7 +42,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -51,7 +50,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-type Mt5Preview = ReturnType<typeof parseMT5Html> | null
+/* -------------------- TYPES -------------------- */
 
 const profileSchema = z.object({
   displayName: z.string().min(1).max(40),
@@ -80,12 +79,13 @@ export function Onboarding() {
   const [savedProfile, setSavedProfile] = useState<ProfileValues | null>(null)
 
   const [htmlFile, setHtmlFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<Mt5Preview>(null)
+  const [preview, setPreview] = useState<any>(null)
   const [parsing, setParsing] = useState(false)
   const [importedCount, setImportedCount] = useState(0)
 
+  /* -------------------- FIXED FORM -------------------- */
   const form = useForm<ProfileValues>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(profileSchema) as any,
     defaultValues: {
       displayName: '',
       experience: 'intermediate',
@@ -94,7 +94,7 @@ export function Onboarding() {
     },
   })
 
-  const sortedPairs = useMemo(() => [...PAIRS].sort(), [])
+  const sortedPairs = [...PAIRS].sort()
 
   function goNext() {
     setStepIndex((i) => Math.min(STEPS.length - 1, i + 1))
@@ -115,25 +115,13 @@ export function Onboarding() {
       startingCapital: values.startingCapital,
     })
 
-    toast.success('Profile saved.')
+    toast.success('Profile saved')
     goNext()
   }
 
-  const decodeMT5File = async (file: File): Promise<string> => {
-    const buf = await file.arrayBuffer()
-    const bytes = new Uint8Array(buf)
-
-    if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
-      return new TextDecoder('utf-16le').decode(bytes.subarray(2))
-    }
-    if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
-      return new TextDecoder('utf-16be').decode(bytes.subarray(2))
-    }
-    if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
-      return new TextDecoder('utf-8').decode(bytes.subarray(3))
-    }
-
-    return new TextDecoder('utf-8').decode(bytes)
+  async function decodeMT5File(file: File) {
+    const text = await file.text()
+    return text
   }
 
   async function handleHtml(file: File | null) {
@@ -143,51 +131,42 @@ export function Onboarding() {
     if (!file) return
 
     setParsing(true)
-
     try {
       const text = await decodeMT5File(file)
       const result = parseMT5Html(text)
       setPreview(result)
-
-      if (result.trades.length === 0) {
-        toast.warning('No trades found in file.')
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'File error')
+    } catch {
+      toast.error('Failed to parse file')
     } finally {
       setParsing(false)
     }
   }
 
   function handleImportAndContinue() {
-    if (!preview || preview.trades.length === 0) {
-      toast.error('Invalid file')
+    if (!preview?.trades?.length) {
+      toast.error('No trades found')
       return
     }
 
     const accountId = upsertFromImport({
       broker: preview.broker,
       number: preview.account,
-      nameHint: preview.account
-        ? `${preview.broker ?? 'MT5'} ${preview.account}`
-        : preview.broker,
+      nameHint: preview.broker,
     })
 
     const accountName =
       useAccountsStore.getState().accounts.find((a) => a.id === accountId)
         ?.name ?? 'MT5 Import'
 
-    const result = addTradesForAccount(accountId, accountName, preview.trades)
+    const result = addTradesForAccount(
+      accountId,
+      accountName,
+      preview.trades
+    )
 
     setImportedCount(result.added)
-
     toast.success(`Imported ${result.added} trades`)
 
-    goNext()
-  }
-
-  function handleSkipUpload() {
-    setImportedCount(0)
     goNext()
   }
 
@@ -196,22 +175,27 @@ export function Onboarding() {
     navigate({ to: '/', replace: true })
   }
 
-  const currentStep = STEPS[stepIndex]
+  const step = STEPS[stepIndex]
 
   return (
     <AuthLayout>
       <Card className="w-full max-w-xl">
         <CardHeader>
-          <CardTitle>{currentStep.label}</CardTitle>
-          <CardDescription>Onboarding step</CardDescription>
+          <CardTitle>{step.label}</CardTitle>
+          <CardDescription>
+            {step.key === 'profile' &&
+              'Set up your trading profile'}
+            {step.key === 'upload' &&
+              'Import MT5 history'}
+            {step.key === 'done' &&
+              'You are ready'}
+          </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-
-          {currentStep.key === 'profile' && (
+        <CardContent>
+          {step.key === 'profile' && (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleProfileSubmit)} className="space-y-4">
-
+              <form onSubmit={form.handleSubmit(handleProfileSubmit)}>
                 <FormField
                   control={form.control}
                   name="displayName"
@@ -226,56 +210,40 @@ export function Onboarding() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="startingCapital"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Capital</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          value={field.value}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <Button type="submit">
-                  Continue <ArrowRight />
+                  Continue
                 </Button>
-
               </form>
             </Form>
           )}
 
-          {currentStep.key === 'upload' && (
-            <div className="space-y-4">
-              <Input type="file" onChange={(e) => handleHtml(e.target.files?.[0] ?? null)} />
+          {step.key === 'upload' && (
+            <div>
+              <input
+                type="file"
+                onChange={(e) =>
+                  handleHtml(e.target.files?.[0] ?? null)
+                }
+              />
 
-              <Button onClick={handleImportAndContinue}>
-                Import & Continue
-              </Button>
+              {parsing && <Loader2 className="animate-spin" />}
 
-              <Button variant="outline" onClick={handleSkipUpload}>
-                Skip
-              </Button>
+              {preview && (
+                <Button onClick={handleImportAndContinue}>
+                  Import
+                </Button>
+              )}
             </div>
           )}
 
-          {currentStep.key === 'done' && (
-            <div className="space-y-4">
-              <p>Setup complete</p>
-
+          {step.key === 'done' && (
+            <div>
+              <CheckCircle2 />
               <Button onClick={handleFinish}>
                 Go to dashboard
               </Button>
             </div>
           )}
-
         </CardContent>
       </Card>
     </AuthLayout>
