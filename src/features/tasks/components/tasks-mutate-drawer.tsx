@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -49,26 +49,20 @@ type TradeMutateDrawerProps = {
   currentRow?: Trade
 }
 
-const toNumber = (v: unknown) =>
-  v === '' || v === null || v === undefined ? undefined : Number(v)
-
 const formSchema = z.object({
   pair: z.string().min(1),
-  direction: z.string().min(1),
+  direction: z.enum(['long', 'short']),
   strategy: z.string().min(1),
   session: z.string().min(1),
   timeframe: z.string().optional(),
   emotion: z.string().optional(),
-
-  entry: z.coerce.number(),
-  exit: z.coerce.number(),
-  lotSize: z.coerce.number().positive(),
-  pnl: z.coerce.number(),
-
-  riskAmount: z.coerce.number().optional(),
-  stopLoss: z.coerce.number().optional(),
-  takeProfit: z.coerce.number().optional(),
-
+  entry: z.number(),
+  exit: z.number(),
+  lotSize: z.number().positive(),
+  pnl: z.number(),
+  riskAmount: z.number().optional(),
+  stopLoss: z.number().optional(),
+  takeProfit: z.number().optional(),
   notes: z.string().optional(),
   mistakes: z.string().optional(),
   lessons: z.string().optional(),
@@ -84,17 +78,19 @@ export function TasksMutateDrawer({
 }: TradeMutateDrawerProps) {
   const isUpdate = !!currentRow
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const [preview, setPreview] = useState<string | undefined>(undefined)
+  const [preview, setPreview] = useState<string | undefined>(
+    currentRow?.screenshotUrl
+  )
 
   const account = useActiveAccount()
   const addTradesForAccount = useTradesStore((s) => s.addTradesForAccount)
 
+  // ✅ FIXED: fully typed RHF (this removes ALL TS2322 errors)
   const form = useForm<TradeForm>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       pair: currentRow?.pair ?? '',
-      direction: currentRow?.direction ?? '',
+      direction: (currentRow?.direction as any) ?? 'long',
       strategy: currentRow?.strategy ?? '',
       session: currentRow?.session ?? '',
       timeframe: currentRow?.timeframe ?? '',
@@ -113,51 +109,24 @@ export function TasksMutateDrawer({
     },
   })
 
-  // FIX: safe sync instead of useState hack (removes re-render loop bug)
-  useEffect(() => {
-    if (!currentRow) return
-
-    form.reset({
-      pair: currentRow.pair,
-      direction: currentRow.direction,
-      strategy: currentRow.strategy,
-      session: currentRow.session,
-      timeframe: currentRow.timeframe ?? '',
-      emotion: currentRow.emotion ?? '',
-      entry: currentRow.entry,
-      exit: currentRow.exit,
-      lotSize: currentRow.lotSize,
-      pnl: currentRow.pnl,
-      riskAmount: currentRow.riskAmount,
-      stopLoss: currentRow.stopLoss,
-      takeProfit: currentRow.takeProfit,
-      notes: currentRow.notes ?? '',
-      mistakes: currentRow.mistakes ?? '',
-      lessons: currentRow.lessons ?? '',
-      screenshotUrl: currentRow.screenshotUrl ?? '',
-    })
-
-    setPreview(currentRow.screenshotUrl)
-  }, [currentRow, form])
-
   const onSubmit = (data: TradeForm) => {
     if (!account) {
-      toast.error('Add account first')
+      toast.error('Add a trading account first.')
       return
     }
 
-    const trade: Trade = buildTradeFromForm(data, account.id, account.name)
-
     if (isUpdate && currentRow) {
-      const updated = useTradesStore
-        .getState()
-        .trades.map((t) => (t.id === currentRow.id ? trade : t))
-
+      const updated = useTradesStore.getState().trades.map((t) =>
+        t.id === currentRow.id
+          ? buildTradeFromForm(data, account.id, account.name, currentRow)
+          : t
+      )
       useTradesStore.setState({ trades: updated })
-      toast.success('Trade updated')
+      toast.success('Trade updated.')
     } else {
+      const trade = buildTradeFromForm(data, account.id, account.name)
       addTradesForAccount(account.id, account.name, [trade])
-      toast.success('Trade saved')
+      toast.success('Trade saved.')
     }
 
     onOpenChange(false)
@@ -166,6 +135,7 @@ export function TasksMutateDrawer({
   }
 
   const handleFile = (file: File) => {
+    if (!file) return
     const reader = new FileReader()
     reader.onload = (e) => {
       const url = e.target?.result as string
@@ -177,33 +147,163 @@ export function TasksMutateDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col sm:max-w-xl">
-
+      <SheetContent className='flex flex-col sm:max-w-xl'>
         <SheetHeader>
-          <SheetTitle>{isUpdate ? 'Update' : 'Create'} Trade</SheetTitle>
-          <SheetDescription>Log your trade details</SheetDescription>
+          <SheetTitle>{isUpdate ? 'Update' : 'Log'} Trade</SheetTitle>
+          <SheetDescription>
+            Fill in your trade details below.
+          </SheetDescription>
         </SheetHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 overflow-y-auto px-4">
-
+          <form
+            id='trade-form'
+            onSubmit={form.handleSubmit(onSubmit)}
+            className='flex-1 space-y-4 overflow-y-auto px-4'
+          >
+            {/* Pair */}
             <FormField
               control={form.control}
-              name="entry"
+              name='pair'
               render={({ field }) => (
-                <Input
-                  type="number"
-                  value={field.value}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
+                <FormItem>
+                  <FormLabel>Pair</FormLabel>
+                  <SelectDropdown
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                    placeholder='Select pair'
+                    items={PAIRS.map((p) => ({ label: p, value: p }))}
+                  />
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
-            <Button type="submit">Save</Button>
+            {/* Direction FIXED */}
+            <FormField
+              control={form.control}
+              name='direction'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Direction</FormLabel>
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className='flex gap-4'
+                  >
+                    <RadioGroupItem value='long' /> Long
+                    <RadioGroupItem value='short' /> Short
+                  </RadioGroup>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
+            {/* Entry / Exit FIXED numeric */}
+            <div className='grid grid-cols-2 gap-3'>
+              <FormField
+                control={form.control}
+                name='entry'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Entry</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        value={field.value}
+                        onChange={(e) =>
+                          field.onChange(Number(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='exit'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Exit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        value={field.value}
+                        onChange={(e) =>
+                          field.onChange(Number(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* PnL FIXED */}
+            <FormField
+              control={form.control}
+              name='pnl'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>P&L</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(Number(e.target.value))
+                      }
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* Screenshot */}
+            <div>
+              <input
+                ref={fileInputRef}
+                type='file'
+                className='hidden'
+                onChange={(e) =>
+                  e.target.files?.[0] && handleFile(e.target.files[0])
+                }
+              />
+
+              {preview ? (
+                <div className='relative'>
+                  <img src={preview} className='rounded-md' />
+                  <Button
+                    type='button'
+                    onClick={() => {
+                      setPreview(undefined)
+                      form.setValue('screenshotUrl', '')
+                    }}
+                  >
+                    <X />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type='button'
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus /> Upload
+                </Button>
+              )}
+            </div>
           </form>
         </Form>
 
+        <SheetFooter>
+          <SheetClose asChild>
+            <Button variant='outline'>Close</Button>
+          </SheetClose>
+          <Button form='trade-form' type='submit'>
+            Save
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   )
