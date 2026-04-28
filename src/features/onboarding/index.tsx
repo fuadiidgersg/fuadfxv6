@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -29,7 +29,7 @@ type FormData = z.infer<typeof schema>
 // --------------------
 // FIX: Strongly typed resolver
 // --------------------
-const resolver = zodResolver(schema)
+const resolver = zodResolver(schema) as Resolver<FormData, any, FormData>
 
 export default function Onboarding() {
   const setProfile = useOnboardingStore((s) => s.setProfile)
@@ -37,7 +37,7 @@ export default function Onboarding() {
   // --------------------
   // FIX: Explicit generic lock (removes TFieldValues conflict)
   // --------------------
-  const form = useForm<FormData>({
+  const form = useForm<FormData, any, FormData>({
     resolver,
     defaultValues: {
       displayName: '',
