@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ImagePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -89,8 +89,8 @@ export function TasksMutateDrawer({
     setPreview(currentRow?.screenshotUrl)
   }
 
-  const form = useForm<TradeForm>({
-    resolver: zodResolver(formSchema) as any,
+  const form = useForm<TradeForm, any, TradeForm>({
+    resolver: zodResolver(formSchema) as Resolver<TradeForm, any, TradeForm>,
     defaultValues: currentRow
       ? {
           pair: currentRow.pair,
@@ -202,12 +202,12 @@ export function TasksMutateDrawer({
         <Form {...form}>
           <form
             id='tasks-form'
-            onSubmit={form.handleSubmit(onSubmit as any)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className='flex-1 space-y-5 overflow-y-auto px-4'
           >
             <div className='grid grid-cols-2 gap-3'>
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='pair'
                 render={({ field }) => (
                   <FormItem>
@@ -223,7 +223,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='timeframe'
                 render={({ field }) => (
                   <FormItem>
@@ -240,7 +240,7 @@ export function TasksMutateDrawer({
               />
             </div>
             <FormField
-              control={form.control as any}
+              control={form.control}
               name='direction'
               render={({ field }) => (
                 <FormItem className='relative'>
@@ -272,7 +272,7 @@ export function TasksMutateDrawer({
 
             <div className='grid grid-cols-2 gap-3'>
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='entry'
                 render={({ field }) => (
                   <FormItem>
@@ -285,7 +285,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='exit'
                 render={({ field }) => (
                   <FormItem>
@@ -298,7 +298,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='stopLoss'
                 render={({ field }) => (
                   <FormItem>
@@ -316,7 +316,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='takeProfit'
                 render={({ field }) => (
                   <FormItem>
@@ -334,7 +334,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='lotSize'
                 render={({ field }) => (
                   <FormItem>
@@ -347,7 +347,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='riskAmount'
                 render={({ field }) => (
                   <FormItem>
@@ -365,7 +365,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='pnl'
                 render={({ field }) => (
                   <FormItem className='col-span-2'>
@@ -381,7 +381,7 @@ export function TasksMutateDrawer({
 
             <div className='grid grid-cols-2 gap-3'>
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='strategy'
                 render={({ field }) => (
                   <FormItem>
@@ -397,7 +397,7 @@ export function TasksMutateDrawer({
                 )}
               />
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name='session'
                 render={({ field }) => (
                   <FormItem>
@@ -415,7 +415,7 @@ export function TasksMutateDrawer({
             </div>
 
             <FormField
-              control={form.control as any}
+              control={form.control}
               name='emotion'
               render={({ field }) => (
                 <FormItem>
@@ -435,7 +435,7 @@ export function TasksMutateDrawer({
             />
 
             <FormField
-              control={form.control as any}
+              control={form.control}
               name='screenshotUrl'
               render={() => (
                 <FormItem>
@@ -495,7 +495,7 @@ export function TasksMutateDrawer({
             />
 
             <FormField
-              control={form.control as any}
+              control={form.control}
               name='notes'
               render={({ field }) => (
                 <FormItem>
@@ -512,7 +512,7 @@ export function TasksMutateDrawer({
               )}
             />
             <FormField
-              control={form.control as any}
+              control={form.control}
               name='mistakes'
               render={({ field }) => (
                 <FormItem>
@@ -529,7 +529,7 @@ export function TasksMutateDrawer({
               )}
             />
             <FormField
-              control={form.control as any}
+              control={form.control}
               name='lessons'
               render={({ field }) => (
                 <FormItem>
