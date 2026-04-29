@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { z } from 'zod'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ImagePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -89,8 +89,8 @@ export function TasksMutateDrawer({
     setPreview(currentRow?.screenshotUrl)
   }
 
-  const form = useForm<TradeForm, any, TradeForm>({
-    resolver: zodResolver(formSchema) as Resolver<TradeForm, any, TradeForm>,
+  const form = useForm<TradeForm>({
+    resolver: zodResolver(formSchema),
     defaultValues: currentRow
       ? {
           pair: currentRow.pair,
