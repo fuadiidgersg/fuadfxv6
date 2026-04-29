@@ -100,6 +100,23 @@ Start the server
   pnpm run dev
 ```
 
+## Deploy to Vercel
+
+This project is preconfigured for Vercel via `vercel.json` (Vite framework, pnpm install, SPA fallback, asset caching).
+
+1. Push the repo to GitHub.
+2. In Vercel, click **Add New → Project** and import the GitHub repo. Vercel will read `vercel.json` and use Vite + pnpm automatically.
+3. Under **Project Settings → Environment Variables**, add the variables from `.env.example` for **Production**, **Preview**, and **Development**:
+   - `VITE_CLERK_PUBLISHABLE_KEY` — your Clerk publishable key.
+4. Click **Deploy**. Future pushes to the default branch deploy to production; pull requests get preview deployments.
+
+To deploy from the command line instead:
+
+```bash
+  pnpm dlx vercel        # first time: link the project
+  pnpm dlx vercel --prod # production deploy
+```
+
 ## Sponsoring this project ❤️
 
 If you find this project helpful or use this in your own work, consider [sponsoring me](https://github.com/sponsors/satnaing) to support development and maintenance. You can [buy me a coffee](https://buymeacoffee.com/satnaing) as well. Don’t worry, every penny helps. Thank you! 🙏
