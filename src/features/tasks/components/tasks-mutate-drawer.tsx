@@ -89,7 +89,7 @@ export function TasksMutateDrawer({
     setPreview(currentRow?.screenshotUrl)
   }
 
-  const form = useForm<TradeForm>({
+  const form = useForm<z.input<typeof formSchema>, any, z.output<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: currentRow
       ? {

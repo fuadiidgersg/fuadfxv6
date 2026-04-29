@@ -50,7 +50,7 @@ export function EquityCurve() {
             borderRadius: 6,
             fontSize: 12,
           }}
-          formatter={(v) => typeof v === 'number' ? [`$${v.toLocaleString()}`, 'Equity'] : ['$0', 'Equity']}
+          formatter={(v: unknown) => typeof v === 'number' ? [`$${v.toLocaleString()}`, 'Equity'] : ['$0', 'Equity']}
         />
         <Area
           type='monotone'
