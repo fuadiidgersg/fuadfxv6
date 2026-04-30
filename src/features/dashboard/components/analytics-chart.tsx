@@ -49,9 +49,12 @@ export function AnalyticsChart() {
             borderRadius: 6,
             fontSize: 12,
           }}
-          formatter={(v: unknown, n: unknown) =>
-            n === 'pnl' && typeof v === 'number' ? [`$${v.toFixed(2)}`, 'P&L'] : [`${v}`, 'Trades']
-          }
+          formatter={(value: unknown, name: unknown) => {
+            if (name === 'pnl' && typeof value === 'number') {
+              return [`$${value.toFixed(2)}`, 'P&L']
+            }
+            return [`${value}`, 'Trades']
+          }}
         />
         <Bar
           yAxisId='left'

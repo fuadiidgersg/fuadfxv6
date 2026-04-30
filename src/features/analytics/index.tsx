@@ -173,7 +173,14 @@ export function Analytics() {
                 <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                 <XAxis dataKey='date' fontSize={11} stroke='#888' tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip formatter={(v: unknown) => typeof v === 'number' ? [`$${v.toLocaleString()}`, 'Equity'] : ['$0', 'Equity']} />
+                <Tooltip 
+  formatter={(value: unknown) => {
+    if (typeof value === 'number') {
+      return [`$${value.toLocaleString()}`, 'Equity']
+    }
+    return ['$0', 'Equity']
+  }} 
+/>
                 <Line type='monotone' dataKey='equity' stroke='currentColor' strokeWidth={2} className='text-emerald-500' dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -200,7 +207,14 @@ export function Analytics() {
                 <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                 <XAxis dataKey='date' fontSize={11} stroke='#888' tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip formatter={(v: unknown) => typeof v === 'number' ? [`$${v.toFixed(2)}`, 'Drawdown'] : ['$0.00', 'Drawdown']} />
+                <Tooltip 
+  formatter={(value: unknown) => {
+    if (typeof value === 'number') {
+      return [`$${value.toFixed(2)}`, 'Drawdown']
+    }
+    return ['$0.00', 'Drawdown']
+  }} 
+/>
                 <Area type='monotone' dataKey='drawdown' stroke='#ef4444' strokeWidth={2} fill='url(#ddFill)' />
               </AreaChart>
             </ResponsiveContainer>
@@ -219,7 +233,14 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                   <XAxis dataKey='pair' fontSize={11} stroke='#888' tickLine={false} axisLine={false} />
                   <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: unknown) => [typeof v === 'number' ? `$${v.toFixed(2)}` : '$0.00', 'P&L']} />
+                  <Tooltip 
+  formatter={(value: unknown) => {
+    if (typeof value === 'number') {
+      return [`$${value.toFixed(2)}`, 'P&L']
+    }
+    return ['$0.00', 'P&L']
+  }} 
+/>
                   <Bar dataKey='pnl' radius={[4, 4, 0, 0]}>
                     {byPair.map((p, i) => (
                       <Cell key={i} fill={p.pnl >= 0 ? '#10b981' : '#ef4444'} />
@@ -263,7 +284,14 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                   <XAxis dataKey='session' fontSize={11} stroke='#888' tickLine={false} axisLine={false} />
                   <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: unknown) => [typeof v === 'number' ? `$${v.toFixed(2)}` : '$0.00', 'P&L']} />
+                  <Tooltip 
+  formatter={(value: unknown) => {
+    if (typeof value === 'number') {
+      return [`$${value.toFixed(2)}`, 'P&L']
+    }
+    return ['$0.00', 'P&L']
+  }} 
+/>
                   <Bar dataKey='pnl' radius={[4, 4, 0, 0]}>
                     {bySession.map((s, i) => (
                       <Cell key={i} fill={s.pnl >= 0 ? '#0ea5e9' : '#f43f5e'} />
@@ -285,7 +313,14 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                   <XAxis dataKey='day' fontSize={11} stroke='#888' tickLine={false} axisLine={false} />
                   <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: unknown) => [typeof v === 'number' ? `$${v.toFixed(2)}` : '$0.00', 'P&L']} />
+                  <Tooltip 
+  formatter={(value: unknown) => {
+    if (typeof value === 'number') {
+      return [`$${value.toFixed(2)}`, 'P&L']
+    }
+    return ['$0.00', 'P&L']
+  }} 
+/>
                   <Bar dataKey='pnl' radius={[4, 4, 0, 0]}>
                     {byDow.map((d, i) => (
                       <Cell key={i} fill={d.pnl >= 0 ? '#8b5cf6' : '#fb7185'} />
@@ -307,7 +342,14 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                   <XAxis dataKey='label' fontSize={10} stroke='#888' tickLine={false} axisLine={false} interval={1} />
                   <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v: unknown) => [typeof v === 'number' ? `$${v.toFixed(2)}` : '$0.00', 'P&L']} />
+                  <Tooltip 
+  formatter={(value: unknown) => {
+    if (typeof value === 'number') {
+      return [`$${value.toFixed(2)}`, 'P&L']
+    }
+    return ['$0.00', 'P&L']
+  }} 
+/>
                   <Bar dataKey='pnl' radius={[3, 3, 0, 0]}>
                     {byHour.map((h, i) => (
                       <Cell key={i} fill={h.pnl >= 0 ? '#22c55e' : '#f97316'} />
@@ -329,7 +371,13 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray='3 3' className='stroke-muted' />
                   <XAxis dataKey='bucket' fontSize={11} stroke='#888' tickLine={false} axisLine={false} />
                   <YAxis fontSize={11} stroke='#888' tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip formatter={(v: unknown, n: unknown) => [typeof v === 'number' ? v : 0, n === 'count' ? 'Trades' : String(n ?? '')]} />
+                  <Tooltip 
+  formatter={(value: unknown, name: unknown) => {
+    const numValue = typeof value === 'number' ? value : 0
+    const label = name === 'count' ? 'Trades' : String(name ?? '')
+    return [numValue, label]
+  }} 
+/>
                   <Bar dataKey='count' radius={[4, 4, 0, 0]}>
                     {rDist.map((r, i) => {
                       const positive = r.bucket.startsWith('+') || r.bucket === '≥ +3R'
