@@ -162,10 +162,11 @@ export function parseMT5Html(html: string): MT5ParseResult {
 
   // Walk rows top-to-bottom and track which section we're in.
   let section: Section = 'unknown'
-  // The Positions table has THIS column count: 13 (or sometimes 14 with extra "Comment")
+  // The Positions table typically has 13-14 columns but we handle flexible layouts:
   // [0]=Time(open), [1]=Position#, [2]=Symbol, [3]=Type, [4]=Volume,
   // [5]=Price(open), [6]=S/L, [7]=T/P, [8]=Time(close), [9]=Price(close),
   // [10]=Commission, [11]=Swap, [12]=Profit, ([13]=Comment)
+  // We allow flexible cell counts to handle different MT5 report formats
   for (const cells of allRows) {
     // Section header row (single non-empty cell with a section keyword, often a colspan)
     const nonEmpty = cells.filter((c) => c.length > 0)
@@ -186,7 +187,8 @@ export function parseMT5Html(html: string): MT5ParseResult {
     }
 
     if (section !== 'positions') continue
-    if (cells.length < 13 || cells.length > 14) continue
+    // Allow flexible cell counts but require minimum essential columns
+    if (cells.length < 10) continue
 
     // Strict shape validation for a position row
     const openTimeStr = cells[0] ?? ''
@@ -194,9 +196,9 @@ export function parseMT5Html(html: string): MT5ParseResult {
     const type = (cells[3] ?? '').toLowerCase()
     const volumeStr = cells[4] ?? ''
     const openPriceStr = cells[5] ?? ''
-    const closeTimeStr = cells[8] ?? ''
-    const closePriceStr = cells[9] ?? ''
-    const profitStr = cells[12] ?? ''
+    const closeTimeStr = cells[8] ?? cells[cells.length - 3] ?? ''
+    const closePriceStr = cells[9] ?? cells[cells.length - 2] ?? ''
+    const profitStr = cells[cells.length >= 13 ? 12 : cells.length - 1] ?? ''
 
     if (type !== 'buy' && type !== 'sell') continue
 
