@@ -278,7 +278,12 @@ export function TasksMutateDrawer({
                   <FormItem>
                     <FormLabel>Entry</FormLabel>
                     <FormControl>
-                      <Input type='number' step='0.00001' {...field} />
+                      <Input 
+                        type='number' 
+                        step='0.00001' 
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -291,7 +296,12 @@ export function TasksMutateDrawer({
                   <FormItem>
                     <FormLabel>Exit</FormLabel>
                     <FormControl>
-                      <Input type='number' step='0.00001' {...field} />
+                      <Input 
+                        type='number' 
+                        step='0.00001' 
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -307,8 +317,8 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.00001'
-                        {...field}
-                        value={field.value ?? ''}
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -325,8 +335,8 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.00001'
-                        {...field}
-                        value={field.value ?? ''}
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -340,7 +350,12 @@ export function TasksMutateDrawer({
                   <FormItem>
                     <FormLabel>Lot size</FormLabel>
                     <FormControl>
-                      <Input type='number' step='0.01' {...field} />
+                      <Input 
+                        type='number' 
+                        step='0.01' 
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -356,8 +371,8 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.01'
-                        {...field}
-                        value={field.value ?? ''}
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -371,7 +386,12 @@ export function TasksMutateDrawer({
                   <FormItem className='col-span-2'>
                     <FormLabel>P&L ($)</FormLabel>
                     <FormControl>
-                      <Input type='number' step='0.01' {...field} />
+                      <Input 
+                        type='number' 
+                        step='0.01' 
+                        value={typeof field.value === 'number' ? field.value : ''}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
