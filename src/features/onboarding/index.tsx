@@ -17,7 +17,7 @@ import { SelectDropdown } from '@/components/select-dropdown'
 import { useOnboardingStore } from '@/stores/onboarding-store'
 
 // --------------------
-// Schema (FIXED)
+// Schema (FIXED FOR VERCEL)
 // --------------------
 const schema = z.object({
   displayName: z.string().min(1, 'Required'),
@@ -45,7 +45,7 @@ export default function Onboarding() {
   })
 
   const onSubmit = (data: FormData) => {
-    console.log('SUBMIT WORKING:', data)
+    console.log('SUBMIT:', data)
     setProfile(data)
   }
 
@@ -81,7 +81,7 @@ export default function Onboarding() {
                   <FormControl>
                     <SelectDropdown
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(val: string) => field.onChange(val)}
                       items={[
                         { label: 'Beginner', value: 'beginner' },
                         { label: 'Intermediate', value: 'intermediate' },
@@ -120,9 +120,11 @@ export default function Onboarding() {
                   <FormControl>
                     <Input
                       type="number"
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(e.target.valueAsNumber || 0)
+                      }
                       placeholder="1000"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />
