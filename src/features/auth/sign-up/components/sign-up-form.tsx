@@ -5,8 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
-import { IconFacebook, IconGithub } from '@/assets/brand-icons'
-import { signUp } from '@/lib/supabase/auth'
+import { IconGoogle } from '@/assets/brand-icons'
+import { signUp, signInWithGoogle } from '@/lib/supabase/auth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -133,24 +133,21 @@ export function SignUpForm({
           </div>
         </div>
 
-        <div className='grid grid-cols-2 gap-2'>
-          <Button
-            variant='outline'
-            className='w-full'
-            type='button'
-            disabled={isLoading}
-          >
-            <IconGithub className='h-4 w-4' /> GitHub
-          </Button>
-          <Button
-            variant='outline'
-            className='w-full'
-            type='button'
-            disabled={isLoading}
-          >
-            <IconFacebook className='h-4 w-4' /> Facebook
-          </Button>
-        </div>
+        <Button
+          variant='outline'
+          className='w-full'
+          type='button'
+          disabled={isLoading}
+          onClick={async () => {
+            try {
+              await signInWithGoogle()
+            } catch (err: any) {
+              toast.error(err?.message ?? 'Google sign up failed.')
+            }
+          }}
+        >
+          <IconGoogle className='h-4 w-4' /> Continue with Google
+        </Button>
       </form>
     </Form>
   )
