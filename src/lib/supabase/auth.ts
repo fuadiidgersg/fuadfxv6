@@ -46,6 +46,11 @@ export async function signInWithGoogle() {
   if (error) throw error
 }
 
+export async function updatePassword(newPassword: string) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw error
+}
+
 export function onAuthStateChange(callback: Parameters<typeof supabase.auth.onAuthStateChange>[0]) {
   return supabase.auth.onAuthStateChange(callback)
 }
