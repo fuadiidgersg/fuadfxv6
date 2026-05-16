@@ -111,7 +111,7 @@ const MarketNewsPage = () => {
   const fetchLiveNews = useCallback(async () => {
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: "Provide the 8 latest high-impact news stories for Forex, Gold (XAUUSD), and Global Equity indices (US30, NAS100). For each news item, provide: TITLE, SUMMARY, SOURCE, TIME_AGO, IMPACT (High/Medium/Low), and CATEGORY (Forex/Metals/Indices). Use real-time data.",
@@ -943,7 +943,7 @@ const AIDeepAnalysisPage = ({ trades }: { trades: Trade[] }) => {
   const generate = async () => {
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const stats = calculateStats(trades);
       const res = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
