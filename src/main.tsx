@@ -59,13 +59,9 @@ const queryClient = new QueryClient({
         }
         if (error.response?.status === 500) {
           toast.error('Internal Server Error!')
-          // Only navigate to error page in production to avoid disrupting HMR in development
           if (import.meta.env.PROD) {
             router.navigate({ to: '/500' })
           }
-        }
-        if (error.response?.status === 403) {
-          // router.navigate("/forbidden", { replace: true });
         }
       }
     },
@@ -87,21 +83,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Render the app
-const rootElement = document.getElementById('root')!
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement)
-  root.render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <FontProvider>
-            <DirectionProvider>
-              <RouterProvider router={router} />
-            </DirectionProvider>
-          </FontProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </StrictMode>
-  )
-}
+// Initialize Supabase auth session before rendering
+useAuthStore.getState().auth.initialize().then(() => {
+  const rootElement = document.getElementById('root')!
+  if (!rootElement.innerHTML) {
+    const root = ReactDOM.createRoot(rootElement)
+    root.render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <FontProvider>
+              <DirectionProvider>
+                <RouterProvider router={router} />
+              </DirectionProvider>
+            </FontProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </StrictMode>
+    )
+  }
+})

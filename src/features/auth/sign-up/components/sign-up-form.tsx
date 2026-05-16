@@ -6,8 +6,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { Loader2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
-import { useAuthStore } from '@/stores/auth-store'
-import { sleep, cn } from '@/lib/utils'
+import { signUp } from '@/lib/supabase/auth'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -43,7 +43,6 @@ export function SignUpForm({
 }: React.HTMLAttributes<HTMLFormElement>) {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const { auth } = useAuthStore()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,29 +53,22 @@ export function SignUpForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-
-    toast.promise(sleep(2000), {
-      loading: 'Creating account...',
-      success: () => {
-        setIsLoading(false)
-
-        const mockUser = {
-          accountNo: 'ACC001',
-          email: data.email,
-          role: ['user'],
-          exp: Date.now() + 24 * 60 * 60 * 1000,
-        }
-        auth.setUser(mockUser)
-        auth.setAccessToken('mock-access-token')
-
+    try {
+      const result = await signUp(data.email, data.password)
+      if (result.user && !result.session) {
+        toast.success('Account created! Please check your email to confirm your account.')
+        navigate({ to: '/sign-in', replace: true })
+      } else {
+        toast.success(`Account created for ${data.email}.`)
         navigate({ to: '/onboarding', replace: true })
-
-        return `Account created for ${data.email}.`
-      },
-      error: 'Error',
-    })
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Sign up failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

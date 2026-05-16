@@ -16,9 +16,6 @@ import { Input } from '@/components/ui/input'
 import { SelectDropdown } from '@/components/select-dropdown'
 import { useOnboardingStore } from '@/stores/onboarding-store'
 
-// --------------------
-// Schema (FIXED FOR VERCEL)
-// --------------------
 const schema = z.object({
   displayName: z.string().min(1, 'Required'),
   experience: z.enum(['beginner', 'intermediate', 'advanced', 'pro']),
@@ -28,14 +25,11 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-// --------------------
-// Component
-// --------------------
 export default function Onboarding() {
   const setProfile = useOnboardingStore((s) => s.setProfile)
 
   const form = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       displayName: '',
       experience: 'beginner',
@@ -45,7 +39,6 @@ export default function Onboarding() {
   })
 
   const onSubmit = (data: FormData) => {
-    console.log('SUBMIT:', data)
     setProfile(data)
   }
 
@@ -56,7 +49,6 @@ export default function Onboarding() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
-            {/* Display Name */}
             <FormField
               control={form.control}
               name="displayName"
@@ -71,31 +63,28 @@ export default function Onboarding() {
               )}
             />
 
-            {/* Experience */}
             <FormField
               control={form.control}
               name="experience"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Experience</FormLabel>
-                  <FormControl>
-                    <SelectDropdown
-                      value={field.value}
-                      onValueChange={(val: string) => field.onChange(val)}
-                      items={[
-                        { label: 'Beginner', value: 'beginner' },
-                        { label: 'Intermediate', value: 'intermediate' },
-                        { label: 'Advanced', value: 'advanced' },
-                        { label: 'Pro', value: 'pro' },
-                      ]}
-                    />
-                  </FormControl>
+                  <SelectDropdown
+                    defaultValue={field.value}
+                    isControlled
+                    onValueChange={(val: string) => field.onChange(val)}
+                    items={[
+                      { label: 'Beginner', value: 'beginner' },
+                      { label: 'Intermediate', value: 'intermediate' },
+                      { label: 'Advanced', value: 'advanced' },
+                      { label: 'Pro', value: 'pro' },
+                    ]}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Preferred Pair */}
             <FormField
               control={form.control}
               name="preferredPair"
@@ -110,7 +99,6 @@ export default function Onboarding() {
               )}
             />
 
-            {/* Starting Capital */}
             <FormField
               control={form.control}
               name="startingCapital"
@@ -132,7 +120,6 @@ export default function Onboarding() {
               )}
             />
 
-            {/* Submit */}
             <Button type="submit" className="w-full">
               Continue
             </Button>
