@@ -14,7 +14,8 @@ export function AuthCallback() {
 
     async function handleCallback() {
       try {
-        const { data, error } = await supabase.auth.getSession()
+        // Use getSessionFromUrl to properly capture session from OAuth callback URL hash
+        const { data, error } = await supabase.auth.getSessionFromUrl()
 
         if (error || !data.session) {
           navigate({ to: '/sign-in', replace: true })
