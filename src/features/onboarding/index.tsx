@@ -1,62 +1,95 @@
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+import { useNavigate } from '@tanstack/react-router'
 import { zodResolver } from '@hookform/resolvers/zod'
-
+import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
+import { useAuthStore } from '@/stores/auth-store'
+import { useProfileStore } from '@/stores/profile-store'
 import { Button } from '@/components/ui/button'
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from '@/components/ui/form'
-
 import { Input } from '@/components/ui/input'
 import { SelectDropdown } from '@/components/select-dropdown'
-import { useOnboardingStore } from '@/stores/onboarding-store'
 
 const schema = z.object({
   displayName: z.string().min(1, 'Required'),
   experience: z.enum(['beginner', 'intermediate', 'advanced', 'pro']),
   preferredPair: z.string().min(1, 'Required'),
-  startingCapital: z.coerce.number().min(1, 'Required'),
+  startingCapital: z.coerce.number().min(1, 'Must be greater than 0'),
 })
 
 type FormData = z.infer<typeof schema>
 
 export default function Onboarding() {
-  const setProfile = useOnboardingStore((s) => s.setProfile)
+  const navigate = useNavigate()
+  const setProfile = useProfileStore((s) => s.setProfile)
+  const completeOnboarding = useProfileStore((s) => s.completeOnboarding)
+  const user = useAuthStore((s) => s.auth.user)
+  const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
-      displayName: '',
+      displayName: user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? '',
       experience: 'beginner',
       preferredPair: '',
       startingCapital: 0,
     },
   })
 
-  const onSubmit = (data: FormData) => {
-    setProfile(data)
+  const onSubmit = async (data: FormData) => {
+    setIsLoading(true)
+    try {
+      setProfile({
+        email: user?.email ?? '',
+        displayName: data.displayName,
+        experience: data.experience,
+        preferredPair: data.preferredPair,
+        startingCapital: data.startingCapital,
+      })
+      completeOnboarding()
+      toast.success('Welcome to Fuadfx! Your profile is set up.')
+      navigate({ to: '/' })
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-lg space-y-6">
+    <div className='container grid h-svh max-w-none items-center justify-center'>
+      <div className='mx-auto w-full max-w-md space-y-6 py-8'>
+        <div className='space-y-1 text-center'>
+          <h1 className='text-2xl font-semibold tracking-tight'>
+            Welcome to Fuadfx
+          </h1>
+          <p className='text-sm text-muted-foreground'>
+            Tell us a bit about yourself to get started.
+          </p>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className='space-y-4'
+          >
             <FormField
               control={form.control}
-              name="displayName"
+              name='displayName'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Display Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your name" {...field} />
+                    <Input placeholder='Enter your name' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -65,10 +98,10 @@ export default function Onboarding() {
 
             <FormField
               control={form.control}
-              name="experience"
+              name='experience'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Experience</FormLabel>
+                  <FormLabel>Trading Experience</FormLabel>
                   <SelectDropdown
                     defaultValue={field.value}
                     isControlled
@@ -87,12 +120,12 @@ export default function Onboarding() {
 
             <FormField
               control={form.control}
-              name="preferredPair"
+              name='preferredPair'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Preferred Pair</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. EURUSD" {...field} />
+                    <Input placeholder='e.g. EURUSD' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -101,18 +134,18 @@ export default function Onboarding() {
 
             <FormField
               control={form.control}
-              name="startingCapital"
+              name='startingCapital'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Starting Capital</FormLabel>
+                  <FormLabel>Starting Capital ($)</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       value={field.value}
                       onChange={(e) =>
                         field.onChange(e.target.valueAsNumber || 0)
                       }
-                      placeholder="1000"
+                      placeholder='1000'
                     />
                   </FormControl>
                   <FormMessage />
@@ -120,13 +153,12 @@ export default function Onboarding() {
               )}
             />
 
-            <Button type="submit" className="w-full">
-              Continue
+            <Button type='submit' className='w-full' disabled={isLoading}>
+              {isLoading && <Loader2 className='animate-spin' />}
+              Get Started
             </Button>
-
           </form>
         </Form>
-
       </div>
     </div>
   )
