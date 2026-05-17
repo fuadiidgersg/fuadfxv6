@@ -1,0 +1,103 @@
+import {
+  TrendingUp,
+  Activity,
+  GitBranch,
+  Layers,
+  Zap,
+  Crosshair,
+  Repeat,
+  Wind,
+  Triangle,
+  Clock4,
+  Compass,
+  Hexagon,
+  Anchor,
+  Brain,
+} from 'lucide-react'
+
+export const apps = [
+  {
+    name: 'Breakout',
+    logo: <TrendingUp className='size-5 text-emerald-600' />,
+    connected: true,
+    desc: 'Trade explosive moves out of consolidation, range, or key S/R levels.',
+  },
+  {
+    name: 'Trend Following',
+    logo: <Activity className='size-5 text-sky-600' />,
+    connected: true,
+    desc: 'Ride sustained directional momentum confirmed by EMA stack and ADX.',
+  },
+  {
+    name: 'Reversal',
+    logo: <Repeat className='size-5 text-rose-600' />,
+    connected: true,
+    desc: 'Counter-trend setups at exhaustion zones with confirmation candles.',
+  },
+  {
+    name: 'Scalping',
+    logo: <Zap className='size-5 text-amber-600' />,
+    connected: false,
+    desc: 'High frequency, low timeframe entries targeting 5–15 pip moves.',
+  },
+  {
+    name: 'Swing',
+    logo: <Wind className='size-5 text-indigo-600' />,
+    connected: true,
+    desc: 'Multi-day positions following the higher timeframe structure.',
+  },
+  {
+    name: 'News Trading',
+    logo: <GitBranch className='size-5 text-fuchsia-600' />,
+    connected: false,
+    desc: 'Catalyst driven trades around CPI, NFP, FOMC and central bank events.',
+  },
+  {
+    name: 'Mean Reversion',
+    logo: <Crosshair className='size-5 text-cyan-600' />,
+    connected: true,
+    desc: 'Fade overextended moves back toward statistical mean (RSI, BB).',
+  },
+  {
+    name: 'Range',
+    logo: <Layers className='size-5 text-violet-600' />,
+    connected: true,
+    desc: 'Buy support / sell resistance during low volatility consolidations.',
+  },
+  {
+    name: 'ICT / Smart Money',
+    logo: <Triangle className='size-5 text-orange-600' />,
+    connected: false,
+    desc: 'Liquidity sweeps, order blocks and fair value gap based entries.',
+  },
+  {
+    name: 'Asian Session Bias',
+    logo: <Clock4 className='size-5 text-teal-600' />,
+    connected: false,
+    desc: 'Use Asian range to anticipate London open expansion direction.',
+  },
+  {
+    name: 'Carry Trade',
+    logo: <Anchor className='size-5 text-yellow-600' />,
+    connected: false,
+    desc: 'Long high-yield / short low-yield currency pairs for swap income.',
+  },
+  {
+    name: 'Confluence Setup',
+    logo: <Hexagon className='size-5 text-pink-600' />,
+    connected: true,
+    desc: 'Only trade when 3+ factors align: structure, indicator, time-of-day.',
+  },
+  {
+    name: 'Algorithmic',
+    logo: <Compass className='size-5 text-blue-600' />,
+    connected: false,
+    desc: 'Systematic signals from your own backtested expert advisor.',
+  },
+  {
+    name: 'Discretionary',
+    logo: <Brain className='size-5 text-stone-600' />,
+    connected: true,
+    desc: 'Catch-all bucket for context-driven manual decisions.',
+  },
+]

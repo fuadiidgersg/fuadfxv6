@@ -1,0 +1,495 @@
+# FUADFXV6 — PRODUCTION REFACTOR, SUPABASE AUTH MIGRATION & BACKEND IMPLEMENTATION
+
+You are working on an EXISTING forex journal/trading analytics platform called FUADFXV6.
+
+IMPORTANT:
+This is NOT a rebuild project.
+
+The project already contains:
+- React
+- Vite
+- TypeScript
+- TanStack Query
+- TanStack Router
+- TanStack Table
+- Zustand
+- Tailwind CSS
+- Existing UI/pages/layouts/components
+
+The frontend UI already exists and should be preserved.
+
+====================================================
+PRIMARY OBJECTIVES
+====================================================
+
+Your goals are to:
+
+1. Audit the entire existing codebase
+2. Preserve the current UI and frontend structure
+3. Remove Clerk authentication safely
+4. Migrate authentication fully to Supabase Auth
+5. Keep the existing login/signup UI design
+6. Build a secure backend layer using Next.js APIs
+7. Move sensitive logic server-side
+8. Properly structure Supabase integration
+9. Implement production-grade security
+10. Make the entire project Vercel-compatible
+11. Commit all updates cleanly to GitHub
+
+====================================================
+CRITICAL RULES
+====================================================
+
+DO NOT:
+- rebuild the frontend from scratch
+- destroy existing UI/pages
+- replace TanStack ecosystem
+- unnecessarily redesign components
+- break current routing/layouts
+
+DO:
+- preserve frontend investment
+- refactor professionally
+- improve architecture
+- prioritize security
+- build scalable production systems
+
+====================================================
+CURRENT PROJECT ANALYSIS
+====================================================
+
+The current codebase is primarily:
+- frontend/dashboard infrastructure
+- UI components/layouts
+- routing structure
+- chart/table systems
+
+The project currently lacks:
+- proper backend architecture
+- secure API layer
+- production-ready Supabase integration
+- server-side business logic
+- secure analytics engine
+- RLS implementation
+- proper auth/session architecture
+
+====================================================
+TARGET FINAL ARCHITECTURE
+====================================================
+
+FINAL STRUCTURE:
+
+/frontend
+  - Vite React frontend
+
+/backend
+  - Next.js backend APIs
+
+/supabase
+  - schema
+  - policies
+  - migrations
+
+FLOW:
+
+Frontend (Vite)
+    ↓
+Next.js Backend APIs
+    ↓
+Supabase PostgreSQL/Auth/Storage
+
+====================================================
+PHASE 1 — COMPLETE CODEBASE AUDIT
+====================================================
+
+Perform a full audit of the existing project.
+
+Identify:
+- security vulnerabilities
+- dead code
+- placeholder services
+- Clerk dependencies/usages
+- bad architecture
+- duplicated logic
+- frontend business logic exposure
+- unsafe database access
+- missing validation
+- inconsistent typing
+- performance bottlenecks
+- poor state handling
+- improper folder structure
+
+Generate:
+- audit report
+- security report
+- migration plan
+- architecture recommendations
+
+====================================================
+PHASE 2 — REMOVE CLERK AUTH
+====================================================
+
+Audit all Clerk usage.
+
+Safely remove:
+- Clerk SDKs
+- Clerk providers
+- Clerk hooks
+- Clerk components
+- unused dependencies
+
+IMPORTANT:
+Do NOT redesign the UI.
+
+Keep:
+- existing login page
+- existing signup page
+- existing auth layouts
+- onboarding UI
+
+Only replace the auth logic underneath.
+
+====================================================
+PHASE 3 — IMPLEMENT SUPABASE AUTH
+====================================================
+
+Migrate fully to Supabase Auth.
+
+IMPLEMENT:
+- email/password login
+- signup
+- logout
+- forgot password
+- session persistence
+- protected routes
+- auth middleware
+- Google OAuth (optional but recommended)
+
+Keep the same frontend UI.
+
+====================================================
+SUPABASE CLIENT ARCHITECTURE
+====================================================
+
+CREATE:
+
+frontend/src/lib/supabase/
+
+Include:
+- browser client
+- auth helpers
+- typed helpers
+- session utilities
+
+====================================================
+ENVIRONMENT VARIABLES
+====================================================
+
+FRONTEND (.env)
+
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+
+BACKEND (.env)
+
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_URL=
+
+IMPORTANT:
+- NEVER expose service role key to frontend
+- NEVER expose admin logic client-side
+
+====================================================
+PHASE 4 — FRONTEND REFACTOR
+====================================================
+
+Preserve existing UI/pages.
+
+Refactor architecture professionally.
+
+TARGET STRUCTURE:
+
+frontend/src/
+  app/
+  components/
+  features/
+  hooks/
+  routes/
+  services/
+  store/
+  lib/
+  utils/
+  types/
+  providers/
+
+REQUIREMENTS:
+- strict TypeScript
+- reusable hooks
+- centralized API layer
+- proper query management
+- optimized rendering
+- lazy loading
+- clean separation of concerns
+
+====================================================
+PHASE 5 — NEXT.JS BACKEND IMPLEMENTATION
+====================================================
+
+Create a dedicated backend application.
+
+STRUCTURE:
+
+backend/
+  src/
+    app/api/
+    middleware/
+    services/
+    validators/
+    lib/
+    types/
+    utils/
+
+BACKEND RESPONSIBILITIES:
+- secure business logic
+- auth verification
+- analytics calculations
+- dashboard aggregation
+- uploads
+- validation
+- authorization
+- secure Supabase access
+
+====================================================
+PHASE 6 — API IMPLEMENTATION
+====================================================
+
+Create secure APIs for:
+
+/api/auth
+/api/trades
+/api/analytics
+/api/dashboard
+/api/profile
+/api/settings
+/api/uploads
+
+REQUIREMENTS:
+- auth middleware
+- typed responses
+- request validation
+- centralized error handling
+- ownership verification
+- proper HTTP status codes
+
+====================================================
+PHASE 7 — DATABASE & SUPABASE
+====================================================
+
+Review and optimize schema.
+
+TABLES:
+- profiles
+- trades
+- journals
+- strategies
+- analytics
+- screenshots
+- settings
+
+REQUIREMENTS:
+- indexes
+- timestamps
+- foreign keys
+- relational integrity
+- optimized queries
+
+====================================================
+PHASE 8 — ROW LEVEL SECURITY (CRITICAL)
+====================================================
+
+Enable RLS on ALL tables.
+
+Implement ownership-based access policies.
+
+EXAMPLE:
+
+auth.uid() = user_id
+
+Users MUST only access:
+- their own trades
+- their own analytics
+- their own uploads
+- their own journals
+
+Implement secure storage policies for uploads/screenshots.
+
+====================================================
+PHASE 9 — ANALYTICS ENGINE
+====================================================
+
+Move all analytics calculations server-side.
+
+Backend should calculate:
+- PnL
+- win rate
+- RR ratios
+- equity curves
+- strategy analytics
+- pair analytics
+- dashboard summaries
+- session performance
+
+Frontend should ONLY render results.
+
+====================================================
+PHASE 10 — FILE UPLOADS
+====================================================
+
+Implement secure upload system.
+
+REQUIREMENTS:
+- authenticated uploads
+- file validation
+- ownership checks
+- secure storage policies
+- mime validation
+- file size limits
+
+====================================================
+PHASE 11 — TANSTACK QUERY OPTIMIZATION
+====================================================
+
+Optimize:
+- caching
+- invalidation
+- optimistic updates
+- retry behavior
+- stale times
+- pagination
+
+Create centralized query key management.
+
+====================================================
+PHASE 12 — PERFORMANCE OPTIMIZATION
+====================================================
+
+Optimize:
+- bundle size
+- rerenders
+- lazy loading
+- code splitting
+- charts rendering
+- table performance
+- API efficiency
+
+====================================================
+PHASE 13 — ERROR HANDLING
+====================================================
+
+Implement:
+- global error boundaries
+- API error handling
+- loading skeletons
+- empty states
+- fallback UI
+- toast notifications
+
+====================================================
+PHASE 14 — VERCEL COMPATIBILITY
+====================================================
+
+The final project MUST deploy cleanly to Vercel.
+
+REQUIREMENTS:
+- Vercel-compatible frontend
+- Vercel-compatible backend
+- proper environment handling
+- no unsupported server configs
+- optimized build settings
+- correct routing behavior
+
+Ensure:
+- frontend deploys successfully
+- backend deploys successfully
+- environment variables work correctly
+- production builds succeed
+
+====================================================
+PHASE 15 — GITHUB COMMIT & CLEANUP
+====================================================
+
+After all updates:
+
+- clean the repository
+- remove dead code
+- remove unused dependencies
+- organize commits properly
+- ensure project builds successfully
+- commit all changes to GitHub
+
+COMMIT REQUIREMENTS:
+- meaningful commit messages
+- clean git history
+- production-ready repository structure
+
+====================================================
+PHASE 16 — DOCUMENTATION
+====================================================
+
+Create complete documentation:
+
+README should include:
+- project overview
+- architecture overview
+- setup instructions
+- Supabase setup
+- Vercel deployment
+- environment variables
+- backend setup
+- development workflow
+- production deployment
+
+Also create:
+- .env.example
+- deployment guide
+- architecture documentation
+
+====================================================
+FINAL GOAL
+====================================================
+
+Transform the project from:
+
+"frontend dashboard framework"
+
+into:
+
+"production-grade scalable forex journal SaaS platform"
+
+WITHOUT destroying the existing frontend investment.
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+The final project must:
+- preserve existing UI/pages
+- use Supabase Auth fully
+- remove Clerk cleanly
+- have secure backend APIs
+- use proper RLS
+- hide sensitive logic server-side
+- be Vercel-compatible
+- deploy successfully
+- be scalable
+- be maintainable long-term
+- have clean GitHub commits
+- be production-ready
+
+====================================================
+IMPORTANT
+====================================================
+
+DO NOT rebuild the project.
+
+Refactor professionally while preserving the current frontend system.
