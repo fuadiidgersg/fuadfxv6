@@ -102,6 +102,35 @@ Run these SQL files in your Supabase SQL Editor (in order):
 - **Backend** (development): `npm run dev:server` runs Express on port `3001`
 - **Vite dev server**: bound to `0.0.0.0:5000`, proxies `/api/*` → `localhost:3001`
 
+## GitHub
+- **Repo**: `https://github.com/fuadiidgersg/fuadfxv6.git` (always push here)
+- Push using `GITHUB_PERSONAL_ACCESS_TOKEN` secret (set in Replit Secrets)
+- Due to shallow-clone limitation, pushes use `git archive` → fresh repo → force push
+
+## Google OAuth Setup (Supabase Dashboard)
+After deploying to Vercel, complete these steps in Supabase:
+1. **Authentication → Providers → Google** — enable Google, enter Client ID + Secret from Google Cloud Console
+2. **Authentication → URL Configuration → Site URL** — set to your Vercel URL (e.g. `https://fuadfx.vercel.app`)
+3. **Authentication → URL Configuration → Redirect URLs** — add `https://fuadfx.vercel.app/auth/callback`
+4. **Google Cloud Console → Authorized redirect URIs** — add `https://<project>.supabase.co/auth/v1/callback`
+
+The app's OAuth flow: Google → Supabase → `/auth/callback` → app (session exchange handled there).
+
+## Vercel Environment Variables (set in Vercel dashboard)
+| Variable | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
+| `VITE_GEMINI_API_KEY` | Your Google Gemini API key |
+| `VITE_API_URL` | Your Render backend URL (e.g. `https://fuadfx-api.onrender.com`) |
+
+## Render Environment Variables (set in Render dashboard)
+| Variable | Value |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key |
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `FRONTEND_URL` | Your Vercel frontend URL |
+
 ## User Preferences
 - Package manager: npm (not pnpm)
 - Auth: Supabase Auth (Clerk removed)
