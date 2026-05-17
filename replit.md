@@ -9,7 +9,7 @@ A production-grade forex trading journal app built on a Shadcn admin dashboard c
 - **UI**: Shadcn UI (Radix primitives) + Tailwind CSS v4
 - **Charts**: Recharts
 - **Forms/Validation**: react-hook-form + zod
-- **Auth**: Supabase Auth (email/password, password reset)
+- **Auth**: Supabase Auth (email/password, Google OAuth, password reset)
 - **Backend**: Express.js (`server/`) with Supabase service role
 - **Database**: Supabase PostgreSQL (schema in `supabase/schema.sql`, RLS in `supabase/rls.sql`)
 - **AI**: Google Gemini (Market Pulse + AI analysis) via `VITE_GEMINI_API_KEY`
@@ -19,15 +19,32 @@ A production-grade forex trading journal app built on a Shadcn admin dashboard c
 ## Architecture
 
 ```
-Frontend (Vite React)
+Vercel (Frontend — React + Vite)
+    ↓  VITE_API_URL (production) / Vite proxy (dev)
+Render (Backend — Express.js)  ←  SUPABASE_SERVICE_ROLE_KEY (server-side only)
     ↓
-Express Backend (/api/*)  ←  Supabase Service Role (server-side only)
-    ↓
-Supabase PostgreSQL + Auth
+Supabase (PostgreSQL + Auth)
 ```
 
+## Deployment
+
+| Service | What it runs | Config file |
+|---|---|---|
+| **Vercel** | React frontend (static) | `vercel.json` |
+| **Render** | Express API backend | `render.yaml` |
+| **Supabase** | PostgreSQL DB + Auth | `supabase/schema.sql`, `supabase/rls.sql` |
+
+### Vercel (Frontend)
+- Build: `npm run build` → outputs to `dist/`
+- Set env var `VITE_API_URL` = your Render backend URL (e.g. `https://fuadfx-api.onrender.com`)
+- Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GEMINI_API_KEY`
+
+### Render (Backend)
+- Build: `npm install`
+- Start: `npx tsx server/index.ts`
+- Set env vars: `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `FRONTEND_URL` (your Vercel domain)
+
 ## Environment Variables
-All secrets are stored in Replit Secrets / Vercel Environment Variables. See `.env.example` for the full list.
 
 | Variable | Where Used | Purpose |
 |---|---|---|
@@ -35,6 +52,8 @@ All secrets are stored in Replit Secrets / Vercel Environment Variables. See `.e
 | `VITE_SUPABASE_ANON_KEY` | Frontend only | Supabase anon/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Backend only | Admin access — never exposed to browser |
 | `VITE_GEMINI_API_KEY` | Frontend | Google Gemini AI for news + analysis |
+| `VITE_API_URL` | Frontend (production) | Render backend base URL |
+| `FRONTEND_URL` | Backend | Vercel frontend URL for CORS allowlist |
 
 ## Database Setup
 Run these SQL files in your Supabase SQL Editor (in order):
@@ -54,12 +73,20 @@ Run these SQL files in your Supabase SQL Editor (in order):
 | `/news` | `features/news` | Economic News + AI Market Pulse |
 | `/settings/*` | `features/settings` | Profile, account, appearance, notifications |
 | `/onboarding` | `features/onboarding` | New-user onboarding flow |
+| `/reset-password` | `features/auth/reset-password` | Set new password after email reset link |
 
 ## Auth Flow
 - Sign in/up: `src/features/auth/` (forms call Supabase Auth directly)
+- Google OAuth: `signInWithGoogle()` in `src/lib/supabase/auth.ts`
+- Password reset: email → `/reset-password` → `updatePassword()`
 - Session: managed by `@supabase/supabase-js`, initialized in `src/main.tsx`
 - Route guard: `src/routes/_authenticated/route.tsx` checks real Supabase session via `getSession()`
 - Store: `src/stores/auth-store.ts` holds user + session state (Zustand)
+
+## Frontend API Client
+`src/lib/api.ts` — axios instance that:
+- Uses `VITE_API_URL` as base URL in production, `/api` in dev (proxied to localhost:3001)
+- Automatically attaches the Supabase JWT access token as `Authorization: Bearer ...`
 
 ## Backend API Routes
 | Endpoint | Description |
@@ -73,10 +100,11 @@ Run these SQL files in your Supabase SQL Editor (in order):
 ## Replit Setup
 - **Workflow**: `Start application` runs `npm run dev` on port `5000` (webview)
 - **Backend** (development): `npm run dev:server` runs Express on port `3001`
-- **Vite dev server**: bound to `0.0.0.0:5000` with `allowedHosts: true`
-- **Deployment**: Configured for Vercel (`vercel.json`) — static frontend + Express API routes
+- **Vite dev server**: bound to `0.0.0.0:5000`, proxies `/api/*` → `localhost:3001`
 
 ## User Preferences
 - Package manager: npm (not pnpm)
 - Auth: Supabase Auth (Clerk removed)
-- Deployment target: Vercel
+- Backend: Render (Express)
+- Frontend: Vercel
+- Database + Auth: Supabase
