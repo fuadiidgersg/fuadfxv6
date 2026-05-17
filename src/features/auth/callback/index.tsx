@@ -26,7 +26,7 @@ export function AuthCallback() {
         if (!onboardingComplete) {
           navigate({ to: '/onboarding', replace: true })
         } else {
-          navigate({ to: '/', replace: true })
+          navigate({ to: '/_authenticated/', replace: true })
         }
       } catch {
         navigate({ to: '/sign-in', replace: true })
