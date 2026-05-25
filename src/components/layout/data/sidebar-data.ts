@@ -14,6 +14,7 @@ import {
   Notebook,
   Newspaper,
   TrendingUp,
+  Briefcase,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -58,6 +59,11 @@ export const sidebarData: SidebarData = {
           title: 'Analytics',
           url: '/analytics',
           icon: LineChart,
+        },
+        {
+          title: 'Portfolio',
+          url: '/portfolio',
+          icon: Briefcase,
         },
         {
           title: 'Calendar',
