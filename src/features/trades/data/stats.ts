@@ -16,6 +16,7 @@ export type TradeStats = {
   worstTrade: number
   avgR: number
   totalPips: number
+  avgPips: number
   largestWinStreak: number
   largestLossStreak: number
 }
@@ -37,6 +38,7 @@ export function computeStats(trades: Trade[]): TradeStats {
   const expectancy =
     closed.length === 0 ? 0 : (winRate / 100) * avgWin - (1 - winRate / 100) * avgLoss
   const totalPips = closed.reduce((s, t) => s + t.pips, 0)
+  const avgPips = closed.length ? totalPips / closed.length : 0
   const avgR = closed.length ? closed.reduce((s, t) => s + t.rMultiple, 0) / closed.length : 0
 
   let curWinStreak = 0,
@@ -75,6 +77,7 @@ export function computeStats(trades: Trade[]): TradeStats {
     worstTrade: closed.reduce((m, t) => Math.min(m, t.pnl), Infinity) || 0,
     avgR,
     totalPips,
+    avgPips,
     largestWinStreak,
     largestLossStreak,
   }
@@ -111,6 +114,54 @@ export function groupByPair(trades: Trade[]) {
     .sort((a, b) => b.pnl - a.pnl)
 }
 
+export function groupByPairDetailed(trades: Trade[]) {
+  const map = new Map<
+    string,
+    {
+      pair: string
+      pnl: number
+      pips: number
+      trades: number
+      wins: number
+      totalLotSize: number
+      totalHoldMin: number
+    }
+  >()
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const cur = map.get(t.pair) ?? {
+      pair: t.pair,
+      pnl: 0,
+      pips: 0,
+      trades: 0,
+      wins: 0,
+      totalLotSize: 0,
+      totalHoldMin: 0,
+    }
+    cur.pnl += t.pnl
+    cur.pips += t.pips
+    cur.trades += 1
+    if (t.status === 'win') cur.wins += 1
+    cur.totalLotSize += t.lotSize
+    cur.totalHoldMin += Math.max(0, (t.closedAt.getTime() - t.openedAt.getTime()) / 60000)
+    map.set(t.pair, cur)
+  }
+  return Array.from(map.values())
+    .map((g) => ({
+      pair: g.pair,
+      trades: g.trades,
+      wins: g.wins,
+      losses: g.trades - g.wins,
+      pnl: parseFloat(g.pnl.toFixed(2)),
+      pips: parseFloat(g.pips.toFixed(1)),
+      avgPips: parseFloat((g.pips / g.trades).toFixed(1)),
+      winRate: parseFloat(((g.wins / g.trades) * 100).toFixed(1)),
+      avgLotSize: parseFloat((g.totalLotSize / g.trades).toFixed(2)),
+      avgHoldMin: parseFloat((g.totalHoldMin / g.trades).toFixed(0)),
+    }))
+    .sort((a, b) => b.pnl - a.pnl)
+}
+
 export function groupByStrategy(trades: Trade[]) {
   const map = new Map<string, { strategy: string; pnl: number; trades: number; wins: number }>()
   for (const t of trades) {
@@ -127,30 +178,41 @@ export function groupByStrategy(trades: Trade[]) {
 }
 
 export function groupBySession(trades: Trade[]) {
-  const map = new Map<string, { session: string; pnl: number; trades: number; wins: number }>()
+  const map = new Map<string, { session: string; pnl: number; trades: number; wins: number; pips: number }>()
   for (const t of trades) {
     if (t.status === 'open') continue
-    const cur = map.get(t.session) ?? { session: t.session, pnl: 0, trades: 0, wins: 0 }
+    const cur = map.get(t.session) ?? { session: t.session, pnl: 0, trades: 0, wins: 0, pips: 0 }
     cur.pnl += t.pnl
     cur.trades += 1
+    cur.pips += t.pips
     if (t.status === 'win') cur.wins += 1
     map.set(t.session, cur)
   }
-  return Array.from(map.values())
-    .map((g) => ({ ...g, pnl: parseFloat(g.pnl.toFixed(2)), winRate: (g.wins / g.trades) * 100 }))
+  return Array.from(map.values()).map((g) => ({
+    ...g,
+    pnl: parseFloat(g.pnl.toFixed(2)),
+    pips: parseFloat(g.pips.toFixed(1)),
+    winRate: parseFloat(((g.wins / g.trades) * 100).toFixed(1)),
+  }))
 }
 
 export function groupByDayOfWeek(trades: Trade[]) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const buckets = days.map((d) => ({ day: d, pnl: 0, trades: 0, wins: 0 }))
+  const buckets = days.map((d) => ({ day: d, pnl: 0, trades: 0, wins: 0, pips: 0 }))
   for (const t of trades) {
     if (t.status === 'open') continue
     const idx = t.closedAt.getDay()
     buckets[idx].pnl += t.pnl
     buckets[idx].trades += 1
+    buckets[idx].pips += t.pips
     if (t.status === 'win') buckets[idx].wins += 1
   }
-  return buckets.map((b) => ({ ...b, pnl: parseFloat(b.pnl.toFixed(2)) }))
+  return buckets.map((b) => ({
+    ...b,
+    pnl: parseFloat(b.pnl.toFixed(2)),
+    pips: parseFloat(b.pips.toFixed(1)),
+    winRate: b.trades > 0 ? parseFloat(((b.wins / b.trades) * 100).toFixed(1)) : 0,
+  }))
 }
 
 export function groupByDirection(trades: Trade[]) {
@@ -181,15 +243,101 @@ export function groupByHour(trades: Trade[]) {
     pnl: 0,
     trades: 0,
     wins: 0,
+    pips: 0,
   }))
   for (const t of trades) {
     if (t.status === 'open') continue
     const h = t.openedAt.getHours()
     buckets[h].pnl += t.pnl
     buckets[h].trades += 1
+    buckets[h].pips += t.pips
     if (t.status === 'win') buckets[h].wins += 1
   }
-  return buckets.map((b) => ({ ...b, pnl: parseFloat(b.pnl.toFixed(2)) }))
+  return buckets.map((b) => ({
+    ...b,
+    pnl: parseFloat(b.pnl.toFixed(2)),
+    pips: parseFloat(b.pips.toFixed(1)),
+    winRate: b.trades > 0 ? parseFloat(((b.wins / b.trades) * 100).toFixed(1)) : 0,
+  }))
+}
+
+export function groupByTimeframe(trades: Trade[]) {
+  const map = new Map<string, { timeframe: string; pnl: number; trades: number; wins: number; pips: number }>()
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const key = t.timeframe ?? 'Unknown'
+    const cur = map.get(key) ?? { timeframe: key, pnl: 0, trades: 0, wins: 0, pips: 0 }
+    cur.pnl += t.pnl
+    cur.trades += 1
+    cur.pips += t.pips
+    if (t.status === 'win') cur.wins += 1
+    map.set(key, cur)
+  }
+  return Array.from(map.values())
+    .map((g) => ({
+      ...g,
+      pnl: parseFloat(g.pnl.toFixed(2)),
+      pips: parseFloat(g.pips.toFixed(1)),
+      winRate: parseFloat(((g.wins / g.trades) * 100).toFixed(1)),
+    }))
+    .sort((a, b) => b.trades - a.trades)
+}
+
+export function groupByEmotion(trades: Trade[]) {
+  const map = new Map<string, { emotion: string; pnl: number; trades: number; wins: number }>()
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const key = t.emotion ?? 'Untagged'
+    const cur = map.get(key) ?? { emotion: key, pnl: 0, trades: 0, wins: 0 }
+    cur.pnl += t.pnl
+    cur.trades += 1
+    if (t.status === 'win') cur.wins += 1
+    map.set(key, cur)
+  }
+  return Array.from(map.values())
+    .map((g) => ({
+      ...g,
+      pnl: parseFloat(g.pnl.toFixed(2)),
+      winRate: parseFloat(((g.wins / g.trades) * 100).toFixed(1)),
+    }))
+    .sort((a, b) => b.pnl - a.pnl)
+}
+
+export function pipDistribution(trades: Trade[]) {
+  const buckets = [
+    { bucket: '≤ -50', min: -Infinity, max: -50, count: 0 },
+    { bucket: '-50 to -20', min: -50, max: -20, count: 0 },
+    { bucket: '-20 to -5', min: -20, max: -5, count: 0 },
+    { bucket: '-5 to 0', min: -5, max: 0, count: 0 },
+    { bucket: '0 to +5', min: 0, max: 5, count: 0 },
+    { bucket: '+5 to +20', min: 5, max: 20, count: 0 },
+    { bucket: '+20 to +50', min: 20, max: 50, count: 0 },
+    { bucket: '> +50', min: 50, max: Infinity, count: 0 },
+  ]
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const b = buckets.find((b) => t.pips >= b.min && t.pips < b.max)
+    if (b) b.count += 1
+  }
+  return buckets
+}
+
+export function holdTimeDistribution(trades: Trade[]) {
+  const buckets = [
+    { bucket: '< 5m', maxMin: 5, count: 0 },
+    { bucket: '5–30m', maxMin: 30, count: 0 },
+    { bucket: '30m–2h', maxMin: 120, count: 0 },
+    { bucket: '2–8h', maxMin: 480, count: 0 },
+    { bucket: '8h–1d', maxMin: 1440, count: 0 },
+    { bucket: '> 1d', maxMin: Infinity, count: 0 },
+  ]
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const mins = Math.max(0, (t.closedAt.getTime() - t.openedAt.getTime()) / 60000)
+    const b = buckets.find((b) => mins < b.maxMin)
+    if (b) b.count += 1
+  }
+  return buckets
 }
 
 export function rMultipleDistribution(trades: Trade[]) {
@@ -236,9 +384,9 @@ export function holdTimeStats(trades: Trade[]) {
 export function lotSizeDistribution(trades: Trade[]) {
   const buckets = [
     { bucket: '≤ 0.10', max: 0.1, count: 0, pnl: 0 },
-    { bucket: '0.11 – 0.50', max: 0.5, count: 0, pnl: 0 },
-    { bucket: '0.51 – 1.00', max: 1.0, count: 0, pnl: 0 },
-    { bucket: '1.01 – 2.00', max: 2.0, count: 0, pnl: 0 },
+    { bucket: '0.11–0.50', max: 0.5, count: 0, pnl: 0 },
+    { bucket: '0.51–1.00', max: 1.0, count: 0, pnl: 0 },
+    { bucket: '1.01–2.00', max: 2.0, count: 0, pnl: 0 },
     { bucket: '> 2.00', max: Infinity, count: 0, pnl: 0 },
   ]
   for (const t of trades) {
