@@ -44,8 +44,8 @@ type FormValues = z.infer<typeof schema>
 export function SettingsTrading() {
   const settings = useTradingSettings()
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<FormValues, unknown, FormValues>({
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       timezone: settings.timezone,
       currencySymbol: settings.currencySymbol,
