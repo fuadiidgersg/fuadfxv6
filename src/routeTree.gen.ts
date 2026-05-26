@@ -29,6 +29,7 @@ import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authen
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
+import { Route as AuthenticatedPortfolioIndexRouteImport } from './routes/_authenticated/portfolio/index'
 import { Route as AuthenticatedNewsIndexRouteImport } from './routes/_authenticated/news/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
@@ -40,6 +41,7 @@ import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedSettingsTradingIndexRouteImport } from './routes/_authenticated/settings/trading/index'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -142,6 +144,12 @@ const AuthenticatedSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
+const AuthenticatedPortfolioIndexRoute =
+  AuthenticatedPortfolioIndexRouteImport.update({
+    id: '/portfolio/',
+    path: '/portfolio/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNewsIndexRoute = AuthenticatedNewsIndexRouteImport.update({
   id: '/news/',
   path: '/news/',
@@ -205,6 +213,12 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSettingsTradingIndexRoute =
+  AuthenticatedSettingsTradingIndexRouteImport.update({
+    id: '/trading/',
+    path: '/trading/',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -234,9 +248,11 @@ export interface FileRoutesByFullPath {
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/news/': typeof AuthenticatedNewsIndexRoute
+  '/portfolio/': typeof AuthenticatedPortfolioIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
+  '/settings/trading/': typeof AuthenticatedSettingsTradingIndexRoute
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
@@ -265,9 +281,11 @@ export interface FileRoutesByTo {
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/news': typeof AuthenticatedNewsIndexRoute
+  '/portfolio': typeof AuthenticatedPortfolioIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/settings/trading': typeof AuthenticatedSettingsTradingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -299,9 +317,11 @@ export interface FileRoutesById {
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/news/': typeof AuthenticatedNewsIndexRoute
+  '/_authenticated/portfolio/': typeof AuthenticatedPortfolioIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/settings/trading/': typeof AuthenticatedSettingsTradingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -333,9 +353,11 @@ export interface FileRouteTypes {
     | '/chats/'
     | '/help-center/'
     | '/news/'
+    | '/portfolio/'
     | '/settings/'
     | '/tasks/'
     | '/users/'
+    | '/settings/trading/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dashboard'
@@ -364,9 +386,11 @@ export interface FileRouteTypes {
     | '/chats'
     | '/help-center'
     | '/news'
+    | '/portfolio'
     | '/settings'
     | '/tasks'
     | '/users'
+    | '/settings/trading'
   id:
     | '__root__'
     | '/_authenticated'
@@ -397,9 +421,11 @@ export interface FileRouteTypes {
     | '/_authenticated/chats/'
     | '/_authenticated/help-center/'
     | '/_authenticated/news/'
+    | '/_authenticated/portfolio/'
     | '/_authenticated/settings/'
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/_authenticated/settings/trading/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -562,6 +588,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
+    '/_authenticated/portfolio/': {
+      id: '/_authenticated/portfolio/'
+      path: '/portfolio'
+      fullPath: '/portfolio/'
+      preLoaderRoute: typeof AuthenticatedPortfolioIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/news/': {
       id: '/_authenticated/news/'
       path: '/news'
@@ -639,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings/trading/': {
+      id: '/_authenticated/settings/trading/'
+      path: '/trading'
+      fullPath: '/settings/trading/'
+      preLoaderRoute: typeof AuthenticatedSettingsTradingIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
   }
 }
 
@@ -648,6 +688,7 @@ interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsDisplayRoute: typeof AuthenticatedSettingsDisplayRoute
   AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+  AuthenticatedSettingsTradingIndexRoute: typeof AuthenticatedSettingsTradingIndexRoute
 }
 
 const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteChildren =
@@ -658,6 +699,8 @@ const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteCh
     AuthenticatedSettingsNotificationsRoute:
       AuthenticatedSettingsNotificationsRoute,
     AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+    AuthenticatedSettingsTradingIndexRoute:
+      AuthenticatedSettingsTradingIndexRoute,
   }
 
 const AuthenticatedSettingsRouteRouteWithChildren =
@@ -675,6 +718,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedNewsIndexRoute: typeof AuthenticatedNewsIndexRoute
+  AuthenticatedPortfolioIndexRoute: typeof AuthenticatedPortfolioIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
 }
@@ -689,6 +733,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedNewsIndexRoute: AuthenticatedNewsIndexRoute,
+  AuthenticatedPortfolioIndexRoute: AuthenticatedPortfolioIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
 }

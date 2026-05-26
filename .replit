@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web"]
+modules = ["nodejs-20", "web", "python-3.11"]
 [agent]
 expertMode = true
 stack = "BEST_EFFORT_FALLBACK"
@@ -43,3 +43,10 @@ publicDir = "dist"
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 60000
+
+[userenv]
+
+[userenv.shared]
+VITE_SUPABASE_URL = "https://axqwrbncgiiixudqjght.supabase.co"
+VITE_SUPABASE_ANON_KEY = "sb_publishable_QTObOqLWeDERwQeAfOaOxw_q0UK8m3g"
+VITE_API_URL = "https://fuadfx-api.onrender.com"

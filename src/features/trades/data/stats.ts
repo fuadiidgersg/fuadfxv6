@@ -460,3 +460,188 @@ export function dailyPnl(trades: Trade[]) {
     .map((d) => ({ ...d, pnl: parseFloat(d.pnl.toFixed(2)) }))
     .sort((a, b) => a.date.localeCompare(b.date))
 }
+
+export type AdvancedStats = {
+  sharpeRatio: number
+  sortinoRatio: number
+  calmarRatio: number
+  payoffRatio: number
+  recoveryFactor: number
+  zScore: number
+  kellyPct: number
+  consistencyPct: number
+  profitableDays: number
+  losingDays: number
+  neutralDays: number
+  totalTradingDays: number
+  grossProfit: number
+  grossLoss: number
+  avgTradesPerWeek: number
+  expectancyPips: number
+  annualizedReturn: number
+}
+
+export function computeAdvancedStats(trades: Trade[], startingBalance = 10000): AdvancedStats {
+  const closed = [...trades]
+    .filter((t) => t.status !== 'open')
+    .sort((a, b) => a.closedAt.getTime() - b.closedAt.getTime())
+  const wins = closed.filter((t) => t.status === 'win')
+  const losses = closed.filter((t) => t.status === 'loss')
+
+  const grossProfit = wins.reduce((s, t) => s + t.pnl, 0)
+  const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0))
+  const avgWin = wins.length ? grossProfit / wins.length : 0
+  const avgLoss = losses.length ? grossLoss / losses.length : 0
+  const winRate = closed.length ? wins.length / closed.length : 0
+
+  const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? 99 : 0
+  const kellyPct = payoffRatio > 0 ? winRate - (1 - winRate) / payoffRatio : 0
+
+  const dailyMap = new Map<string, number>()
+  for (const t of closed) {
+    const key = t.closedAt.toISOString().slice(0, 10)
+    dailyMap.set(key, (dailyMap.get(key) ?? 0) + t.pnl)
+  }
+  const dailyReturns = Array.from(dailyMap.values())
+  const n = dailyReturns.length
+  const meanReturn = n ? dailyReturns.reduce((s, x) => s + x, 0) / n : 0
+  const variance =
+    n > 1 ? dailyReturns.reduce((s, x) => s + (x - meanReturn) ** 2, 0) / (n - 1) : 0
+  const std = Math.sqrt(variance)
+  const sharpeRatio = std > 0 ? (meanReturn / std) * Math.sqrt(252) : 0
+
+  const negReturns = dailyReturns.filter((r) => r < 0)
+  const downsideVar = negReturns.length
+    ? negReturns.reduce((s, x) => s + x ** 2, 0) / negReturns.length
+    : 0
+  const downsideStd = Math.sqrt(downsideVar)
+  const sortinoRatio = downsideStd > 0 ? (meanReturn / downsideStd) * Math.sqrt(252) : 0
+
+  const totalPnl = closed.reduce((s, t) => s + t.pnl, 0)
+  const tradingDays = dailyMap.size
+  const annualizedReturn =
+    tradingDays > 0 ? (totalPnl / startingBalance) * (252 / tradingDays) * 100 : 0
+
+  const dd = drawdownSeries(trades, startingBalance)
+  const maxDdPct = Math.abs(dd.maxDrawdownPct)
+  const maxDdAbs = Math.abs(dd.maxDrawdown)
+  const calmarRatio = maxDdPct > 0 ? annualizedReturn / maxDdPct : 0
+  const recoveryFactor = maxDdAbs > 0 ? totalPnl / maxDdAbs : 0
+
+  let runs = 0
+  let prevStatus: string | null = null
+  for (const t of closed) {
+    if (t.status !== prevStatus) {
+      runs++
+      prevStatus = t.status
+    }
+  }
+  const W = wins.length
+  const L = losses.length
+  const N = W + L
+  const expectedRuns = N > 1 ? (2 * W * L) / N + 1 : 1
+  const runsVariance =
+    N > 2 ? (2 * W * L * (2 * W * L - N)) / (N * N * (N - 1)) : 0
+  const zScore = runsVariance > 0 ? (runs - expectedRuns) / Math.sqrt(runsVariance) : 0
+
+  const profitableDays = dailyReturns.filter((p) => p > 0).length
+  const losingDays = dailyReturns.filter((p) => p < 0).length
+  const neutralDays = tradingDays - profitableDays - losingDays
+  const consistencyPct = tradingDays > 0 ? (profitableDays / tradingDays) * 100 : 0
+
+  let avgTradesPerWeek = 0
+  if (closed.length >= 2) {
+    const firstDate = closed[0].openedAt.getTime()
+    const lastDate = closed[closed.length - 1].closedAt.getTime()
+    const weeks = Math.max(1, (lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000))
+    avgTradesPerWeek = closed.length / weeks
+  }
+
+  const avgPipWin = wins.length ? wins.reduce((s, t) => s + t.pips, 0) / wins.length : 0
+  const avgPipLoss = losses.length
+    ? Math.abs(losses.reduce((s, t) => s + t.pips, 0) / losses.length)
+    : 0
+  const expectancyPips = winRate * avgPipWin - (1 - winRate) * avgPipLoss
+
+  return {
+    sharpeRatio: parseFloat(sharpeRatio.toFixed(2)),
+    sortinoRatio: parseFloat(sortinoRatio.toFixed(2)),
+    calmarRatio: parseFloat(calmarRatio.toFixed(2)),
+    payoffRatio: parseFloat(payoffRatio.toFixed(2)),
+    recoveryFactor: parseFloat(recoveryFactor.toFixed(2)),
+    zScore: parseFloat(zScore.toFixed(2)),
+    kellyPct: parseFloat((kellyPct * 100).toFixed(1)),
+    consistencyPct: parseFloat(consistencyPct.toFixed(1)),
+    profitableDays,
+    losingDays,
+    neutralDays,
+    totalTradingDays: tradingDays,
+    grossProfit: parseFloat(grossProfit.toFixed(2)),
+    grossLoss: parseFloat(grossLoss.toFixed(2)),
+    avgTradesPerWeek: parseFloat(avgTradesPerWeek.toFixed(1)),
+    expectancyPips: parseFloat(expectancyPips.toFixed(1)),
+    annualizedReturn: parseFloat(annualizedReturn.toFixed(2)),
+  }
+}
+
+export function rollingStats(trades: Trade[], n: number) {
+  const closed = [...trades]
+    .filter((t) => t.status !== 'open')
+    .sort((a, b) => a.closedAt.getTime() - b.closedAt.getTime())
+  const last = closed.slice(-n)
+  const wins = last.filter((t) => t.status === 'win').length
+  const pnl = last.reduce((s, t) => s + t.pnl, 0)
+  const winRate = last.length ? (wins / last.length) * 100 : 0
+  const avgR = last.length ? last.reduce((s, t) => s + t.rMultiple, 0) / last.length : 0
+  return { trades: last.length, wins, winRate: parseFloat(winRate.toFixed(1)), pnl: parseFloat(pnl.toFixed(2)), avgR: parseFloat(avgR.toFixed(2)) }
+}
+
+export function bestWorstPeriods(trades: Trade[]) {
+  const dayMap = new Map<string, number>()
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const key = t.closedAt.toISOString().slice(0, 10)
+    dayMap.set(key, (dayMap.get(key) ?? 0) + t.pnl)
+  }
+  const days = Array.from(dayMap.entries()).map(([date, pnl]) => ({ date, pnl: parseFloat(pnl.toFixed(2)) }))
+  const bestDay = days.length ? days.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : { date: '—', pnl: 0 }
+  const worstDay = days.length ? days.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : { date: '—', pnl: 0 }
+
+  const monthMap = new Map<string, number>()
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    const key = `${t.closedAt.getFullYear()}-${String(t.closedAt.getMonth() + 1).padStart(2, '0')}`
+    monthMap.set(key, (monthMap.get(key) ?? 0) + t.pnl)
+  }
+  const months = Array.from(monthMap.entries()).map(([month, pnl]) => ({ month, pnl: parseFloat(pnl.toFixed(2)) }))
+  const bestMonth = months.length ? months.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : { month: '—', pnl: 0 }
+  const worstMonth = months.length ? months.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : { month: '—', pnl: 0 }
+
+  return { bestDay, worstDay, bestMonth, worstMonth }
+}
+
+export function calendarHeatmap(trades: Trade[], months = 3) {
+  const today = new Date()
+  const startDate = new Date(today.getFullYear(), today.getMonth() - months + 1, 1)
+  const dayMap = new Map<string, number>()
+  for (const t of trades) {
+    if (t.status === 'open') continue
+    if (t.closedAt < startDate) continue
+    const key = t.closedAt.toISOString().slice(0, 10)
+    dayMap.set(key, (dayMap.get(key) ?? 0) + t.pnl)
+  }
+  return Array.from(dayMap.entries())
+    .map(([date, pnl]) => ({ date, pnl: parseFloat(pnl.toFixed(2)) }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export function plannedVsActualRR(trades: Trade[]) {
+  return trades
+    .filter((t) => t.status !== 'open' && t.stopLoss != null && t.takeProfit != null)
+    .map((t) => {
+      const slDist = Math.abs(t.entry - (t.stopLoss ?? t.entry))
+      const tpDist = Math.abs((t.takeProfit ?? t.entry) - t.entry)
+      const planned = slDist > 0 ? parseFloat((tpDist / slDist).toFixed(2)) : 0
+      return { pair: t.pair, planned, actual: t.rMultiple, pnl: t.pnl, status: t.status }
+    })
+}

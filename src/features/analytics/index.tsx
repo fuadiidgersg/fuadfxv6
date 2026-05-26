@@ -49,6 +49,11 @@ import { cn } from '@/lib/utils'
 import { MonthlyPnl } from '@/features/dashboard/components/monthly-pnl'
 import {
   computeStats,
+  computeAdvancedStats,
+  rollingStats,
+  bestWorstPeriods,
+  calendarHeatmap,
+  plannedVsActualRR,
   drawdownSeries,
   equityCurve,
   groupByDayOfWeek,
@@ -67,6 +72,15 @@ import {
   tradesByMonth,
 } from '@/features/trades/data/stats'
 import { useTrades } from '@/stores/trades-store'
+import { useDateRangeStore, filterTradesByDateRange } from '@/stores/date-range-store'
+import { useTradingSettings } from '@/stores/trading-settings-store'
+import { DateRangeFilter } from '@/components/date-range-filter'
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Info } from 'lucide-react'
 import type { Trade } from '@/features/trades/data/schema'
 
 const winLossColors = ['#10b981', '#ef4444', '#94a3b8']
@@ -85,18 +99,23 @@ function Stat({
   sub,
   positive,
   icon: Icon,
+  tooltip,
 }: {
   label: string
   value: string
   sub?: string
   positive?: boolean
   icon?: React.ElementType
+  tooltip?: string
 }) {
-  return (
-    <Card>
+  const card = (
+    <Card className='cursor-default'>
       <CardContent className='pt-6'>
         <div className='flex items-center justify-between'>
-          <p className='text-sm font-medium text-muted-foreground'>{label}</p>
+          <div className='flex items-center gap-1'>
+            <p className='text-sm font-medium text-muted-foreground'>{label}</p>
+            {tooltip && <Info className='size-3 text-muted-foreground/50' />}
+          </div>
           {Icon && <Icon className='size-4 text-muted-foreground' />}
         </div>
         <p
@@ -111,6 +130,16 @@ function Stat({
         {sub && <p className='mt-1 text-xs text-muted-foreground'>{sub}</p>}
       </CardContent>
     </Card>
+  )
+
+  if (!tooltip) return card
+  return (
+    <UITooltip>
+      <TooltipTrigger asChild>{card}</TooltipTrigger>
+      <TooltipContent className='max-w-56 text-xs' side='top'>
+        {tooltip}
+      </TooltipContent>
+    </UITooltip>
   )
 }
 
@@ -204,8 +233,19 @@ function detectWeaknesses(
 }
 
 export function Analytics() {
-  const trades = useTrades()
+  const allTrades = useTrades()
+  const dateRange = useDateRangeStore()
+  const tradingSettings = useTradingSettings()
+  const range = dateRange.getRange()
+  const trades = filterTradesByDateRange(allTrades, range)
+
   const stats = computeStats(trades)
+  const advanced = computeAdvancedStats(trades, 10000)
+  const rolling10 = rollingStats(trades, 10)
+  const rolling20 = rollingStats(trades, 20)
+  const periods = bestWorstPeriods(trades)
+  const heatmapData = calendarHeatmap(trades, 3)
+  const rrData = plannedVsActualRR(trades)
   const emotionData = groupByEmotion(trades)
   const revenge = detectRevengeTrades(trades)
   const weaknesses = detectWeaknesses(stats, emotionData, revenge)
@@ -240,6 +280,13 @@ export function Analytics() {
     { name: 'Breakeven', value: stats.breakeven },
   ]
 
+  const ftmoSize = tradingSettings.ftmoAccountSize
+  const ftmoDailyLimit = (ftmoSize * tradingSettings.ftmoDailyLossLimitPct) / 100
+  const ftmoMaxDD = (ftmoSize * tradingSettings.ftmoMaxDrawdownPct) / 100
+  const ftmoProfitTarget = (ftmoSize * tradingSettings.ftmoProfitTargetPct) / 100
+  const ftmoCurrentDD = Math.abs(dd.maxDrawdown)
+  const ftmoProfit = stats.totalPnl
+
   const scoreColor =
     traderScore >= 70
       ? 'text-emerald-600'
@@ -256,6 +303,7 @@ export function Analytics() {
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <DateRangeFilter />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
@@ -413,7 +461,158 @@ export function Analytics() {
                 label='Avg Hold Time'
                 value={formatHoldTime(hold.avgAllMin)}
                 sub={`Wins ${formatHoldTime(hold.avgWinMin)} · Losses ${formatHoldTime(hold.avgLossMin)}`}
+                tooltip='Average time in a trade. Winning trades held longer than losses is a healthy sign.'
               />
+            </div>
+
+            {/* Advanced Ratios Row 1 */}
+            <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+              <Stat
+                label='Sharpe Ratio'
+                value={isFinite(advanced.sharpeRatio) ? advanced.sharpeRatio.toFixed(2) : '—'}
+                positive={advanced.sharpeRatio > 0}
+                tooltip='Risk-adjusted return (annualised). Above 1.0 is good, above 2.0 is excellent. Negative means you are losing more than the risk taken.'
+              />
+              <Stat
+                label='Sortino Ratio'
+                value={isFinite(advanced.sortinoRatio) ? advanced.sortinoRatio.toFixed(2) : '—'}
+                positive={advanced.sortinoRatio > 0}
+                tooltip='Like Sharpe but only penalises downside volatility. A Sortino above 1.5 is strong for retail traders.'
+              />
+              <Stat
+                label='Calmar Ratio'
+                value={isFinite(advanced.calmarRatio) ? advanced.calmarRatio.toFixed(2) : '—'}
+                positive={advanced.calmarRatio > 0}
+                tooltip='Annualised return divided by max drawdown %. Higher is better. Below 0.5 means your drawdown is eating your returns.'
+              />
+              <Stat
+                label='Payoff Ratio'
+                value={
+                  isFinite(advanced.payoffRatio) && advanced.payoffRatio < 99
+                    ? advanced.payoffRatio.toFixed(2)
+                    : stats.avgLoss === 0
+                      ? '∞'
+                      : '—'
+                }
+                positive={advanced.payoffRatio >= 1}
+                tooltip='Average win divided by average loss. Above 1.0 means your winners are bigger than your losers. Aim for 1.5+.'
+              />
+            </div>
+
+            {/* Advanced Ratios Row 2 */}
+            <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+              <Stat
+                label='Recovery Factor'
+                value={isFinite(advanced.recoveryFactor) ? advanced.recoveryFactor.toFixed(2) : '—'}
+                positive={advanced.recoveryFactor > 1}
+                tooltip='Net P&L divided by max drawdown in dollars. Above 3.0 is very good — you earn back losses quickly.'
+              />
+              <Stat
+                label='Z-Score'
+                value={isFinite(advanced.zScore) ? advanced.zScore.toFixed(2) : '—'}
+                tooltip='Statistical runs test. Negative Z-Score means wins and losses cluster (streaky). Near 0 is random, as expected.'
+              />
+              <Stat
+                label='Kelly %'
+                value={`${advanced.kellyPct.toFixed(1)}%`}
+                positive={advanced.kellyPct > 0}
+                tooltip='Mathematically optimal % of account to risk per trade. In practice, use 25–50% of Kelly to stay conservative.'
+              />
+              <Stat
+                label='Consistency'
+                value={`${advanced.consistencyPct.toFixed(1)}%`}
+                sub={`${advanced.profitableDays}P · ${advanced.losingDays}L days`}
+                positive={advanced.consistencyPct >= 50}
+                tooltip='Percentage of trading days that were profitable. Top traders aim for 60%+ consistent profitable days.'
+              />
+            </div>
+
+            {/* Gross P&L + Rolling Performance */}
+            <div className='grid gap-4 lg:grid-cols-2'>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gross P&L Breakdown</CardTitle>
+                  <CardDescription>Total winning vs losing amounts before netting</CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-4 pt-2'>
+                  <div className='flex items-center justify-between rounded-lg bg-emerald-500/10 p-3'>
+                    <span className='text-sm font-medium text-emerald-700 dark:text-emerald-400'>Gross Profit</span>
+                    <span className='text-lg font-bold tabular-nums text-emerald-600'>
+                      +${advanced.grossProfit.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between rounded-lg bg-red-500/10 p-3'>
+                    <span className='text-sm font-medium text-red-700 dark:text-red-400'>Gross Loss</span>
+                    <span className='text-lg font-bold tabular-nums text-red-500'>
+                      -${advanced.grossLoss.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between rounded-lg border p-3'>
+                    <span className='text-sm font-medium text-muted-foreground'>Net P&L</span>
+                    <span
+                      className={cn(
+                        'text-lg font-bold tabular-nums',
+                        stats.totalPnl >= 0 ? 'text-emerald-600' : 'text-red-500'
+                      )}
+                    >
+                      {stats.totalPnl >= 0 ? '+' : ''}${stats.totalPnl.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className='grid grid-cols-2 gap-2 text-center'>
+                    <div className='rounded-md bg-muted/50 p-2'>
+                      <div className='text-xs text-muted-foreground'>Expectancy / pip</div>
+                      <div className={cn('text-sm font-bold', advanced.expectancyPips >= 0 ? 'text-emerald-600' : 'text-red-500')}>
+                        {advanced.expectancyPips >= 0 ? '+' : ''}{advanced.expectancyPips.toFixed(1)} pips
+                      </div>
+                    </div>
+                    <div className='rounded-md bg-muted/50 p-2'>
+                      <div className='text-xs text-muted-foreground'>Trades / week</div>
+                      <div className='text-sm font-bold'>{advanced.avgTradesPerWeek}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rolling Performance</CardTitle>
+                  <CardDescription>Recent form — are you improving?</CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-4 pt-2'>
+                  {[
+                    { label: 'Last 10 trades', data: rolling10 },
+                    { label: 'Last 20 trades', data: rolling20 },
+                    { label: 'All time', data: { trades: stats.total, winRate: stats.winRate, pnl: stats.totalPnl, avgR: stats.avgR } },
+                  ].map(({ label, data }) => (
+                    <div key={label} className='rounded-lg border p-3'>
+                      <div className='mb-2 flex items-center justify-between'>
+                        <span className='text-xs font-medium text-muted-foreground'>{label}</span>
+                        <span className='text-xs text-muted-foreground'>{data.trades} trades</span>
+                      </div>
+                      <div className='grid grid-cols-3 gap-2 text-center'>
+                        <div>
+                          <div className='text-xs text-muted-foreground'>Win Rate</div>
+                          <div className={cn('text-sm font-bold', data.winRate >= 50 ? 'text-emerald-600' : 'text-red-500')}>
+                            {data.winRate.toFixed(0)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-xs text-muted-foreground'>P&L</div>
+                          <div className={cn('text-sm font-bold', data.pnl >= 0 ? 'text-emerald-600' : 'text-red-500')}>
+                            {data.pnl >= 0 ? '+' : ''}${data.pnl.toFixed(0)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-xs text-muted-foreground'>Avg R</div>
+                          <div className={cn('text-sm font-bold', data.avgR >= 0 ? 'text-emerald-600' : 'text-red-500')}>
+                            {data.avgR.toFixed(2)}R
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Equity Curve */}
@@ -822,6 +1021,76 @@ export function Analytics() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Best / Worst Periods */}
+            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+              {[
+                { label: 'Best Day', value: periods.bestDay.pnl, date: periods.bestDay.date, positive: true },
+                { label: 'Worst Day', value: periods.worstDay.pnl, date: periods.worstDay.date, positive: false },
+                { label: 'Best Month', value: periods.bestMonth.pnl, date: periods.bestMonth.month, positive: true },
+                { label: 'Worst Month', value: periods.worstMonth.pnl, date: periods.worstMonth.month, positive: false },
+              ].map(({ label, value, date, positive }) => (
+                <Card key={label}>
+                  <CardContent className='pt-6'>
+                    <p className='text-sm font-medium text-muted-foreground'>{label}</p>
+                    <p className={cn('mt-1 text-2xl font-bold tabular-nums', positive ? 'text-emerald-600' : 'text-red-500')}>
+                      {value >= 0 ? '+' : ''}${value.toFixed(2)}
+                    </p>
+                    <p className='mt-1 text-xs text-muted-foreground'>{date}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Planned vs Actual RR */}
+            {rrData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Planned vs Actual RR</CardTitle>
+                  <CardDescription>
+                    Did you hit your planned risk-reward? ({rrData.length} trades with SL/TP set)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className='overflow-x-auto'>
+                    <table className='w-full min-w-[480px] text-sm'>
+                      <thead className='text-xs uppercase text-muted-foreground'>
+                        <tr className='border-b'>
+                          <th className='py-2 text-start'>Pair</th>
+                          <th className='py-2 text-end'>Planned RR</th>
+                          <th className='py-2 text-end'>Actual RR</th>
+                          <th className='py-2 text-end'>Difference</th>
+                          <th className='py-2 text-end'>Result</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rrData.slice(0, 20).map((r, i) => {
+                          const diff = r.actual - r.planned
+                          return (
+                            <tr key={i} className='border-b last:border-0'>
+                              <td className='py-2 font-medium'>{r.pair}</td>
+                              <td className='py-2 text-end tabular-nums'>{r.planned.toFixed(2)}R</td>
+                              <td className={cn('py-2 text-end tabular-nums font-semibold', r.actual >= 0 ? 'text-emerald-600' : 'text-red-500')}>
+                                {r.actual.toFixed(2)}R
+                              </td>
+                              <td className={cn('py-2 text-end tabular-nums', diff >= 0 ? 'text-emerald-600' : 'text-red-500')}>
+                                {diff >= 0 ? '+' : ''}{diff.toFixed(2)}R
+                              </td>
+                              <td className='py-2 text-end'>
+                                <Badge variant={r.status === 'win' ? 'default' : r.status === 'loss' ? 'destructive' : 'secondary'} className='text-xs'>
+                                  {r.status}
+                                </Badge>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
           </TabsContent>
 
           {/* ─── PSYCHOLOGY (Psychology & Discipline Model) ─── */}
@@ -1371,6 +1640,86 @@ export function Analytics() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* FTMO / Prop Firm Tracker */}
+            {tradingSettings.ftmoMode && (
+              <Card className='border-amber-500/30 bg-amber-500/5'>
+                <CardHeader>
+                  <CardTitle className='flex items-center gap-2'>
+                    <Target className='size-4 text-amber-500' />
+                    Prop Firm Compliance Tracker
+                  </CardTitle>
+                  <CardDescription>
+                    Account: ${ftmoSize.toLocaleString()} — tracking against your funded account rules
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-4'>
+                  {[
+                    {
+                      label: 'Profit Target',
+                      current: Math.max(0, ftmoProfit),
+                      target: ftmoProfitTarget,
+                      good: true,
+                      format: (v: number) => `$${v.toFixed(0)}`,
+                      desc: `${tradingSettings.ftmoProfitTargetPct}% target = $${ftmoProfitTarget.toFixed(0)}`,
+                    },
+                    {
+                      label: 'Max Drawdown Used',
+                      current: ftmoCurrentDD,
+                      target: ftmoMaxDD,
+                      good: false,
+                      format: (v: number) => `$${v.toFixed(0)}`,
+                      desc: `${tradingSettings.ftmoMaxDrawdownPct}% limit = $${ftmoMaxDD.toFixed(0)}`,
+                    },
+                    {
+                      label: 'Daily Loss Limit',
+                      current: 0,
+                      target: ftmoDailyLimit,
+                      good: false,
+                      format: (v: number) => `$${v.toFixed(0)}`,
+                      desc: `${tradingSettings.ftmoDailyLossLimitPct}% limit = $${ftmoDailyLimit.toFixed(0)} per day`,
+                    },
+                  ].map(({ label, current, target, good, format, desc }) => {
+                    const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0
+                    const isBreached = !good && pct >= 100
+                    const isAchieved = good && pct >= 100
+                    return (
+                      <div key={label}>
+                        <div className='mb-1 flex items-center justify-between text-sm'>
+                          <span className='font-medium'>{label}</span>
+                          <span className={cn('font-mono text-xs', isBreached ? 'text-red-500' : isAchieved ? 'text-emerald-600' : 'text-muted-foreground')}>
+                            {format(current)} / {format(target)}
+                          </span>
+                        </div>
+                        <div className='h-2 w-full overflow-hidden rounded-full bg-muted'>
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all',
+                              isBreached ? 'bg-red-500' : isAchieved ? 'bg-emerald-500' : good ? 'bg-emerald-500/60' : 'bg-amber-500/60'
+                            )}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <p className='mt-1 text-[11px] text-muted-foreground'>{desc}</p>
+                      </div>
+                    )
+                  })}
+                  <div className={cn(
+                    'rounded-lg border p-3 text-center text-sm font-semibold',
+                    ftmoCurrentDD >= ftmoMaxDD ? 'border-red-500/30 bg-red-500/10 text-red-500'
+                      : ftmoProfit >= ftmoProfitTarget ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                      : 'border-amber-500/30 text-amber-600'
+                  )}>
+                    {ftmoCurrentDD >= ftmoMaxDD
+                      ? '❌ Challenge Failed — Max drawdown exceeded'
+                      : ftmoProfit >= ftmoProfitTarget
+                        ? '✅ Profit Target Hit — Challenge Passed!'
+                        : '⏳ In Progress — Keep following the rules'}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
           </TabsContent>
 
           {/* ─── TIME ─── */}
@@ -1384,6 +1733,88 @@ export function Analytics() {
                 </p>
               </div>
             </div>
+
+            {/* Calendar Heatmap */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Daily P&L Calendar</CardTitle>
+                <CardDescription>Last 3 months — green = profitable day, red = losing day</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {heatmapData.length === 0 ? (
+                  <p className='py-8 text-center text-sm text-muted-foreground'>No trade data for the last 3 months.</p>
+                ) : (
+                  <div className='space-y-3'>
+                    {(() => {
+                      const maxAbs = Math.max(...heatmapData.map((d) => Math.abs(d.pnl)), 1)
+                      const byMonth = new Map<string, typeof heatmapData>()
+                      for (const d of heatmapData) {
+                        const m = d.date.slice(0, 7)
+                        if (!byMonth.has(m)) byMonth.set(m, [])
+                        byMonth.get(m)!.push(d)
+                      }
+                      return Array.from(byMonth.entries()).map(([month, days]) => {
+                        const [yr, mo] = month.split('-').map(Number)
+                        const firstDay = new Date(yr, mo - 1, 1).getDay()
+                        const daysInMonth = new Date(yr, mo, 0).getDate()
+                        const dayMap = new Map(days.map((d) => [parseInt(d.date.slice(8, 10)), d.pnl]))
+                        const label = new Date(yr, mo - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                        return (
+                          <div key={month}>
+                            <p className='mb-2 text-xs font-semibold text-muted-foreground'>{label}</p>
+                            <div className='grid grid-cols-7 gap-1'>
+                              {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d) => (
+                                <div key={d} className='text-center text-[10px] text-muted-foreground/50'>{d}</div>
+                              ))}
+                              {Array.from({ length: firstDay }).map((_, i) => (
+                                <div key={`empty-${i}`} />
+                              ))}
+                              {Array.from({ length: daysInMonth }).map((_, i) => {
+                                const day = i + 1
+                                const pnl = dayMap.get(day)
+                                const intensity = pnl !== undefined ? Math.min(0.9, Math.max(0.15, Math.abs(pnl) / maxAbs)) : 0
+                                return (
+                                  <UITooltip key={day}>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        className={cn(
+                                          'flex aspect-square items-center justify-center rounded text-[10px] font-medium cursor-default',
+                                          pnl === undefined
+                                            ? 'bg-muted/30 text-muted-foreground/30'
+                                            : pnl > 0
+                                              ? 'text-emerald-100'
+                                              : 'text-red-100'
+                                        )}
+                                        style={
+                                          pnl !== undefined
+                                            ? {
+                                                backgroundColor: pnl > 0
+                                                  ? `rgba(16,185,129,${intensity})`
+                                                  : `rgba(239,68,68,${intensity})`,
+                                              }
+                                            : undefined
+                                        }
+                                      >
+                                        {day}
+                                      </div>
+                                    </TooltipTrigger>
+                                    {pnl !== undefined && (
+                                      <TooltipContent className='text-xs'>
+                                        {`${month}-${String(day).padStart(2, '0')}: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`}
+                                      </TooltipContent>
+                                    )}
+                                  </UITooltip>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             <div className='grid gap-4 lg:grid-cols-2'>
               {/* By Session */}
