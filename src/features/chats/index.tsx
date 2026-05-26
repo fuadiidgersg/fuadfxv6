@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
   BookOpen,
+  Loader2,
   Plus,
   Search as SearchIcon,
   Trash2,
   X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,13 +28,17 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useActiveAccount } from '@/stores/accounts-store'
+import { useActiveAccount } from '@/hooks/use-accounts-query'
+import {
+  useCreateJournal,
+  useUpdateJournal,
+  useDeleteJournal,
+  useNotesForActiveAccount,
+} from '@/hooks/use-journals-query'
 import {
   type JournalMood,
   moodColors,
   moodLabels,
-  useJournalStore,
-  useNotesForActiveAccount,
 } from '@/stores/journal-store'
 
 const moodOptions: JournalMood[] = [
@@ -46,13 +52,18 @@ const moodOptions: JournalMood[] = [
 export function Chats() {
   const account = useActiveAccount()
   const notes = useNotesForActiveAccount()
-  const addNote = useJournalStore((s) => s.addNote)
-  const updateNote = useJournalStore((s) => s.updateNote)
-  const removeNote = useJournalStore((s) => s.removeNote)
+  const createJournal = useCreateJournal()
+  const updateJournal = useUpdateJournal()
+  const deleteJournal = useDeleteJournal()
 
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tagDraft, setTagDraft] = useState('')
+
+  // Local draft for the editor — synced to server after a short delay
+  const [draftTitle, setDraftTitle] = useState('')
+  const [draftBody, setDraftBody] = useState('')
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const filtered = useMemo(() => {
     const sorted = [...notes].sort(
@@ -74,13 +85,48 @@ export function Chats() {
       ? selectedId
       : (filtered[0]?.id ?? null)
 
-  const selected =
-    filtered.find((n) => n.id === effectiveSelectedId) ?? null
+  const selected = filtered.find((n) => n.id === effectiveSelectedId) ?? null
 
-  const handleNew = () => {
+  // Keep draft in sync when the selected note changes (from server refresh)
+  useEffect(() => {
+    if (selected) {
+      setDraftTitle(selected.title)
+      setDraftBody(selected.body)
+    }
+  }, [selected?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const scheduleSave = useCallback(
+    (patch: { title?: string; body?: string }) => {
+      if (!selected) return
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(() => {
+        updateJournal.mutate({ id: selected.id, ...patch })
+      }, 800)
+    },
+    [selected, updateJournal]
+  )
+
+  const handleNew = async () => {
     if (!account) return
-    const id = addNote(account.id, { title: 'New journal entry' })
-    setSelectedId(id)
+    try {
+      const note = await createJournal.mutateAsync({
+        accountId: account.id,
+        title: 'New journal entry',
+      })
+      setSelectedId(note.id)
+    } catch {
+      toast.error('Failed to create journal entry.')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selected) return
+    try {
+      await deleteJournal.mutateAsync(selected.id)
+      setSelectedId(null)
+    } catch {
+      toast.error('Failed to delete journal entry.')
+    }
   }
 
   const handleAddTag = () => {
@@ -90,8 +136,21 @@ export function Chats() {
       setTagDraft('')
       return
     }
-    updateNote(selected.id, { tags: [...selected.tags, t] })
+    updateJournal.mutate({ id: selected.id, tags: [...selected.tags, t] })
     setTagDraft('')
+  }
+
+  const handleRemoveTag = (tag: string) => {
+    if (!selected) return
+    updateJournal.mutate({
+      id: selected.id,
+      tags: selected.tags.filter((x) => x !== tag),
+    })
+  }
+
+  const handleMoodChange = (mood: JournalMood) => {
+    if (!selected) return
+    updateJournal.mutate({ id: selected.id, mood })
   }
 
   return (
@@ -118,10 +177,14 @@ export function Chats() {
                   variant='ghost'
                   className='rounded-lg'
                   onClick={handleNew}
-                  disabled={!account}
+                  disabled={!account || createJournal.isPending}
                   aria-label='New note'
                 >
-                  <Plus size={20} />
+                  {createJournal.isPending ? (
+                    <Loader2 size={20} className='animate-spin' />
+                  ) : (
+                    <Plus size={20} />
+                  )}
                 </Button>
               </div>
 
@@ -163,7 +226,7 @@ export function Chats() {
                     onClick={() => setSelectedId(note.id)}
                     className={cn(
                       'group mb-1 flex w-full flex-col gap-1 rounded-md px-3 py-2 text-start text-sm hover:bg-accent hover:text-accent-foreground',
-                      selectedId === note.id && 'sm:bg-muted'
+                      effectiveSelectedId === note.id && 'sm:bg-muted'
                     )}
                   >
                     <div className='flex items-center justify-between gap-2'>
@@ -197,26 +260,25 @@ export function Chats() {
               <div className='flex flex-none items-start justify-between gap-3 border-b bg-card p-4 sm:rounded-t-md'>
                 <div className='flex flex-1 flex-col gap-2'>
                   <Input
-                    value={selected.title}
-                    onChange={(e) =>
-                      updateNote(selected.id, { title: e.target.value })
-                    }
+                    value={draftTitle}
+                    onChange={(e) => {
+                      setDraftTitle(e.target.value)
+                      scheduleSave({ title: e.target.value })
+                    }}
                     placeholder='Title…'
                     className='h-9 border-none bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0 md:text-lg'
                   />
                   <p className='text-xs text-muted-foreground'>
                     {account?.name ?? 'No account'} · created{' '}
                     {format(new Date(selected.createdAt), 'd MMM yyyy')} ·
-                    edited {formatDistanceToNow(new Date(selected.updatedAt))}{' '}
-                    ago
+                    edited{' '}
+                    {formatDistanceToNow(new Date(selected.updatedAt))} ago
                   </p>
                 </div>
                 <div className='flex items-center gap-2'>
                   <Select
                     value={selected.mood}
-                    onValueChange={(v) =>
-                      updateNote(selected.id, { mood: v as JournalMood })
-                    }
+                    onValueChange={(v) => handleMoodChange(v as JournalMood)}
                   >
                     <SelectTrigger className='h-8 w-[130px]'>
                       <SelectValue />
@@ -232,12 +294,15 @@ export function Chats() {
                   <Button
                     size='icon'
                     variant='ghost'
-                    onClick={() => {
-                      removeNote(selected.id)
-                    }}
+                    onClick={handleDelete}
+                    disabled={deleteJournal.isPending}
                     aria-label='Delete note'
                   >
-                    <Trash2 className='size-4 text-destructive' />
+                    {deleteJournal.isPending ? (
+                      <Loader2 className='size-4 animate-spin' />
+                    ) : (
+                      <Trash2 className='size-4 text-destructive' />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -254,11 +319,7 @@ export function Chats() {
                       <button
                         type='button'
                         aria-label={`Remove ${t}`}
-                        onClick={() =>
-                          updateNote(selected.id, {
-                            tags: selected.tags.filter((x) => x !== t),
-                          })
-                        }
+                        onClick={() => handleRemoveTag(t)}
                         className='ms-0.5 rounded p-0.5 hover:bg-foreground/10'
                       >
                         <X className='size-3' />
@@ -291,10 +352,11 @@ export function Chats() {
                 </div>
 
                 <Textarea
-                  value={selected.body}
-                  onChange={(e) =>
-                    updateNote(selected.id, { body: e.target.value })
-                  }
+                  value={draftBody}
+                  onChange={(e) => {
+                    setDraftBody(e.target.value)
+                    scheduleSave({ body: e.target.value })
+                  }}
                   placeholder='What did you see? What did you trade? What did you learn?'
                   className='min-h-[280px] flex-1 resize-none border-none bg-transparent text-sm leading-relaxed shadow-none focus-visible:ring-0'
                 />
@@ -314,7 +376,7 @@ export function Chats() {
                 </p>
               </div>
               {account && (
-                <Button onClick={handleNew}>
+                <Button onClick={handleNew} disabled={createJournal.isPending}>
                   <Plus className='me-1 size-4' /> New entry
                 </Button>
               )}

@@ -9,11 +9,8 @@ import {
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  useAccountsStore,
-  type AccountCurrency,
-  type AccountType,
-} from '@/stores/accounts-store'
+import { useAccountsStore, type AccountCurrency, type AccountType } from '@/stores/accounts-store'
+import { useAccountsQuery, useCreateAccount } from '@/hooks/use-accounts-query'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -61,7 +58,7 @@ function TypeIcon({
 
 export function AccountSwitcher() {
   const { isMobile } = useSidebar()
-  const accounts = useAccountsStore((s) => s.accounts)
+  const { data: accounts = [] } = useAccountsQuery()
   const activeId = useAccountsStore((s) => s.activeAccountId)
   const setActive = useAccountsStore((s) => s.setActive)
   const [createOpen, setCreateOpen] = useState(false)
@@ -186,8 +183,8 @@ export function CreateAccountDialog({
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
-  const addAccount = useAccountsStore((s) => s.addAccount)
   const setActive = useAccountsStore((s) => s.setActive)
+  const createAccount = useCreateAccount()
 
   const [name, setName] = useState('')
   const [broker, setBroker] = useState('')
@@ -205,24 +202,28 @@ export function CreateAccountDialog({
     setStartingBalance('10000')
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!name.trim() || !broker.trim()) {
       toast.error('Please enter a name and broker.')
       return
     }
     const balance = Number(startingBalance) || 0
-    const id = addAccount({
-      name: name.trim(),
-      broker: broker.trim(),
-      number: number.trim() || '—',
-      type,
-      currency,
-      startingBalance: balance,
-    })
-    setActive(id)
-    toast.success(`Account "${name.trim()}" created.`)
-    reset()
-    onOpenChange(false)
+    try {
+      const account = await createAccount.mutateAsync({
+        name: name.trim(),
+        broker: broker.trim(),
+        number: number.trim() || '—',
+        type,
+        currency,
+        startingBalance: balance,
+      })
+      setActive(account.id)
+      toast.success(`Account "${account.name}" created.`)
+      reset()
+      onOpenChange(false)
+    } catch {
+      toast.error('Failed to create account.')
+    }
   }
 
   return (
@@ -323,9 +324,9 @@ export function CreateAccountDialog({
           <Button variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreate} disabled={createAccount.isPending}>
             <Plus className='size-4' />
-            Create account
+            {createAccount.isPending ? 'Creating…' : 'Create account'}
           </Button>
         </DialogFooter>
       </DialogContent>

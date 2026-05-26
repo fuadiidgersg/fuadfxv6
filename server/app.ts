@@ -1,6 +1,8 @@
 import cors from 'cors'
 import express from 'express'
+import accountsRouter from './routes/accounts'
 import analyticsRouter from './routes/analytics'
+import journalsRouter from './routes/journals'
 import profileRouter from './routes/profile'
 import tradesRouter from './routes/trades'
 
@@ -22,13 +24,15 @@ app.use(
     credentials: true,
   })
 )
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
 app.use('/api/trades', tradesRouter)
+app.use('/api/accounts', accountsRouter)
+app.use('/api/journals', journalsRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/profile', profileRouter)
 

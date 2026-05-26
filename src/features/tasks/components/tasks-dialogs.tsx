@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { useTradesStore } from '@/stores/trades-store'
+import { useDeleteTrade } from '@/hooks/use-trades-query'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { TasksImportDialog } from './tasks-import-dialog'
 import { TasksMutateDrawer } from './tasks-mutate-drawer'
@@ -7,7 +7,8 @@ import { useTasks } from './tasks-provider'
 
 export function TasksDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useTasks()
-  const removeTrade = useTradesStore((s) => s.removeTrade)
+  const deleteTrade = useDeleteTrade()
+
   return (
     <>
       <TasksMutateDrawer
@@ -47,19 +48,17 @@ export function TasksDialogs() {
               }, 500)
             }}
             handleConfirm={() => {
-              const ok = removeTrade(currentRow.id)
+              deleteTrade
+                .mutateAsync(currentRow.id)
+                .then(() => toast.success('Trade deleted.'))
+                .catch(() => toast.error('Could not delete trade.'))
               setOpen(null)
               setTimeout(() => {
                 setCurrentRow(null)
               }, 500)
-              if (ok) {
-                toast.success('Trade deleted.')
-              } else {
-                toast.error('Could not delete trade.')
-              }
             }}
             className='max-w-md'
-            title={`Delete this trade?`}
+            title='Delete this trade?'
             desc={
               <>
                 You are about to delete trade{' '}

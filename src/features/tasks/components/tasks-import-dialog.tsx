@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { CheckCircle2, FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { parseMT5Html } from '@/lib/mt5-import'
+import { useAccountsStore } from '@/stores/accounts-store'
 import {
-  useAccountsStore,
-  useActiveAccount,
-} from '@/stores/accounts-store'
-import { useTradesStore } from '@/stores/trades-store'
+  useUpsertAccountFromImport,
+} from '@/hooks/use-accounts-query'
+import {
+  useBulkCreateTrades,
+  useClearTradesForAccount,
+  useAllTradesQuery,
+} from '@/hooks/use-trades-query'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,19 +36,21 @@ export function TasksImportDialog({
   open,
   onOpenChange,
 }: TaskImportDialogProps) {
-  const upsertFromImport = useAccountsStore((s) => s.upsertFromImport)
-  const addTradesForAccount = useTradesStore((s) => s.addTradesForAccount)
-  const clearTradesForAccount = useTradesStore((s) => s.clearTradesForAccount)
-  const activeAccount = useActiveAccount()
-  const tradesCountForActive = useTradesStore((s) =>
-    activeAccount
-      ? s.trades.filter((t) => t.accountId === activeAccount.id).length
-      : 0
-  )
+  const activeAccountId = useAccountsStore((s) => s.activeAccountId)
+  const { data: allTrades = [] } = useAllTradesQuery()
+  const upsertAccount = useUpsertAccountFromImport()
+  const bulkCreate = useBulkCreateTrades()
+  const clearTrades = useClearTradesForAccount()
+
+  const tradesCountForActive = activeAccountId
+    ? allTrades.filter((t) => t.accountId === activeAccountId).length
+    : 0
+
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [htmlFile, setHtmlFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Mt5Preview>(null)
   const [parsing, setParsing] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [tab, setTab] = useState<'mt5' | 'csv'>('mt5')
 
   const reset = () => {
@@ -105,34 +111,45 @@ export function TasksImportDialog({
     }
   }
 
-  const handleImportMt5 = () => {
+  const handleImportMt5 = async () => {
     if (!preview || preview.trades.length === 0) return
-    const accountId = upsertFromImport({
-      broker: preview.broker,
-      number: preview.account,
-      nameHint: preview.account
-        ? `${preview.broker ?? 'MT5'} ${preview.account}`
-        : preview.broker,
-    })
-    const accountName =
-      useAccountsStore.getState().accounts.find((a) => a.id === accountId)
-        ?.name ?? 'MT5 Import'
-    const res = addTradesForAccount(accountId, accountName, preview.trades)
-    if (res.added === 0 && res.duplicates > 0) {
-      toast.message(
-        `All ${res.duplicates} trades were already in "${accountName}".`
+    setImporting(true)
+    try {
+      const account = await upsertAccount.mutateAsync({
+        broker: preview.broker,
+        number: preview.account,
+        nameHint: preview.account
+          ? `${preview.broker ?? 'MT5'} ${preview.account}`
+          : preview.broker,
+      })
+
+      const res = await bulkCreate.mutateAsync({
+        trades: preview.trades,
+        accountId: account.id,
+      })
+
+      if (res.added === 0 && res.duplicates > 0) {
+        toast.message(
+          `All ${res.duplicates} trades were already in "${account.name}".`
+        )
+      } else if (res.duplicates > 0) {
+        toast.success(
+          `Imported ${res.added} into "${account.name}" (${res.duplicates} duplicate${res.duplicates === 1 ? '' : 's'} skipped).`
+        )
+      } else {
+        toast.success(
+          `Imported ${res.added} trade${res.added === 1 ? '' : 's'} into "${account.name}".`
+        )
+      }
+      reset()
+      onOpenChange(false)
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Import failed. Please try again.'
       )
-    } else if (res.duplicates > 0) {
-      toast.success(
-        `Imported ${res.added} into "${accountName}" (${res.duplicates} duplicate${res.duplicates === 1 ? '' : 's'} skipped).`
-      )
-    } else {
-      toast.success(
-        `Imported ${res.added} trade${res.added === 1 ? '' : 's'} into "${accountName}".`
-      )
+    } finally {
+      setImporting(false)
     }
-    reset()
-    onOpenChange(false)
   }
 
   const handleImportCsv = () => {
@@ -145,13 +162,19 @@ export function TasksImportDialog({
     onOpenChange(false)
   }
 
-  const handleClearActive = () => {
-    if (!activeAccount) return
-    const removed = clearTradesForAccount(activeAccount.id)
-    toast.success(
-      `Removed ${removed} trade${removed === 1 ? '' : 's'} from "${activeAccount.name}".`
-    )
+  const handleClearActive = async () => {
+    if (!activeAccountId) return
+    try {
+      const result = await clearTrades.mutateAsync(activeAccountId)
+      toast.success(
+        `Removed ${result.deleted} trade${result.deleted === 1 ? '' : 's'} from the current account.`
+      )
+    } catch {
+      toast.error('Failed to clear trades.')
+    }
   }
+
+  const isBusy = parsing || importing || clearTrades.isPending
 
   return (
     <Dialog
@@ -273,7 +296,9 @@ export function TasksImportDialog({
                               {t.pnl.toFixed(2)}
                             </td>
                             <td className='px-2 py-1 text-end text-muted-foreground'>
-                              {t.closedAt.toISOString().slice(0, 10)}
+                              {t.closedAt instanceof Date
+                                ? t.closedAt.toISOString().slice(0, 10)
+                                : String(t.closedAt).slice(0, 10)}
                             </td>
                           </tr>
                         ))}
@@ -315,7 +340,7 @@ export function TasksImportDialog({
             type='button'
             variant='ghost'
             size='sm'
-            disabled={!activeAccount || tradesCountForActive === 0}
+            disabled={!activeAccountId || tradesCountForActive === 0 || isBusy}
             onClick={handleClearActive}
             className='text-muted-foreground hover:text-destructive'
           >
@@ -326,18 +351,26 @@ export function TasksImportDialog({
 
           <div className='flex items-center gap-2'>
             <DialogClose asChild>
-              <Button variant='outline'>Close</Button>
+              <Button variant='outline' disabled={isBusy}>
+                Close
+              </Button>
             </DialogClose>
             {tab === 'mt5' ? (
               <Button
                 onClick={handleImportMt5}
-                disabled={!preview || preview.trades.length === 0 || parsing}
+                disabled={!preview || preview.trades.length === 0 || isBusy}
               >
-                <Upload className='size-4' />
-                Import {preview?.trades.length ?? 0} trades
+                {importing ? (
+                  <Loader2 className='size-4 animate-spin' />
+                ) : (
+                  <Upload className='size-4' />
+                )}
+                {importing
+                  ? 'Importing…'
+                  : `Import ${preview?.trades.length ?? 0} trades`}
               </Button>
             ) : (
-              <Button onClick={handleImportCsv} disabled={!csvFile}>
+              <Button onClick={handleImportCsv} disabled={!csvFile || isBusy}>
                 <Upload className='size-4' />
                 Import CSV
               </Button>

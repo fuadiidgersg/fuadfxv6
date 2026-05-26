@@ -17,13 +17,13 @@ import {
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAccountsStore, type AccountType, type TradingAccount } from '@/stores/accounts-store'
 import {
-  useAccountsStore,
-  type AccountType,
-  type TradingAccount,
-} from '@/stores/accounts-store'
-import { useTradesStore } from '@/stores/trades-store'
-import { useJournalStore } from '@/stores/journal-store'
+  useAccountsQuery,
+  useUpdateAccount,
+  useDeleteAccount,
+} from '@/hooks/use-accounts-query'
+import { useAllTradesQuery, useClearTradesForAccount } from '@/hooks/use-trades-query'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -80,26 +80,20 @@ function iconForType(type: AccountType) {
 }
 
 export function Accounts() {
-  const accounts = useAccountsStore((s) => s.accounts)
+  const { data: accounts = [] } = useAccountsQuery()
+  const { data: allTrades = [] } = useAllTradesQuery()
   const activeId = useAccountsStore((s) => s.activeAccountId)
   const setActive = useAccountsStore((s) => s.setActive)
-  const renameAccount = useAccountsStore((s) => s.rename)
-  const setArchived = useAccountsStore((s) => s.setArchived)
-  const removeAccount = useAccountsStore((s) => s.remove)
-
-  const allTrades = useTradesStore((s) => s.trades)
-  const clearTradesForAccount = useTradesStore((s) => s.clearTradesForAccount)
-  const removeAccountTrades = useTradesStore((s) => s.removeAccount)
-  const removeAccountNotes = useJournalStore((s) => s.removeNotesForAccount)
+  const updateAccount = useUpdateAccount()
+  const deleteAccount = useDeleteAccount()
+  const clearTrades = useClearTradesForAccount()
 
   const [search, setSearch] = useState('')
   const [type, setType] = useState<'all' | AccountType>('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<TradingAccount | null>(null)
   const [renameValue, setRenameValue] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState<TradingAccount | null>(
-    null
-  )
+  const [confirmDelete, setConfirmDelete] = useState<TradingAccount | null>(null)
 
   const stats = useMemo(() => {
     const byAccount = new Map<
@@ -150,26 +144,54 @@ export function Accounts() {
     setRenameTarget(a)
     setRenameValue(a.name)
   }
-  function commitRename() {
+
+  async function commitRename() {
     if (!renameTarget) return
-    renameAccount(renameTarget.id, renameValue)
-    toast.success('Account renamed.')
+    try {
+      await updateAccount.mutateAsync({ id: renameTarget.id, name: renameValue.trim() || renameTarget.name })
+      toast.success('Account renamed.')
+    } catch {
+      toast.error('Failed to rename account.')
+    }
     setRenameTarget(null)
   }
 
-  function handleClear(a: TradingAccount) {
-    const removed = clearTradesForAccount(a.id)
-    toast.success(
-      `Cleared ${removed} trade${removed === 1 ? '' : 's'} from "${a.name}".`
-    )
+  async function handleArchive(a: TradingAccount) {
+    try {
+      await updateAccount.mutateAsync({ id: a.id, isArchived: !a.isArchived })
+      if (!a.isArchived && activeId === a.id) {
+        const next = accounts.find((acc) => !acc.isArchived && acc.id !== a.id)
+        setActive(next?.id ?? null)
+      }
+      toast.success(a.isArchived ? 'Account unarchived.' : 'Account archived.')
+    } catch {
+      toast.error('Failed to update account.')
+    }
   }
 
-  function handleDelete() {
+  async function handleClear(a: TradingAccount) {
+    try {
+      const result = await clearTrades.mutateAsync(a.id)
+      toast.success(
+        `Cleared ${result.deleted} trade${result.deleted === 1 ? '' : 's'} from "${a.name}".`
+      )
+    } catch {
+      toast.error('Failed to clear trades.')
+    }
+  }
+
+  async function handleDelete() {
     if (!confirmDelete) return
-    removeAccountTrades(confirmDelete.id)
-    removeAccountNotes(confirmDelete.id)
-    removeAccount(confirmDelete.id)
-    toast.success(`Deleted account "${confirmDelete.name}".`)
+    try {
+      await deleteAccount.mutateAsync(confirmDelete.id)
+      if (activeId === confirmDelete.id) {
+        const next = accounts.find((a) => !a.isArchived && a.id !== confirmDelete.id)
+        setActive(next?.id ?? null)
+      }
+      toast.success(`Deleted account "${confirmDelete.name}".`)
+    } catch {
+      toast.error('Failed to delete account.')
+    }
     setConfirmDelete(null)
   }
 
@@ -369,9 +391,7 @@ export function Accounts() {
                                 Rename
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  setArchived(a.id, !a.isArchived)
-                                }
+                                onClick={() => handleArchive(a)}
                               >
                                 {a.isArchived ? (
                                   <>
@@ -496,7 +516,9 @@ export function Accounts() {
             <Button variant='outline' onClick={() => setRenameTarget(null)}>
               Cancel
             </Button>
-            <Button onClick={commitRename}>Save</Button>
+            <Button onClick={commitRename} disabled={updateAccount.isPending}>
+              {updateAccount.isPending ? 'Saving…' : 'Save'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -518,9 +540,13 @@ export function Accounts() {
             <Button variant='outline' onClick={() => setConfirmDelete(null)}>
               Cancel
             </Button>
-            <Button variant='destructive' onClick={handleDelete}>
+            <Button
+              variant='destructive'
+              onClick={handleDelete}
+              disabled={deleteAccount.isPending}
+            >
               <Trash2 className='size-4' />
-              Delete account
+              {deleteAccount.isPending ? 'Deleting…' : 'Delete account'}
             </Button>
           </DialogFooter>
         </DialogContent>

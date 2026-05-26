@@ -4,8 +4,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ImagePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { useActiveAccount } from '@/stores/accounts-store'
-import { useTradesStore } from '@/stores/trades-store'
+import { useActiveAccount } from '@/hooks/use-accounts-query'
+import { useCreateTrade, useUpdateTrade } from '@/hooks/use-trades-query'
 import {
   EMOTIONS,
   PAIRS,
@@ -133,35 +133,31 @@ export function TasksMutateDrawer({
   })
 
   const account = useActiveAccount()
-  const addTradesForAccount = useTradesStore((s) => s.addTradesForAccount)
+  const createTrade = useCreateTrade()
+  const updateTrade = useUpdateTrade()
 
-  const onSubmit = (data: TradeForm) => {
+  const onSubmit = async (data: TradeForm) => {
     if (!account) {
       toast.error('Add a trading account first before logging a trade.')
       return
     }
-    if (isUpdate && currentRow) {
-      // Update path — replace the existing trade in the store.
-      const existing = useTradesStore.getState().trades
-      const updated = existing.map((t) =>
-        t.id === currentRow.id
-          ? buildTradeFromForm(data, account.id, account.name, currentRow)
-          : t
-      )
-      useTradesStore.setState({ trades: updated })
-      toast.success('Trade updated.')
-    } else {
-      const trade = buildTradeFromForm(data, account.id, account.name)
-      const result = addTradesForAccount(account.id, account.name, [trade])
-      if (result.added > 0) {
-        toast.success(`Trade logged on "${account.name}".`)
+    try {
+      if (isUpdate && currentRow) {
+        await updateTrade.mutateAsync(
+          buildTradeFromForm(data, account.id, account.name, currentRow)
+        )
+        toast.success('Trade updated.')
       } else {
-        toast.error('Could not save trade.')
+        const trade = buildTradeFromForm(data, account.id, account.name)
+        await createTrade.mutateAsync(trade)
+        toast.success(`Trade logged on "${account.name}".`)
       }
+      onOpenChange(false)
+      form.reset()
+      setPreview(undefined)
+    } catch {
+      toast.error(isUpdate ? 'Failed to update trade.' : 'Failed to save trade.')
     }
-    onOpenChange(false)
-    form.reset()
-    setPreview(undefined)
   }
 
   const handleFile = (file: File) => {
@@ -178,6 +174,8 @@ export function TasksMutateDrawer({
     }
     reader.readAsDataURL(file)
   }
+
+  const isPending = createTrade.isPending || updateTrade.isPending
 
   return (
     <Sheet
@@ -278,9 +276,9 @@ export function TasksMutateDrawer({
                   <FormItem>
                     <FormLabel>Entry</FormLabel>
                     <FormControl>
-                      <Input 
-                        type='number' 
-                        step='0.00001' 
+                      <Input
+                        type='number'
+                        step='0.00001'
                         value={typeof field.value === 'number' ? field.value : ''}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
@@ -296,9 +294,9 @@ export function TasksMutateDrawer({
                   <FormItem>
                     <FormLabel>Exit</FormLabel>
                     <FormControl>
-                      <Input 
-                        type='number' 
-                        step='0.00001' 
+                      <Input
+                        type='number'
+                        step='0.00001'
                         value={typeof field.value === 'number' ? field.value : ''}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
@@ -318,7 +316,11 @@ export function TasksMutateDrawer({
                         type='number'
                         step='0.00001'
                         value={typeof field.value === 'number' ? field.value : ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? Number(e.target.value) : undefined
+                          )
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -336,7 +338,11 @@ export function TasksMutateDrawer({
                         type='number'
                         step='0.00001'
                         value={typeof field.value === 'number' ? field.value : ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? Number(e.target.value) : undefined
+                          )
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -350,9 +356,9 @@ export function TasksMutateDrawer({
                   <FormItem>
                     <FormLabel>Lot size</FormLabel>
                     <FormControl>
-                      <Input 
-                        type='number' 
-                        step='0.01' 
+                      <Input
+                        type='number'
+                        step='0.01'
                         value={typeof field.value === 'number' ? field.value : ''}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
@@ -372,7 +378,11 @@ export function TasksMutateDrawer({
                         type='number'
                         step='0.01'
                         value={typeof field.value === 'number' ? field.value : ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? Number(e.target.value) : undefined
+                          )
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -386,9 +396,9 @@ export function TasksMutateDrawer({
                   <FormItem className='col-span-2'>
                     <FormLabel>P&L ($)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type='number' 
-                        step='0.01' 
+                      <Input
+                        type='number'
+                        step='0.01'
                         value={typeof field.value === 'number' ? field.value : ''}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
@@ -569,10 +579,12 @@ export function TasksMutateDrawer({
         </Form>
         <SheetFooter className='gap-2'>
           <SheetClose asChild>
-            <Button variant='outline'>Close</Button>
+            <Button variant='outline' disabled={isPending}>
+              Close
+            </Button>
           </SheetClose>
-          <Button form='tasks-form' type='submit'>
-            Save trade
+          <Button form='tasks-form' type='submit' disabled={isPending}>
+            {isPending ? 'Saving…' : 'Save trade'}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -592,12 +604,6 @@ function computeStatus(pnl: number): TradeStatus {
   return 'breakeven'
 }
 
-function newTradeId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `trade_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-}
-
 function buildTradeFromForm(
   data: TradeForm,
   accountId: string,
@@ -613,7 +619,7 @@ function buildTradeFromForm(
   const now = new Date()
 
   return {
-    id: base?.id ?? newTradeId(),
+    id: base?.id ?? crypto.randomUUID(),
     accountId,
     account: accountName,
     pair: data.pair,
