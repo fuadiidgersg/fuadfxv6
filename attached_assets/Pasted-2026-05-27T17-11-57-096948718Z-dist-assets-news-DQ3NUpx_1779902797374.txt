@@ -1,0 +1,50 @@
+2026-05-27T17:11:57.096948718Z dist/assets/news-DQ3NUpx8.js                      7.40 kB │ gzip:   2.56 kB
+2026-05-27T17:11:57.096951158Z dist/assets/portfolio-BqNgVyGS.js                 8.51 kB │ gzip:   2.53 kB
+2026-05-27T17:11:57.096953558Z dist/assets/apps-BBrVTiVw.js                      8.70 kB │ gzip:   3.27 kB
+2026-05-27T17:11:57.096955948Z dist/assets/route-D5lLXoBt.js                     9.91 kB │ gzip:   3.38 kB
+2026-05-27T17:11:57.096958579Z dist/assets/accounts-store-Bbc99mp0.js           11.24 kB │ gzip:   3.95 kB
+2026-05-27T17:11:57.096961049Z dist/assets/chats-CPmV-Da7.js                    11.30 kB │ gzip:   3.99 kB
+2026-05-27T17:11:57.096963429Z dist/assets/users-Bgf5Q9ZG.js                    11.80 kB │ gzip:   3.79 kB
+2026-05-27T17:11:57.096965809Z dist/assets/tasks-U4P2_Aww.js                    12.24 kB │ gzip:   4.42 kB
+2026-05-27T17:11:57.096968209Z dist/assets/stats-B6KIle3W.js                    12.35 kB │ gzip:   3.11 kB
+2026-05-27T17:11:57.096974809Z dist/assets/AreaChart-CCIoJKUn.js                12.47 kB │ gzip:   4.58 kB
+2026-05-27T17:11:57.09697729Z dist/assets/otp-DAMWEM4t.js                      12.66 kB │ gzip:   4.93 kB
+2026-05-27T17:11:57.0969797Z dist/assets/react-icons.esm-BdNnOj1R.js          12.79 kB │ gzip:   3.45 kB
+2026-05-27T17:11:57.09698214Z dist/assets/_authenticated-w2To9Q3k.js           15.26 kB │ gzip:   4.75 kB
+2026-05-27T17:11:57.09698459Z dist/assets/format-DBV0Jv7H.js                   19.65 kB │ gzip:   5.67 kB
+2026-05-27T17:11:57.09698706Z dist/assets/select-DOMirLoX.js                   22.79 kB │ gzip:   7.76 kB
+2026-05-27T17:11:57.09698947Z dist/assets/command-CArXYHp8.js                  23.04 kB │ gzip:   8.08 kB
+2026-05-27T17:11:57.096991851Z dist/assets/PieChart-BHOp8Wi1.js                 24.25 kB │ gzip:   7.05 kB
+2026-05-27T17:11:57.096994281Z dist/assets/theme-switch-DluwViQh.js             26.71 kB │ gzip:   6.04 kB
+2026-05-27T17:11:57.096996721Z dist/assets/form-AB8JsxvI.js                     37.53 kB │ gzip:  13.15 kB
+2026-05-27T17:11:57.096999131Z dist/assets/dist-DGTa7Qrc.js                     45.44 kB │ gzip:  16.62 kB
+2026-05-27T17:11:57.097001551Z dist/assets/calendar-EAsGfQeh.js                 51.88 kB │ gzip:  15.82 kB
+2026-05-27T17:11:57.097003962Z dist/assets/analytics-BdG9vCRl.js                56.82 kB │ gzip:  11.94 kB
+2026-05-27T17:11:57.097006352Z dist/assets/search-provider-CmtBrDYX.js          74.46 kB │ gzip:  21.56 kB
+2026-05-27T17:11:57.097008712Z dist/assets/tasks-dialogs-CUowD-4M.js            89.93 kB │ gzip:  24.00 kB
+2026-05-27T17:11:57.097011122Z dist/assets/CartesianChart-Cjje6ZvZ.js          360.68 kB │ gzip: 105.35 kB
+2026-05-27T17:11:57.097013522Z dist/assets/index-C7i84If9.js                   906.35 kB │ gzip: 251.13 kB
+2026-05-27T17:11:57.097015872Z 
+2026-05-27T17:11:57.098203391Z ✓ built in 4.92s
+2026-05-27T17:11:57.098971343Z [plugin builtin:vite-reporter] 
+2026-05-27T17:11:57.098980773Z (!) Some chunks are larger than 500 kB after minification. Consider:
+2026-05-27T17:11:57.098983694Z - Using dynamic import() to code-split the application
+2026-05-27T17:11:57.098986874Z - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+2026-05-27T17:11:57.098988984Z - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+2026-05-27T17:11:58.294993898Z ==> Uploading build...
+2026-05-27T17:12:06.476678821Z ==> Uploaded in 4.3s. Compression took 3.9s
+2026-05-27T17:12:06.501066557Z ==> Build successful 🎉
+2026-05-27T17:12:09.55713849Z ==> Deploying...
+2026-05-27T17:12:09.648303542Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-05-27T17:12:29.91368625Z ==> Running 'yarn start'
+2026-05-27T17:12:32.017454015Z error This project's package.json defines "packageManager": "yarn@npm@10.0.0". However the current global version of Yarn is 1.22.22.
+2026-05-27T17:12:32.017828544Z 
+2026-05-27T17:12:32.017950918Z Presence of the "packageManager" field indicates that the project is meant to be used with Corepack, a tool included by default with all official Node.js distributions starting from 16.9 and 14.19.
+2026-05-27T17:12:32.018021439Z Corepack must currently be enabled by running corepack enable in your terminal. For more information, check out https://yarnpkg.com/corepack.
+2026-05-27T17:12:34.192246814Z ==> Exited with status 1
+2026-05-27T17:12:34.194120252Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+2026-05-27T17:12:38.864332987Z ==> Running 'yarn start'
+2026-05-27T17:12:40.263496049Z error This project's package.json defines "packageManager": "yarn@npm@10.0.0". However the current global version of Yarn is 1.22.22.
+2026-05-27T17:12:40.263617012Z 
+2026-05-27T17:12:40.263629172Z Presence of the "packageManager" field indicates that the project is meant to be used with Corepack, a tool included by default with all official Node.js distributions starting from 16.9 and 14.19.
+2026-05-27T17:12:40.263679063Z Corepack must currently be enabled by running corepack enable in your terminal. For more information, check out https://yarnpkg.com/corepack.

@@ -3,12 +3,12 @@
   "private": false,
   "version": "2.2.1",
   "type": "module",
-  "packageManager": "npm@10.0.0",
   "scripts": {
     "dev": "vite",
     "dev:server": "tsx watch server/index.ts",
     "build": "tsc -b && vite build",
     "build:server": "tsc -b tsconfig.server.json",
+    "start": "npx tsx server/index.ts",
     "start:server": "node dist/server/index.js",
     "lint": "eslint .",
     "preview": "vite preview",
