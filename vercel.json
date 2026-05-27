@@ -26,10 +26,5 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "https://axqwrbncgiiixudqjght.supabase.co",
-    "VITE_SUPABASE_ANON_KEY": "sb_publishable_QTObOqLWeDERwQeAfOaOxw_q0UK8m3g",
-    "VITE_API_URL": "https://fuadfx-api.onrender.com"
-  }
+  ]
 }
