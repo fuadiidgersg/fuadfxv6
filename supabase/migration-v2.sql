@@ -9,7 +9,7 @@ ALTER TABLE public.trades
   ADD COLUMN IF NOT EXISTS pips            NUMERIC,
   ADD COLUMN IF NOT EXISTS r_multiple      NUMERIC,
   ADD COLUMN IF NOT EXISTS risk_amount     NUMERIC,
-  ADD COLUMN IF NOT EXISTS session         TEXT,          -- 'Asian' | 'London' | 'New York' | 'Overlap'
+  ADD COLUMN IF NOT EXISTS session         TEXT,          -- 'Asian' | 'London' | 'New York' | 'Overlap'aa
   ADD COLUMN IF NOT EXISTS timeframe       TEXT,          -- 'M1' | 'M5' | 'H1' etc
   ADD COLUMN IF NOT EXISTS trade_outcome   TEXT,          -- 'win' | 'loss' | 'breakeven' | 'open'
   ADD COLUMN IF NOT EXISTS account_name    TEXT,
