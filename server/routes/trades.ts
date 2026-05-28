@@ -128,13 +128,15 @@ router.post('/bulk', async (req: AuthRequest, res) => {
       return res.json({ added: 0, duplicates })
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('trades')
-      .insert(toInsert)
-      .select()
-    if (error) return res.status(400).json({ error: error.message })
+    // Insert in chunks of 500 to avoid PostgREST row limits and request timeouts
+    const CHUNK_SIZE = 500
+    for (let i = 0; i < toInsert.length; i += CHUNK_SIZE) {
+      const chunk = toInsert.slice(i, i + CHUNK_SIZE)
+      const { error } = await supabaseAdmin.from('trades').insert(chunk)
+      if (error) return res.status(400).json({ error: error.message })
+    }
 
-    res.status(201).json({ added: data?.length ?? 0, duplicates })
+    res.status(201).json({ added: toInsert.length, duplicates })
   } catch {
     res.status(500).json({ error: 'Internal server error' })
   }
