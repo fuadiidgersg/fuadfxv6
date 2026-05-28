@@ -45,15 +45,21 @@ app.use(
 )
 app.use(express.json({ limit: '10mb' }))
 
+// Health check — respond on both paths (Render uses /api/health, plain clients use /health)
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-app.use('/api/trades', tradesRouter)
-app.use('/api/accounts', accountsRouter)
-app.use('/api/journals', journalsRouter)
-app.use('/api/analytics', analyticsRouter)
-app.use('/api/profile', profileRouter)
+// Routes mounted at root so VITE_API_URL = 'https://fuadfx-api.onrender.com' works in prod
+// (Vite dev proxy strips the leading /api prefix before forwarding to this server)
+app.use('/trades', tradesRouter)
+app.use('/accounts', accountsRouter)
+app.use('/journals', journalsRouter)
+app.use('/analytics', analyticsRouter)
+app.use('/profile', profileRouter)
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' })
