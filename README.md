@@ -1,136 +1,100 @@
-# Shadcn Admin Dashboard
+# FUADFX
 
-Admin Dashboard UI crafted with Shadcn and Vite. Built with responsiveness and accessibility in mind.
+Trading journal dashboard built with Vite, React, TanStack Router, Supabase Auth, and a separate Express API deployed on Render.
 
-![alt text](public/images/shadcn-admin.png)
-
-[![Sponsored by Clerk](https://img.shields.io/badge/Sponsored%20by-Clerk-5b6ee1?logo=clerk)](https://go.clerk.com/GttUAaK)
-
-I've been creating dashboard UIs at work and for my personal projects. I always wanted to make a reusable collection of dashboard UI for future projects; and here it is now. While I've created a few custom components, some of the code is directly adapted from ShadcnUI examples.
-
-> This is not a starter project (template) though. I'll probably make one in the future.
-
-## Features
-
-- Light/dark mode
-- Responsive
-- Accessible
-- With built-in Sidebar component
-- Global search command
-- 10+ pages
-- Extra custom components
-- RTL support
-
-<details>
-<summary>Customized Components (click to expand)</summary>
-
-This project uses Shadcn UI components, but some have been slightly modified for better RTL (Right-to-Left) support and other improvements. These customized components differ from the original Shadcn UI versions.
-
-If you want to update components using the Shadcn CLI (e.g., `npx shadcn@latest add <component>`), it's generally safe for non-customized components. For the listed customized ones, you may need to manually merge changes to preserve the project's modifications and avoid overwriting RTL support or other updates.
-
-> If you don't require RTL support, you can safely update the 'RTL Updated Components' via the Shadcn CLI, as these changes are primarily for RTL compatibility. The 'Modified Components' may have other customizations to consider.
-
-### Modified Components
-
-- scroll-area
-- sonner
-- separator
-
-### RTL Updated Components
-
-- alert-dialog
-- calendar
-- command
-- dialog
-- dropdown-menu
-- select
-- table
-- sheet
-- sidebar
-- switch
-
-**Notes:**
-
-- **Modified Components**: These have general updates, potentially including RTL adjustments.
-- **RTL Updated Components**: These have specific changes for RTL language support (e.g., layout, positioning).
-- For implementation details, check the source files in `src/components/ui/`.
-- All other Shadcn UI components in the project are standard and can be safely updated via the CLI.
-
-</details>
+![Dashboard preview](public/images/shadcn-admin.png)
 
 ## Tech Stack
 
-**UI:** [ShadcnUI](https://ui.shadcn.com) (TailwindCSS + RadixUI)
-
-**Build Tool:** [Vite](https://vitejs.dev/)
-
-**Routing:** [TanStack Router](https://tanstack.com/router/latest)
-
-**Type Checking:** [TypeScript](https://www.typescriptlang.org/)
-
-**Linting/Formatting:** [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)
-
-**Icons:** [Lucide Icons](https://lucide.dev/icons/), [Tabler Icons](https://tabler.io/icons) (Brand icons only)
-
-**Auth (partial):** [Clerk](https://go.clerk.com/GttUAaK)
+- Vite and React
+- TanStack Router and TanStack Query
+- Supabase Auth and database
+- Express API on Render
+- Tailwind CSS and shadcn/ui
 
 ## Run Locally
 
-Clone the project
+Install dependencies:
 
 ```bash
-  git clone https://github.com/satnaing/shadcn-admin.git
+npm install
 ```
 
-Go to the project directory
+Copy `.env.example` to `.env` and fill in the Supabase values.
+
+Start the frontend:
 
 ```bash
-  cd shadcn-admin
+npm run dev
 ```
 
-Install dependencies
+Start the API in another terminal:
 
 ```bash
-  pnpm install
+npm run dev:server
 ```
 
-Start the server
+The Vite dev server proxies `/api/*` to the local API and strips the `/api` prefix before forwarding.
+
+## Deployment Checklist
+
+This project is split across three services:
+
+- Vercel serves the Vite frontend from `dist`.
+- Render runs the Express API from `server/index.ts`.
+- Supabase provides auth and database access.
+
+### Vercel Environment Variables
+
+Set these for Production, Preview, and Development in Vercel:
 
 ```bash
-  pnpm run dev
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_API_URL=https://your-render-service.onrender.com
+VITE_GEMINI_API_KEY=your-gemini-api-key
 ```
 
-## Deploy to Vercel
+`VITE_API_URL` must point to the Render API root. If it is missing, the frontend falls back to `/api`, which only works during local Vite development through the dev proxy.
 
-This project is preconfigured for Vercel via `vercel.json` (Vite framework, pnpm install, SPA fallback, asset caching).
+Do not set `SUPABASE_SERVICE_ROLE_KEY` in Vercel. Vite exposes `VITE_*` values to browser code, and the service role key must stay server-only.
 
-1. Push the repo to GitHub.
-2. In Vercel, click **Add New → Project** and import the GitHub repo. Vercel will read `vercel.json` and use Vite + pnpm automatically.
-3. Under **Project Settings → Environment Variables**, add the variables from `.env.example` for **Production**, **Preview**, and **Development**:
-   - `VITE_CLERK_PUBLISHABLE_KEY` — your Clerk publishable key.
-4. Click **Deploy**. Future pushes to the default branch deploy to production; pull requests get preview deployments.
+### Render Environment Variables
 
-To deploy from the command line instead:
+Set these on the Render web service:
 
 ```bash
-  pnpm dlx vercel        # first time: link the project
-  pnpm dlx vercel --prod # production deploy
+NODE_ENV=production
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+FRONTEND_URL=https://your-vercel-app.vercel.app
 ```
 
-## Sponsoring this project ❤️
+`FRONTEND_URL` can be a comma-separated list if you need to allow multiple frontend origins.
 
-If you find this project helpful or use this in your own work, consider [sponsoring me](https://github.com/sponsors/satnaing) to support development and maintenance. You can [buy me a coffee](https://buymeacoffee.com/satnaing) as well. Don’t worry, every penny helps. Thank you! 🙏
+### Supabase Auth URLs
 
-For questions or sponsorship inquiries, feel free to reach out at [satnaingdev@gmail.com](mailto:satnaingdev@gmail.com).
+In Supabase Dashboard > Authentication > URL Configuration:
 
-### Current Sponsor
+- Site URL: your production Vercel URL
+- Redirect URLs: your production Vercel URL plus any Vercel preview URLs you use
 
-- [Clerk](https://go.clerk.com/GttUAaK) - authentication and user management for the modern web
+## Useful Checks
 
-## Author
+Build the frontend:
 
-Crafted with 🤍 by [@satnaing](https://github.com/satnaing)
+```bash
+npm run build
+```
 
-## License
+Type-check the Render API:
 
-Licensed under the [MIT License](https://choosealicense.com/licenses/mit/)
+```bash
+npm run build:server
+```
+
+Check the Render health endpoint:
+
+```bash
+curl https://your-render-service.onrender.com/api/health
+```

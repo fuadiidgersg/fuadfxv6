@@ -3,13 +3,15 @@ services:
     name: fuadfx-api
     env: node
     plan: free
-    buildCommand: npm install
-    startCommand: npx tsx server/index.ts
+    buildCommand: npm ci
+    startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_URL
         sync: false

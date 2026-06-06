@@ -1,4 +1,3 @@
-import ws from 'ws'
 import { createClient } from '@supabase/supabase-js'
 
 // Accept both SUPABASE_URL (Render/production) and VITE_SUPABASE_URL (legacy)
@@ -15,8 +14,5 @@ export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
-  },
-  realtime: {
-    transport: ws,
   },
 })
