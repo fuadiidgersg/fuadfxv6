@@ -6,6 +6,7 @@ import {
   Wallet,
   Trophy,
   CandlestickChart,
+  Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ import { RecentTrades } from './components/recent-trades'
 export function Dashboard() {
   const trades = useTrades()
   const stats = useMemo(() => computeStats(trades), [trades])
+  const hasTrades = trades.length > 0
 
   return (
     <>
@@ -54,7 +56,7 @@ export function Dashboard() {
             </p>
           </div>
           <div className='flex items-center space-x-2'>
-            <Button variant='outline'>Export</Button>
+            <Button variant='outline' disabled={!hasTrades}>Export</Button>
             <Button asChild>
               <Link to='/tasks' search={{ new: true }}>
                 <CandlestickChart className='size-4' />
@@ -72,16 +74,12 @@ export function Dashboard() {
             <TabsList>
               <TabsTrigger value='overview'>Overview</TabsTrigger>
               <TabsTrigger value='analytics'>Analytics</TabsTrigger>
-              <TabsTrigger value='reports' disabled>
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value='notifications' disabled>
-                Notifications
-              </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value='overview' className='space-y-4'>
+            {!hasTrades && <EmptyTradingState />}
+
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
               <KpiCard
                 title='Net P&L'
@@ -106,7 +104,11 @@ export function Dashboard() {
               />
               <KpiCard
                 title='Best / Worst'
-                value={`+$${stats.bestTrade.toFixed(0)} / $${stats.worstTrade.toFixed(0)}`}
+                value={
+                  hasTrades
+                    ? `+$${stats.bestTrade.toFixed(0)} / $${stats.worstTrade.toFixed(0)}`
+                    : '$0 / $0'
+                }
                 hint={`Streak ${stats.largestWinStreak}W · ${stats.largestLossStreak}L`}
                 icon={Trophy}
                 tone='neutral'
@@ -158,6 +160,37 @@ export function Dashboard() {
         </Tabs>
       </Main>
     </>
+  )
+}
+
+function EmptyTradingState() {
+  return (
+    <Card className='border-dashed'>
+      <CardHeader className='items-center text-center'>
+        <div className='mb-2 flex size-12 items-center justify-center rounded-full bg-muted'>
+          <CandlestickChart className='size-5' />
+        </div>
+        <CardTitle className='text-base'>Start with your trade history</CardTitle>
+        <CardDescription className='max-w-xl'>
+          Import an MT5 detailed report to fill your dashboard instantly, or log
+          a single trade if you want to test the workflow first.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='flex flex-wrap justify-center gap-2'>
+        <Button asChild>
+          <Link to='/tasks' search={{ import: true }}>
+            <Download className='size-4' />
+            Import MT5 report
+          </Link>
+        </Button>
+        <Button variant='outline' asChild>
+          <Link to='/tasks' search={{ new: true }}>
+            <CandlestickChart className='size-4' />
+            Log one trade
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

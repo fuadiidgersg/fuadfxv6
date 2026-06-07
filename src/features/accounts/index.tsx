@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -14,6 +15,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -311,10 +313,16 @@ export function Accounts() {
                 started.
               </CardDescription>
             </CardHeader>
-            <CardContent className='flex justify-center'>
-              <Button onClick={() => setCreateOpen(true)}>
+            <CardContent className='flex flex-wrap justify-center gap-2'>
+              <Button asChild>
+                <Link to='/tasks' search={{ import: true }}>
+                  <Upload className='me-1 size-4' />
+                  Import MT5 report
+                </Link>
+              </Button>
+              <Button variant='outline' onClick={() => setCreateOpen(true)}>
                 <Plus className='me-1 size-4' />
-                Add your first account
+                Add account manually
               </Button>
             </CardContent>
           </Card>

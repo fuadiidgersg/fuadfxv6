@@ -20,7 +20,7 @@ import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
 import { TasksProvider, useTasks } from './components/tasks-provider'
 import { TasksTable } from './components/tasks-table'
 
-function NewTradeIntent() {
+function TradeDialogIntent() {
   const search = TasksRoute.useSearch()
   const navigate = useNavigate()
   const { setOpen } = useTasks()
@@ -28,6 +28,10 @@ function NewTradeIntent() {
     if (search.new) {
       setOpen('create')
       navigate({ to: '/tasks', search: { ...search, new: undefined }, replace: true })
+    }
+    if (search.import) {
+      setOpen('import')
+      navigate({ to: '/tasks', search: { ...search, import: undefined }, replace: true })
     }
   }, [search, setOpen, navigate])
   return null
@@ -39,7 +43,7 @@ export function Tasks() {
 
   return (
     <TasksProvider>
-      <NewTradeIntent />
+      <TradeDialogIntent />
       <Header fixed>
         <Search className='me-auto' />
         <ThemeSwitch />

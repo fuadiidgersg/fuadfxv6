@@ -188,16 +188,17 @@ export function TasksImportDialog({
         <DialogHeader className='text-start'>
           <DialogTitle>Import Trades</DialogTitle>
           <DialogDescription>
-            Bring in your trade history from MetaTrader 5 or a CSV statement.
-            Trades are assigned to the account detected in the file (or the
-            current account if none is detected).
+            Bring in your trade history from a MetaTrader 5 detailed report.
+            Trades are assigned to the account detected in the file.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as 'mt5' | 'csv')}>
           <TabsList className='grid w-full grid-cols-2'>
             <TabsTrigger value='mt5'>MT5 (HTML)</TabsTrigger>
-            <TabsTrigger value='csv'>CSV</TabsTrigger>
+            <TabsTrigger value='csv' disabled>
+              CSV soon
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value='mt5' className='space-y-3 pt-3'>

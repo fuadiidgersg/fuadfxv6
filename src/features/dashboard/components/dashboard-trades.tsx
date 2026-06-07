@@ -12,7 +12,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { Download, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -28,6 +30,7 @@ import {
 import { tasksColumns } from '@/features/tasks/components/tasks-columns'
 import { TasksDialogs } from '@/features/tasks/components/tasks-dialogs'
 import { TasksProvider } from '@/features/tasks/components/tasks-provider'
+import { useTasks } from '@/features/tasks/components/tasks-provider'
 import {
   directions,
   pairs,
@@ -38,6 +41,7 @@ import { useTrades } from '@/stores/trades-store'
 
 function TradesTableInner() {
   const trades = useTrades()
+  const { setOpen } = useTasks()
   const [rowSelection, setRowSelection] = useState({})
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'closedAt', desc: true },
@@ -154,16 +158,41 @@ function TradesTableInner() {
               <TableRow>
                 <TableCell
                   colSpan={visibleColumns.length}
-                  className='h-24 text-center'
+                  className='h-40 text-center'
                 >
-                  No trades match your filters.
+                  {trades.length === 0 ? (
+                    <div className='flex flex-col items-center gap-3 py-6'>
+                      <div>
+                        <p className='font-medium'>No trades logged yet</p>
+                        <p className='text-sm text-muted-foreground'>
+                          Import an MT5 report or log your first trade manually.
+                        </p>
+                      </div>
+                      <div className='flex flex-wrap justify-center gap-2'>
+                        <Button size='sm' onClick={() => setOpen('import')}>
+                          <Download className='size-4' />
+                          Import MT5
+                        </Button>
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          onClick={() => setOpen('create')}
+                        >
+                          <Plus className='size-4' />
+                          Log trade
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    'No trades match your filters.'
+                  )}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      {trades.length > 0 && <DataTablePagination table={table} />}
     </div>
   )
 }

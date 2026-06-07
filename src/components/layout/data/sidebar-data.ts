@@ -81,7 +81,7 @@ export const sidebarData: SidebarData = {
           icon: BookOpen,
         },
         {
-          title: 'Journal Notes',
+          title: 'Journal',
           url: '/chats',
           icon: Notebook,
         },

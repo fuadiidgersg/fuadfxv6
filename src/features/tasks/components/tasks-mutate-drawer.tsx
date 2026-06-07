@@ -203,6 +203,10 @@ export function TasksMutateDrawer({
             onSubmit={form.handleSubmit(onSubmit)}
             className='flex-1 space-y-5 overflow-y-auto px-4'
           >
+            <FormSection
+              title='Market context'
+              description='What you traded and the setup behind it.'
+            />
             <div className='grid grid-cols-2 gap-3'>
               <FormField
                 control={form.control}
@@ -237,6 +241,11 @@ export function TasksMutateDrawer({
                 )}
               />
             </div>
+
+            <FormSection
+              title='Execution'
+              description='Entry, exit, risk and result.'
+            />
             <FormField
               control={form.control}
               name='direction'
@@ -409,6 +418,10 @@ export function TasksMutateDrawer({
               />
             </div>
 
+            <FormSection
+              title='Review'
+              description='What happened, what you felt, and what to improve.'
+            />
             <div className='grid grid-cols-2 gap-3'>
               <FormField
                 control={form.control}
@@ -589,6 +602,21 @@ export function TasksMutateDrawer({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  )
+}
+
+function FormSection({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <div className='border-t pt-4 first:border-t-0 first:pt-0'>
+      <h3 className='text-sm font-medium'>{title}</h3>
+      <p className='text-xs text-muted-foreground'>{description}</p>
+    </div>
   )
 }
 

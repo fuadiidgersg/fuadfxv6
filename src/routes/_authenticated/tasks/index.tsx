@@ -24,6 +24,7 @@ const tradesSearchSchema = z.object({
     .catch([]),
   filter: z.string().optional().catch(''),
   new: z.boolean().optional().catch(false),
+  import: z.boolean().optional().catch(false),
 })
 
 export const Route = createFileRoute('/_authenticated/tasks/')({

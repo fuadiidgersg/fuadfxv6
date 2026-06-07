@@ -41,7 +41,7 @@ export default function Onboarding() {
       displayName: user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? '',
       experience: 'beginner',
       preferredPair: '',
-      startingCapital: 0,
+      startingCapital: 10000,
     },
   })
 
@@ -73,7 +73,8 @@ export default function Onboarding() {
             Welcome to Fuadfx
           </h1>
           <p className='text-sm text-muted-foreground'>
-            Tell us a bit about yourself to get started.
+            Set your trading profile, then import your statement or log your
+            first trade.
           </p>
         </div>
 
@@ -155,7 +156,7 @@ export default function Onboarding() {
 
             <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading && <Loader2 className='animate-spin' />}
-              Get Started
+              Create profile
             </Button>
           </form>
         </Form>

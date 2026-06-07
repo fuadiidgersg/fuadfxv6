@@ -8,6 +8,18 @@ export function RecentTrades() {
   const recent = [...trades]
     .sort((a, b) => b.closedAt.getTime() - a.closedAt.getTime())
     .slice(0, 6)
+
+  if (recent.length === 0) {
+    return (
+      <div className='rounded-md border border-dashed p-6 text-center'>
+        <p className='text-sm font-medium'>No recent trades</p>
+        <p className='mt-1 text-xs text-muted-foreground'>
+          Imported or logged trades will appear here.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className='space-y-5'>
       {recent.map((t) => {

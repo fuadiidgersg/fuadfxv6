@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
+import { Download, Plus } from 'lucide-react'
 import {
   type SortingState,
   type VisibilityState,
@@ -14,6 +15,7 @@ import {
 } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -27,6 +29,7 @@ import { directions, pairs, statuses, strategies } from '../data/data'
 import { type Task as Trade } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { tasksColumns as columns } from './tasks-columns'
+import { useTasks } from './tasks-provider'
 
 const route = getRouteApi('/_authenticated/tasks/')
 
@@ -35,6 +38,7 @@ type DataTableProps = {
 }
 
 export function TasksTable({ data }: DataTableProps) {
+  const { setOpen } = useTasks()
   const [rowSelection, setRowSelection] = useState({})
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'closedAt', desc: true },
@@ -171,16 +175,43 @@ export function TasksTable({ data }: DataTableProps) {
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className='h-24 text-center'
+                  className='h-40 text-center'
                 >
-                  No trades match your filters.
+                  {data.length === 0 ? (
+                    <div className='flex flex-col items-center gap-3 py-6'>
+                      <div>
+                        <p className='font-medium'>No trades logged yet</p>
+                        <p className='text-sm text-muted-foreground'>
+                          Import an MT5 report or log your first trade manually.
+                        </p>
+                      </div>
+                      <div className='flex flex-wrap justify-center gap-2'>
+                        <Button size='sm' onClick={() => setOpen('import')}>
+                          <Download className='size-4' />
+                          Import MT5
+                        </Button>
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          onClick={() => setOpen('create')}
+                        >
+                          <Plus className='size-4' />
+                          Log trade
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    'No trades match your filters.'
+                  )}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} className='mt-auto' />
+      {data.length > 0 && (
+        <DataTablePagination table={table} className='mt-auto' />
+      )}
       <DataTableBulkActions table={table} />
     </div>
   )

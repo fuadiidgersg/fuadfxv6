@@ -170,7 +170,7 @@ export function Chats() {
               <div className='flex items-center justify-between py-2'>
                 <div className='flex items-center gap-2'>
                   <BookOpen size={20} className='text-muted-foreground' />
-                  <h1 className='text-2xl font-bold'>Journal Notes</h1>
+                  <h1 className='text-2xl font-bold'>Journal</h1>
                 </div>
                 <Button
                   size='icon'

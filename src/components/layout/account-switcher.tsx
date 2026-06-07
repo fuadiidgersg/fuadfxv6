@@ -103,7 +103,7 @@ export function AccountSwitcher() {
               </DropdownMenuLabel>
               {visible.length === 0 && (
                 <div className='px-2 py-3 text-xs text-muted-foreground'>
-                  No accounts yet. Create one to start journaling.
+                  No accounts yet. Import an MT5 report or create one manually.
                 </div>
               )}
               {visible.map((a) => {
