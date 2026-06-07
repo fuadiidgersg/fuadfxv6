@@ -51,6 +51,16 @@ describe('trade stats calculations', () => {
     expect(stats.profitFactor).toBe(2)
     expect(stats.bestTrade).toBe(100)
     expect(stats.worstTrade).toBe(-75)
+    expect(stats.totalPips).toBe(7.5)
+    expect(stats.totalPipsWon).toBe(15)
+    expect(stats.totalPipsLost).toBe(7.5)
+    expect(stats.avgWinPips).toBe(7.5)
+    expect(stats.avgLossPips).toBe(-7.5)
+    expect(stats.bestTradePips).toBe(10)
+    expect(stats.worstTradePips).toBe(-7.5)
+    expect(stats.longs).toBe(4)
+    expect(stats.longsWon).toBe(2)
+    expect(stats.totalLots).toBe(4)
   })
 
   it('does not count breakeven trades as losses in pair breakdowns', () => {

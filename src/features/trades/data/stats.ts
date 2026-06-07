@@ -17,7 +17,18 @@ export type TradeStats = {
   worstTrade: number
   avgR: number
   totalPips: number
+  totalPipsWon: number
+  totalPipsLost: number
   avgPips: number
+  avgWinPips: number
+  avgLossPips: number
+  bestTradePips: number
+  worstTradePips: number
+  longs: number
+  longsWon: number
+  shorts: number
+  shortsWon: number
+  totalLots: number
   largestWinStreak: number
   largestLossStreak: number
 }
@@ -52,10 +63,23 @@ export function computeStats(trades: Trade[]): TradeStats {
       ? 0
       : (winRate / 100) * avgWin - (1 - winRate / 100) * avgLoss
   const totalPips = closed.reduce((s, t) => s + t.pips, 0)
+  const pipsWon = closed.filter((t) => t.pips > 0)
+  const pipsLost = closed.filter((t) => t.pips < 0)
+  const totalPipsWon = pipsWon.reduce((s, t) => s + t.pips, 0)
+  const totalPipsLost = Math.abs(pipsLost.reduce((s, t) => s + t.pips, 0))
   const avgPips = closed.length ? totalPips / closed.length : 0
+  const avgWinPips = wins.length
+    ? wins.reduce((s, t) => s + t.pips, 0) / wins.length
+    : 0
+  const avgLossPips = losses.length
+    ? losses.reduce((s, t) => s + t.pips, 0) / losses.length
+    : 0
   const avgR = closed.length
     ? closed.reduce((s, t) => s + t.rMultiple, 0) / closed.length
     : 0
+  const longs = closed.filter((t) => t.direction === 'long')
+  const shorts = closed.filter((t) => t.direction === 'short')
+  const totalLots = closed.reduce((s, t) => s + t.lotSize, 0)
 
   let curWinStreak = 0,
     curLossStreak = 0,
@@ -96,7 +120,18 @@ export function computeStats(trades: Trade[]): TradeStats {
     worstTrade: closed.length ? Math.min(...closed.map((t) => t.pnl)) : 0,
     avgR,
     totalPips,
+    totalPipsWon,
+    totalPipsLost,
     avgPips,
+    avgWinPips,
+    avgLossPips,
+    bestTradePips: closed.length ? Math.max(...closed.map((t) => t.pips)) : 0,
+    worstTradePips: closed.length ? Math.min(...closed.map((t) => t.pips)) : 0,
+    longs: longs.length,
+    longsWon: longs.filter((t) => t.status === 'win').length,
+    shorts: shorts.length,
+    shortsWon: shorts.filter((t) => t.status === 'win').length,
+    totalLots,
     largestWinStreak,
     largestLossStreak,
   }

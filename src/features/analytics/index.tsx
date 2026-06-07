@@ -265,6 +265,11 @@ function formatMoney(value: number) {
   return `${value >= 0 ? '+' : '-'}$${Math.abs(value).toFixed(2)}`
 }
 
+function formatWinShare(wins: number, total: number) {
+  const pct = total > 0 ? (wins / total) * 100 : 0
+  return `(${wins}/${total}) ${pct.toFixed(0)}%`
+}
+
 function coachToneClass(tone: 'good' | 'warn' | 'bad' | 'neutral') {
   if (tone === 'good') return 'border-emerald-500/30 bg-emerald-500/5'
   if (tone === 'warn') return 'border-amber-500/30 bg-amber-500/5'
@@ -2145,32 +2150,81 @@ export function Analytics() {
                     <CardContent className='space-y-4 pt-4'>
                       <RiskRow
                         label='Average Win'
-                        value={`+$${stats.avgWin.toFixed(2)}`}
+                        value={`${stats.avgWinPips >= 0 ? '+' : ''}${stats.avgWinPips.toFixed(1)} pips / +$${stats.avgWin.toFixed(2)}`}
                         icon={TrendingUp}
                         positive
                       />
                       <RiskRow
                         label='Average Loss'
-                        value={`-$${stats.avgLoss.toFixed(2)}`}
+                        value={`${stats.avgLossPips >= 0 ? '+' : ''}${stats.avgLossPips.toFixed(1)} pips / -$${stats.avgLoss.toFixed(2)}`}
                         icon={TrendingDown}
                         positive={false}
                       />
                       <RiskRow
                         label='Expectancy / Trade'
-                        value={`$${stats.expectancy.toFixed(2)}`}
+                        value={`${advanced.expectancyPips >= 0 ? '+' : ''}${advanced.expectancyPips.toFixed(1)} pips / $${stats.expectancy.toFixed(2)}`}
                         icon={Target}
                         positive={stats.expectancy >= 0}
+                      />
+                      <RiskRow
+                        label='Pips Won'
+                        value={`+${stats.totalPipsWon.toFixed(1)}`}
+                        icon={TrendingUp}
+                        positive
+                      />
+                      <RiskRow
+                        label='Pips Lost'
+                        value={`-${stats.totalPipsLost.toFixed(1)}`}
+                        icon={TrendingDown}
+                        positive={false}
+                      />
+                      <RiskRow
+                        label='Net Pips'
+                        value={`${stats.totalPips.toFixed(1)}`}
+                        icon={ArrowDownRight}
+                        positive={stats.totalPips >= 0}
+                      />
+                      <RiskRow
+                        label='Best Trade (Pips)'
+                        value={`${stats.bestTradePips >= 0 ? '+' : ''}${stats.bestTradePips.toFixed(1)}`}
+                        icon={Trophy}
+                        positive={stats.bestTradePips >= 0}
+                      />
+                      <RiskRow
+                        label='Worst Trade (Pips)'
+                        value={`${stats.worstTradePips >= 0 ? '+' : ''}${stats.worstTradePips.toFixed(1)}`}
+                        icon={AlertTriangle}
+                        positive={false}
+                      />
+                      <RiskRow
+                        label='Longs Won'
+                        value={formatWinShare(stats.longsWon, stats.longs)}
+                        icon={ArrowUpRight}
+                        positive={
+                          stats.longs > 0
+                            ? stats.longsWon / stats.longs >= 0.5
+                            : undefined
+                        }
+                      />
+                      <RiskRow
+                        label='Shorts Won'
+                        value={formatWinShare(stats.shortsWon, stats.shorts)}
+                        icon={ArrowDownRight}
+                        positive={
+                          stats.shorts > 0
+                            ? stats.shortsWon / stats.shorts >= 0.5
+                            : undefined
+                        }
+                      />
+                      <RiskRow
+                        label='Lots'
+                        value={stats.totalLots.toFixed(2)}
+                        icon={CandlestickChart}
                       />
                       <RiskRow
                         label='Open Positions'
                         value={`${stats.open}`}
                         icon={ArrowUpRight}
-                      />
-                      <RiskRow
-                        label='Total Pips'
-                        value={`${stats.totalPips.toFixed(1)}`}
-                        icon={ArrowDownRight}
-                        positive={stats.totalPips >= 0}
                       />
                       <RiskRow
                         label='Best Win Streak'
