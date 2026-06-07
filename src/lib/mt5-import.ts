@@ -85,12 +85,21 @@ function sessionFromDate(d: Date): (typeof SESSIONS)[number] {
   return 'New York'
 }
 
+function pipMultiplier(pair: string): number {
+  if (/^XA[GU]\//i.test(pair)) return 10
+
+  if (/^[A-Z]{3}\/[A-Z]{3}$/.test(pair)) {
+    return /JPY/i.test(pair) ? 100 : 10000
+  }
+
+  // Indices, crypto, energies, and synthetic symbols are better represented
+  // as points than forex-style fractional pips.
+  return 1
+}
+
 function pipsBetween(pair: string, entry: number, exit: number, dir: 'long' | 'short'): number {
   const diff = dir === 'long' ? exit - entry : entry - exit
-  const isJpy = /JPY/i.test(pair)
-  const isMetal = /^XA[GU]/.test(pair)
-  const factor = isJpy ? 100 : isMetal ? 10 : 10000
-  return Math.round(diff * factor * 10) / 10
+  return Math.round(diff * pipMultiplier(pair) * 10) / 10
 }
 
 type Section =
@@ -267,5 +276,5 @@ export function parseMT5Html(html: string): MT5ParseResult {
 
   const skipped = Math.max(0, totalRows - trades.length)
 
-  return { trades, totalRows: trades.length, skipped, account, broker }
+  return { trades, totalRows, skipped, account, broker }
 }
