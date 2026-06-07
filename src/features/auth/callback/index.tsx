@@ -14,6 +14,16 @@ export function AuthCallback() {
 
     async function handleCallback() {
       try {
+        const code = new URLSearchParams(window.location.search).get('code')
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) {
+            navigate({ to: '/sign-in', replace: true })
+            return
+          }
+        }
+
         const { data, error } = await supabase.auth.getSession()
 
         if (error || !data.session) {
