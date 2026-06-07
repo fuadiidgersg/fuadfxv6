@@ -17,7 +17,7 @@ export function SignIn() {
     <AuthLayout>
       <Card className='max-w-sm gap-4'>
         <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>Sign in to Fuadfx</CardTitle>
+          <CardTitle className='text-lg tracking-tight'>Sign in to FUADFX</CardTitle>
           <CardDescription>
             Review your trades, accounts and analytics. Don't have an
             account?{' '}

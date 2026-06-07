@@ -56,7 +56,7 @@ export default function Onboarding() {
         startingCapital: data.startingCapital,
       })
       completeOnboarding()
-      toast.success('Welcome to Fuadfx! Your profile is set up.')
+      toast.success('Welcome to FUADFX! Your profile is set up.')
       navigate({ to: '/dashboard' })
     } catch (err: any) {
       toast.error(err?.message ?? 'Something went wrong. Please try again.')
@@ -70,7 +70,7 @@ export default function Onboarding() {
       <div className='mx-auto w-full max-w-md space-y-6 py-8'>
         <div className='space-y-1 text-center'>
           <h1 className='text-2xl font-semibold tracking-tight'>
-            Welcome to Fuadfx
+            Welcome to FUADFX
           </h1>
           <p className='text-sm text-muted-foreground'>
             Set your trading profile, then import your statement or log your

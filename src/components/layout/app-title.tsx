@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Menu, X } from 'lucide-react'
+import { BrandLogoHorizontal } from '@/assets/logo'
 import { cn } from '@/lib/utils'
 import {
   SidebarMenu,
@@ -21,12 +22,11 @@ export function AppTitle() {
         >
           <div>
             <Link
-              to='/'
+              to='/dashboard'
               onClick={() => setOpenMobile(false)}
-              className='grid flex-1 text-start text-sm leading-tight'
+              className='flex flex-1 items-center text-black dark:text-white'
             >
-              <span className='truncate font-bold'>Fuadfx</span>
-              <span className='truncate text-xs'>Forex Trading Journal</span>
+              <BrandLogoHorizontal className='h-6 w-[108px]' />
             </Link>
             <ToggleSidebar />
           </div>

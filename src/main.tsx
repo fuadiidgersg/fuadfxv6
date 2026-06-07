@@ -161,7 +161,7 @@ async function bootstrap() {
   try {
     await useAuthStore.getState().auth.initialize()
   } catch (err) {
-    console.error('[Fuadfx] Auth initialization failed:', err) // eslint-disable-line no-console
+    console.error('[FUADFX] Auth initialization failed:', err) // eslint-disable-line no-console
   }
 
   const root = ReactDOM.createRoot(rootElement)

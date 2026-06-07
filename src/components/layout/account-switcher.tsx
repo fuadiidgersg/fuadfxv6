@@ -9,6 +9,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { BrandIcon } from '@/assets/logo'
 import { useAccountsStore, type AccountCurrency, type AccountType } from '@/stores/accounts-store'
 import { useAccountsQuery, useCreateAccount } from '@/hooks/use-accounts-query'
 import { Button } from '@/components/ui/button'
@@ -76,8 +77,8 @@ export function AccountSwitcher() {
                 size='lg'
                 className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
-                <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
-                  <TypeIcon type={active?.type} className='size-4' />
+                <div className='flex aspect-square size-8 items-center justify-center text-black dark:text-white'>
+                  <BrandIcon className='size-6' />
                 </div>
                 <div className='grid flex-1 text-start text-sm leading-tight'>
                   <span className='truncate font-semibold'>

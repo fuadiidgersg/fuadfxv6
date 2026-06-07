@@ -20,13 +20,13 @@ import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
   user: {
-    name: 'trader',
+    name: 'Trader',
     email: 'trader@journal.app',
     avatar: '/avatars/shadcn.jpg',
   },
   teams: [
     {
-      name: 'Fuadfx',
+      name: 'FUADFX',
       logo: TrendingUp,
       plan: 'Pro Trader',
     },

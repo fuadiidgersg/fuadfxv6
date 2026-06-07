@@ -16,7 +16,11 @@ import {
   Target,
   UploadCloud,
 } from 'lucide-react'
-import { Logo } from '@/assets/logo'
+import {
+  BrandIcon,
+  BrandLogoHorizontal,
+  BrandLogoStacked,
+} from '@/assets/logo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -69,7 +73,7 @@ const launchFeatures = [
   'Economic news workspace',
   'Daily and weekly journal templates',
   'Screenshot notes for chart context',
-  'Light and dark mode shadcn interface',
+  'Monochrome light and dark interface',
 ]
 
 function LandingPage() {
@@ -78,8 +82,7 @@ function LandingPage() {
       <header className='sticky top-0 z-40 border-b bg-background/90 backdrop-blur'>
         <div className='mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8'>
           <Link to='/' className='flex items-center gap-2 font-semibold'>
-            <Logo className='size-8' />
-            <span>Fuadfx</span>
+            <BrandLogoHorizontal className='h-7 w-[126px]' />
           </Link>
           <nav className='hidden items-center gap-6 text-sm text-muted-foreground md:flex'>
             <a href='#features' className='hover:text-foreground'>
@@ -113,11 +116,12 @@ function LandingPage() {
               <Sparkles className='size-3.5' />
               Forex journal for disciplined traders
             </Badge>
+            <BrandLogoStacked className='mb-6 hidden h-24 w-[146px] sm:block' />
             <h1 className='max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl'>
               Turn every forex trade into a cleaner decision next time.
             </h1>
             <p className='mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg'>
-              Fuadfx combines MT5 imports, Myfxbook-style performance metrics,
+              FUADFX combines MT5 imports, Myfxbook-style performance metrics,
               pips analysis, portfolio tracking and structured review so your
               trading journal becomes a process, not a spreadsheet.
             </p>
@@ -273,8 +277,8 @@ function LandingPage() {
 
           <footer className='mt-8 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between'>
             <div className='flex items-center gap-2'>
-              <Logo className='size-6' />
-              <span>Fuadfx trading journal</span>
+              <BrandLogoHorizontal className='h-6 w-[108px]' />
+              <span>Trading journal</span>
             </div>
             <div className='flex items-center gap-4'>
               <CalendarDays className='size-4' />
@@ -292,12 +296,12 @@ function ProductPreview() {
   return (
     <div
       className='relative min-h-[360px] overflow-hidden rounded-lg border bg-card p-4 shadow-sm'
-      aria-label='Fuadfx product preview'
+      aria-label='FUADFX product preview'
     >
       <div className='flex items-center justify-between border-b pb-3 text-sm'>
         <div className='flex items-center gap-2 font-semibold'>
-          <Logo className='size-7' />
-          Fuadfx Journal
+              <BrandIcon className='size-6' />
+              FUADFX Journal
         </div>
         <Badge variant='secondary'>Live account review</Badge>
       </div>
