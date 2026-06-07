@@ -11,7 +11,7 @@ export const Route = createFileRoute('/onboarding')({
     }
     const { onboardingComplete } = useProfileStore.getState()
     if (onboardingComplete) {
-      throw redirect({ to: '/' })
+      throw redirect({ to: '/dashboard' })
     }
   },
   component: Onboarding,

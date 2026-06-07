@@ -57,7 +57,7 @@ export default function Onboarding() {
       })
       completeOnboarding()
       toast.success('Welcome to Fuadfx! Your profile is set up.')
-      navigate({ to: '/' })
+      navigate({ to: '/dashboard' })
     } catch (err: any) {
       toast.error(err?.message ?? 'Something went wrong. Please try again.')
     } finally {

@@ -35,7 +35,7 @@ export function AuthCallback() {
         if (!onboardingComplete) {
           navigate({ to: '/onboarding', replace: true })
         } else {
-          navigate({ to: '/', replace: true })
+          navigate({ to: '/dashboard', replace: true })
         }
       } catch {
         navigate({ to: '/sign-in', replace: true })
@@ -49,7 +49,7 @@ export function AuthCallback() {
     <div className='flex min-h-screen items-center justify-center'>
       <div className='flex flex-col items-center gap-3'>
         <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
-        <p className='text-sm text-muted-foreground'>Signing you in…</p>
+        <p className='text-sm text-muted-foreground'>Signing you in...</p>
       </div>
     </div>
   )

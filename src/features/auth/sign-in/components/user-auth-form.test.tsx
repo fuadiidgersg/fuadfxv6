@@ -10,16 +10,14 @@ const FORM_MESSAGES = {
 } as const
 
 const navigate = vi.fn()
-const setUserMock = vi.fn()
-const setAccessTokenMock = vi.fn()
+const mocks = vi.hoisted(() => ({
+  signIn: vi.fn(),
+  signInWithGoogle: vi.fn(),
+}))
 
-vi.mock('@/stores/auth-store', () => ({
-  useAuthStore: () => ({
-    auth: {
-      setUser: setUserMock,
-      setAccessToken: setAccessTokenMock,
-    },
-  }),
+vi.mock('@/lib/supabase/auth', () => ({
+  signIn: mocks.signIn,
+  signInWithGoogle: mocks.signInWithGoogle,
 }))
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -90,20 +88,14 @@ describe('UserAuthForm', () => {
 
       await userEvent.click(signInButton)
 
-      await vi.waitFor(() => expect(setUserMock).toHaveBeenCalledOnce())
-      expect(setUserMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          email: 'a@b.com',
-          accountNo: expect.any(String),
-          role: expect.any(Array),
-          exp: expect.any(Number),
-        })
-      )
-      expect(setAccessTokenMock).toHaveBeenCalledOnce()
-      expect(setAccessTokenMock).toHaveBeenCalledWith('mock-access-token')
+      await vi.waitFor(() => expect(mocks.signIn).toHaveBeenCalledOnce())
+      expect(mocks.signIn).toHaveBeenCalledWith('a@b.com', '1234567')
 
       await vi.waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith({ to: '/', replace: true })
+        expect(navigate).toHaveBeenCalledWith({
+          to: '/dashboard',
+          replace: true,
+        })
       )
     })
   })
@@ -120,8 +112,8 @@ describe('UserAuthForm', () => {
 
     await userEvent.click(getByRole('button', { name: /Sign in/i }))
 
-    await vi.waitFor(() => expect(setUserMock).toHaveBeenCalledOnce())
-    expect(setAccessTokenMock).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(mocks.signIn).toHaveBeenCalledOnce())
+    expect(mocks.signIn).toHaveBeenCalledWith('a@b.com', '1234567')
 
     await vi.waitFor(() =>
       expect(navigate).toHaveBeenCalledWith({
