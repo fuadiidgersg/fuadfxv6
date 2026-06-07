@@ -6,6 +6,17 @@ const router = Router()
 router.use(requireAuth)
 
 function fromRow(row: any) {
+  const pnl = parseFloat(row.profit) || 0
+  const outcome =
+    row.trade_outcome ||
+    (row.status === 'open'
+      ? 'open'
+      : pnl > 0
+        ? 'win'
+        : pnl < 0
+          ? 'loss'
+          : 'breakeven')
+
   return {
     id: row.id as string,
     pair: (row.symbol ?? '') as string,
@@ -15,13 +26,13 @@ function fromRow(row: any) {
     stopLoss: row.stop_loss != null ? parseFloat(row.stop_loss) : undefined,
     takeProfit: row.take_profit != null ? parseFloat(row.take_profit) : undefined,
     lotSize: parseFloat(row.lots) || 0,
-    pnl: parseFloat(row.profit) || 0,
+    pnl,
     pips: row.pips != null ? parseFloat(row.pips) : 0,
     rMultiple: row.r_multiple != null ? parseFloat(row.r_multiple) : 0,
     riskAmount: row.risk_amount != null ? parseFloat(row.risk_amount) : undefined,
     strategy: (row.strategy || 'Smart Money') as string,
     session: (row.session || 'London') as string,
-    status: (row.trade_outcome || (row.status === 'open' ? 'open' : 'loss')) as string,
+    status: outcome as string,
     openedAt: row.open_time ? new Date(row.open_time).toISOString() : new Date().toISOString(),
     closedAt: (row.close_time || row.open_time)
       ? new Date(row.close_time || row.open_time).toISOString()

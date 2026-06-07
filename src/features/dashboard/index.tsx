@@ -8,6 +8,7 @@ import {
   CandlestickChart,
   Download,
 } from 'lucide-react'
+import { useTrades } from '@/stores/trades-store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,8 +27,7 @@ import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useTrades } from '@/stores/trades-store'
-import { computeStats } from '@/features/trades/data/stats'
+import { computeStats, formatProfitFactor } from '@/features/trades/data/stats'
 import { Analytics } from './components/analytics'
 import { DashboardTrades } from './components/dashboard-trades'
 import { EquityCurve } from './components/equity-curve'
@@ -53,13 +53,17 @@ export function Dashboard() {
       <Main>
         <div className='mb-2 flex items-center justify-between space-y-2'>
           <div>
-            <h1 className='text-2xl font-bold tracking-tight'>Trading Dashboard</h1>
+            <h1 className='text-2xl font-bold tracking-tight'>
+              Trading Dashboard
+            </h1>
             <p className='text-sm text-muted-foreground'>
               Track your performance, review trades, and grow your edge.
             </p>
           </div>
           <div className='flex items-center space-x-2'>
-            <Button variant='outline' disabled={!hasTrades}>Export</Button>
+            <Button variant='outline' disabled={!hasTrades}>
+              Export
+            </Button>
             <Button asChild>
               <Link to='/tasks' search={{ new: true }}>
                 <CandlestickChart className='size-4' />
@@ -87,7 +91,7 @@ export function Dashboard() {
               <KpiCard
                 title='Net P&L'
                 value={`${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-                hint={`${stats.total} trades closed`}
+                hint={`${stats.closed} trades closed`}
                 icon={Wallet}
                 tone={stats.totalPnl >= 0 ? 'positive' : 'negative'}
               />
@@ -100,7 +104,7 @@ export function Dashboard() {
               />
               <KpiCard
                 title='Profit Factor'
-                value={stats.profitFactor.toFixed(2)}
+                value={formatProfitFactor(stats.profitFactor)}
                 hint={`Avg R: ${stats.avgR.toFixed(2)}`}
                 icon={Activity}
                 tone={stats.profitFactor >= 1 ? 'positive' : 'negative'}
@@ -109,7 +113,7 @@ export function Dashboard() {
                 title='Best / Worst'
                 value={
                   hasTrades
-                    ? `+$${stats.bestTrade.toFixed(0)} / $${stats.worstTrade.toFixed(0)}`
+                    ? `${stats.bestTrade >= 0 ? '+' : ''}$${stats.bestTrade.toFixed(0)} / ${stats.worstTrade >= 0 ? '+' : ''}$${stats.worstTrade.toFixed(0)}`
                     : '$0 / $0'
                 }
                 hint={`Streak ${stats.largestWinStreak}W · ${stats.largestLossStreak}L`}
@@ -123,7 +127,7 @@ export function Dashboard() {
                 <CardHeader>
                   <CardTitle>Equity Curve</CardTitle>
                   <CardDescription>
-                    Cumulative balance from a $10,000 baseline.
+                    Cumulative balance from the active account starting balance.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className='ps-2'>
@@ -173,7 +177,9 @@ function EmptyTradingState() {
         <div className='mb-2 flex size-12 items-center justify-center rounded-full bg-muted'>
           <CandlestickChart className='size-5' />
         </div>
-        <CardTitle className='text-base'>Start with your trade history</CardTitle>
+        <CardTitle className='text-base'>
+          Start with your trade history
+        </CardTitle>
         <CardDescription className='max-w-xl'>
           Import an MT5 detailed report to fill your dashboard instantly, or log
           a single trade if you want to test the workflow first.

@@ -21,11 +21,24 @@ router.get('/summary', async (req: AuthRequest, res) => {
     const losses = closedTrades.filter((t) => t.profit < 0)
     const netProfit = closedTrades.reduce((sum, t) => sum + (t.profit ?? 0), 0)
     const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0
-    const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.profit, 0) / wins.length : 0
-    const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.profit, 0) / losses.length) : 0
-    const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0
+    const grossProfit = wins.reduce((s, t) => s + t.profit, 0)
+    const grossLoss = Math.abs(losses.reduce((s, t) => s + t.profit, 0))
+    const avgWin = wins.length > 0 ? grossProfit / wins.length : 0
+    const avgLoss = losses.length > 0 ? grossLoss / losses.length : 0
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? null : 0
 
-    res.json({ totalTrades, netProfit, winRate, profitFactor, wins: wins.length, losses: losses.length, avgWin, avgLoss })
+    res.json({
+      totalTrades,
+      netProfit,
+      winRate,
+      profitFactor,
+      wins: wins.length,
+      losses: losses.length,
+      avgWin,
+      avgLoss,
+      grossProfit,
+      grossLoss,
+    })
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' })
   }

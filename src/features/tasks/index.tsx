@@ -1,20 +1,15 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Route as TasksRoute } from '@/routes/_authenticated/tasks/index'
+import { useTrades } from '@/stores/trades-store'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfigDrawer } from '@/components/config-drawer'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { computeStats } from '@/features/trades/data/stats'
-import { useTrades } from '@/stores/trades-store'
+import { computeStats, formatProfitFactor } from '@/features/trades/data/stats'
 import { TasksDialogs } from './components/tasks-dialogs'
 import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
 import { TasksProvider, useTasks } from './components/tasks-provider'
@@ -27,11 +22,19 @@ function TradeDialogIntent() {
   useEffect(() => {
     if (search.new) {
       setOpen('create')
-      navigate({ to: '/tasks', search: { ...search, new: undefined }, replace: true })
+      navigate({
+        to: '/tasks',
+        search: { ...search, new: undefined },
+        replace: true,
+      })
     }
     if (search.import) {
       setOpen('import')
-      navigate({ to: '/tasks', search: { ...search, import: undefined }, replace: true })
+      navigate({
+        to: '/tasks',
+        search: { ...search, import: undefined },
+        replace: true,
+      })
     }
   }, [search, setOpen, navigate])
   return null
@@ -68,19 +71,13 @@ export function Tasks() {
             value={`${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toFixed(2)}`}
             tone={stats.totalPnl >= 0 ? 'positive' : 'negative'}
           />
-          <MiniStat
-            label='Win Rate'
-            value={`${stats.winRate.toFixed(1)}%`}
-          />
+          <MiniStat label='Win Rate' value={`${stats.winRate.toFixed(1)}%`} />
           <MiniStat
             label='Profit Factor'
-            value={stats.profitFactor.toFixed(2)}
+            value={formatProfitFactor(stats.profitFactor)}
             tone={stats.profitFactor >= 1 ? 'positive' : 'negative'}
           />
-          <MiniStat
-            label='Total Trades'
-            value={`${stats.total}`}
-          />
+          <MiniStat label='Total Trades' value={`${stats.total}`} />
         </div>
 
         <TasksTable data={trades} />

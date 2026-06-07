@@ -1,4 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Target, Trophy } from 'lucide-react'
+import { useTrades } from '@/stores/trades-store'
 import {
   Card,
   CardContent,
@@ -6,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useTrades } from '@/stores/trades-store'
 import {
   computeStats,
   groupByPair,
@@ -39,21 +39,21 @@ export function Analytics() {
       <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <MiniCard
           title='Largest Win'
-          value={`+$${stats.bestTrade.toFixed(2)}`}
+          value={`${stats.bestTrade >= 0 ? '+' : ''}$${stats.bestTrade.toFixed(2)}`}
           hint='single trade'
           icon={Trophy}
           positive
         />
         <MiniCard
           title='Largest Loss'
-          value={`$${stats.worstTrade.toFixed(2)}`}
+          value={`${stats.worstTrade >= 0 ? '+' : ''}$${stats.worstTrade.toFixed(2)}`}
           hint='single trade'
           icon={ArrowDownRight}
         />
         <MiniCard
           title='Avg R Multiple'
           value={stats.avgR.toFixed(2)}
-          hint={`across ${stats.total} trades`}
+          hint={`across ${stats.closed} closed trades`}
           icon={Target}
           positive={stats.avgR >= 0}
         />

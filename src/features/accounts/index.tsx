@@ -19,14 +19,21 @@ import {
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useAccountsStore, type AccountType, type TradingAccount } from '@/stores/accounts-store'
+import {
+  useAccountsStore,
+  type AccountType,
+  type TradingAccount,
+} from '@/stores/accounts-store'
+import { cn } from '@/lib/utils'
 import {
   useAccountsQuery,
   useUpdateAccount,
   useDeleteAccount,
 } from '@/hooks/use-accounts-query'
-import { useAllTradesQuery, useClearTradesForAccount } from '@/hooks/use-trades-query'
-import { cn } from '@/lib/utils'
+import {
+  useAllTradesQuery,
+  useClearTradesForAccount,
+} from '@/hooks/use-trades-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -61,8 +68,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { CreateAccountDialog } from '@/components/layout/account-switcher'
 import { ConfigDrawer } from '@/components/config-drawer'
+import { CreateAccountDialog } from '@/components/layout/account-switcher'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -95,7 +102,9 @@ export function Accounts() {
   const [createOpen, setCreateOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<TradingAccount | null>(null)
   const [renameValue, setRenameValue] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState<TradingAccount | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<TradingAccount | null>(
+    null
+  )
 
   const stats = useMemo(() => {
     const byAccount = new Map<
@@ -103,6 +112,7 @@ export function Accounts() {
       { tradeCount: number; pnl: number; lastAt: number | null }
     >()
     for (const t of allTrades) {
+      if (t.status === 'open') continue
       if (!t.accountId) continue
       const cur = byAccount.get(t.accountId) ?? {
         tradeCount: 0,
@@ -129,8 +139,7 @@ export function Accounts() {
   const totals = accounts.reduce(
     (acc, a) => {
       if (a.isArchived) return acc
-      const usd =
-        a.currency === 'USD' ? 1 : a.currency === 'EUR' ? 1.08 : 1.27
+      const usd = a.currency === 'USD' ? 1 : a.currency === 'EUR' ? 1.08 : 1.27
       const s = stats.get(a.id)
       const equity = a.startingBalance + (s?.pnl ?? 0)
       acc.equity += equity * usd
@@ -150,7 +159,10 @@ export function Accounts() {
   async function commitRename() {
     if (!renameTarget) return
     try {
-      await updateAccount.mutateAsync({ id: renameTarget.id, name: renameValue.trim() || renameTarget.name })
+      await updateAccount.mutateAsync({
+        id: renameTarget.id,
+        name: renameValue.trim() || renameTarget.name,
+      })
       toast.success('Account renamed.')
     } catch {
       toast.error('Failed to rename account.')
@@ -187,7 +199,9 @@ export function Accounts() {
     try {
       await deleteAccount.mutateAsync(confirmDelete.id)
       if (activeId === confirmDelete.id) {
-        const next = accounts.find((a) => !a.isArchived && a.id !== confirmDelete.id)
+        const next = accounts.find(
+          (a) => !a.isArchived && a.id !== confirmDelete.id
+        )
         setActive(next?.id ?? null)
       }
       toast.success(`Deleted account "${confirmDelete.name}".`)
@@ -284,10 +298,7 @@ export function Accounts() {
             onChange={(e) => setSearch(e.target.value)}
             className='h-9 w-60'
           />
-          <Select
-            value={type}
-            onValueChange={(v) => setType(v as typeof type)}
-          >
+          <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
             <SelectTrigger className='w-36'>
               <SelectValue />
             </SelectTrigger>
@@ -480,9 +491,7 @@ export function Accounts() {
                         </div>
                         <div>
                           <div className='text-muted-foreground'>Type</div>
-                          <div className='font-medium capitalize'>
-                            {a.type}
-                          </div>
+                          <div className='font-medium capitalize'>{a.type}</div>
                         </div>
                       </div>
                     </CardContent>

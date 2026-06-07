@@ -8,14 +8,21 @@ import {
   YAxis,
 } from 'recharts'
 import { useTrades } from '@/stores/trades-store'
+import { useActiveAccount } from '@/hooks/use-accounts-query'
 import { equityCurve } from '@/features/trades/data/stats'
 
 export function EquityCurve() {
   const trades = useTrades()
-  const data = equityCurve(trades).map((d) => ({
-    name: d.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-    balance: d.balance,
-  }))
+  const activeAccount = useActiveAccount()
+  const data = equityCurve(trades, activeAccount?.startingBalance ?? 10000).map(
+    (d) => ({
+      name: d.date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      }),
+      balance: d.balance,
+    })
+  )
 
   return (
     <ResponsiveContainer width='100%' height={300}>
@@ -51,11 +58,11 @@ export function EquityCurve() {
             fontSize: 12,
           }}
           formatter={(value: unknown) => {
-    if (typeof value === 'number') {
-      return [`$${value.toLocaleString()}`, 'Equity']
-    }
-    return ['$0', 'Equity']
-  }}
+            if (typeof value === 'number') {
+              return [`$${value.toLocaleString()}`, 'Equity']
+            }
+            return ['$0', 'Equity']
+          }}
         />
         <Area
           type='monotone'

@@ -2,6 +2,7 @@ import { type Trade } from './schema'
 
 export type TradeStats = {
   total: number
+  closed: number
   wins: number
   losses: number
   breakeven: number
@@ -21,6 +22,16 @@ export type TradeStats = {
   largestLossStreak: number
 }
 
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`
+}
+
+export function formatProfitFactor(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : '∞'
+}
+
 export function computeStats(trades: Trade[]): TradeStats {
   const closed = trades.filter((t) => t.status !== 'open')
   const wins = closed.filter((t) => t.status === 'win')
@@ -34,18 +45,25 @@ export function computeStats(trades: Trade[]): TradeStats {
   const avgWin = wins.length ? grossProfit / wins.length : 0
   const avgLoss = losses.length ? grossLoss / losses.length : 0
   const winRate = closed.length ? (wins.length / closed.length) * 100 : 0
-  const profitFactor = grossLoss === 0 ? grossProfit : grossProfit / grossLoss
+  const profitFactor =
+    grossLoss === 0 ? (grossProfit > 0 ? Infinity : 0) : grossProfit / grossLoss
   const expectancy =
-    closed.length === 0 ? 0 : (winRate / 100) * avgWin - (1 - winRate / 100) * avgLoss
+    closed.length === 0
+      ? 0
+      : (winRate / 100) * avgWin - (1 - winRate / 100) * avgLoss
   const totalPips = closed.reduce((s, t) => s + t.pips, 0)
   const avgPips = closed.length ? totalPips / closed.length : 0
-  const avgR = closed.length ? closed.reduce((s, t) => s + t.rMultiple, 0) / closed.length : 0
+  const avgR = closed.length
+    ? closed.reduce((s, t) => s + t.rMultiple, 0) / closed.length
+    : 0
 
   let curWinStreak = 0,
     curLossStreak = 0,
     largestWinStreak = 0,
     largestLossStreak = 0
-  const ordered = [...closed].sort((a, b) => a.closedAt.getTime() - b.closedAt.getTime())
+  const ordered = [...closed].sort(
+    (a, b) => a.closedAt.getTime() - b.closedAt.getTime()
+  )
   for (const t of ordered) {
     if (t.status === 'win') {
       curWinStreak += 1
@@ -63,6 +81,7 @@ export function computeStats(trades: Trade[]): TradeStats {
 
   return {
     total: trades.length,
+    closed: closed.length,
     wins: wins.length,
     losses: losses.length,
     breakeven: breakeven.length,
@@ -73,8 +92,8 @@ export function computeStats(trades: Trade[]): TradeStats {
     avgLoss,
     profitFactor,
     expectancy,
-    bestTrade: closed.reduce((m, t) => Math.max(m, t.pnl), -Infinity) || 0,
-    worstTrade: closed.reduce((m, t) => Math.min(m, t.pnl), Infinity) || 0,
+    bestTrade: closed.length ? Math.max(...closed.map((t) => t.pnl)) : 0,
+    worstTrade: closed.length ? Math.min(...closed.map((t) => t.pnl)) : 0,
     avgR,
     totalPips,
     avgPips,
@@ -100,7 +119,10 @@ export function equityCurve(trades: Trade[], startingBalance = 10000) {
 }
 
 export function groupByPair(trades: Trade[]) {
-  const map = new Map<string, { pair: string; pnl: number; trades: number; wins: number }>()
+  const map = new Map<
+    string,
+    { pair: string; pnl: number; trades: number; wins: number }
+  >()
   for (const t of trades) {
     if (t.status === 'open') continue
     const cur = map.get(t.pair) ?? { pair: t.pair, pnl: 0, trades: 0, wins: 0 }
@@ -110,7 +132,11 @@ export function groupByPair(trades: Trade[]) {
     map.set(t.pair, cur)
   }
   return Array.from(map.values())
-    .map((g) => ({ ...g, pnl: parseFloat(g.pnl.toFixed(2)), winRate: (g.wins / g.trades) * 100 }))
+    .map((g) => ({
+      ...g,
+      pnl: parseFloat(g.pnl.toFixed(2)),
+      winRate: (g.wins / g.trades) * 100,
+    }))
     .sort((a, b) => b.pnl - a.pnl)
 }
 
@@ -123,6 +149,7 @@ export function groupByPairDetailed(trades: Trade[]) {
       pips: number
       trades: number
       wins: number
+      losses: number
       totalLotSize: number
       totalHoldMin: number
     }
@@ -135,6 +162,7 @@ export function groupByPairDetailed(trades: Trade[]) {
       pips: 0,
       trades: 0,
       wins: 0,
+      losses: 0,
       totalLotSize: 0,
       totalHoldMin: 0,
     }
@@ -142,8 +170,12 @@ export function groupByPairDetailed(trades: Trade[]) {
     cur.pips += t.pips
     cur.trades += 1
     if (t.status === 'win') cur.wins += 1
+    if (t.status === 'loss') cur.losses += 1
     cur.totalLotSize += t.lotSize
-    cur.totalHoldMin += Math.max(0, (t.closedAt.getTime() - t.openedAt.getTime()) / 60000)
+    cur.totalHoldMin += Math.max(
+      0,
+      (t.closedAt.getTime() - t.openedAt.getTime()) / 60000
+    )
     map.set(t.pair, cur)
   }
   return Array.from(map.values())
@@ -151,7 +183,7 @@ export function groupByPairDetailed(trades: Trade[]) {
       pair: g.pair,
       trades: g.trades,
       wins: g.wins,
-      losses: g.trades - g.wins,
+      losses: g.losses,
       pnl: parseFloat(g.pnl.toFixed(2)),
       pips: parseFloat(g.pips.toFixed(1)),
       avgPips: parseFloat((g.pips / g.trades).toFixed(1)),
@@ -163,25 +195,46 @@ export function groupByPairDetailed(trades: Trade[]) {
 }
 
 export function groupByStrategy(trades: Trade[]) {
-  const map = new Map<string, { strategy: string; pnl: number; trades: number; wins: number }>()
+  const map = new Map<
+    string,
+    { strategy: string; pnl: number; trades: number; wins: number }
+  >()
   for (const t of trades) {
     if (t.status === 'open') continue
-    const cur = map.get(t.strategy) ?? { strategy: t.strategy, pnl: 0, trades: 0, wins: 0 }
+    const cur = map.get(t.strategy) ?? {
+      strategy: t.strategy,
+      pnl: 0,
+      trades: 0,
+      wins: 0,
+    }
     cur.pnl += t.pnl
     cur.trades += 1
     if (t.status === 'win') cur.wins += 1
     map.set(t.strategy, cur)
   }
   return Array.from(map.values())
-    .map((g) => ({ ...g, pnl: parseFloat(g.pnl.toFixed(2)), winRate: (g.wins / g.trades) * 100 }))
+    .map((g) => ({
+      ...g,
+      pnl: parseFloat(g.pnl.toFixed(2)),
+      winRate: (g.wins / g.trades) * 100,
+    }))
     .sort((a, b) => b.pnl - a.pnl)
 }
 
 export function groupBySession(trades: Trade[]) {
-  const map = new Map<string, { session: string; pnl: number; trades: number; wins: number; pips: number }>()
+  const map = new Map<
+    string,
+    { session: string; pnl: number; trades: number; wins: number; pips: number }
+  >()
   for (const t of trades) {
     if (t.status === 'open') continue
-    const cur = map.get(t.session) ?? { session: t.session, pnl: 0, trades: 0, wins: 0, pips: 0 }
+    const cur = map.get(t.session) ?? {
+      session: t.session,
+      pnl: 0,
+      trades: 0,
+      wins: 0,
+      pips: 0,
+    }
     cur.pnl += t.pnl
     cur.trades += 1
     cur.pips += t.pips
@@ -198,7 +251,13 @@ export function groupBySession(trades: Trade[]) {
 
 export function groupByDayOfWeek(trades: Trade[]) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const buckets = days.map((d) => ({ day: d, pnl: 0, trades: 0, wins: 0, pips: 0 }))
+  const buckets = days.map((d) => ({
+    day: d,
+    pnl: 0,
+    trades: 0,
+    wins: 0,
+    pips: 0,
+  }))
   for (const t of trades) {
     if (t.status === 'open') continue
     const idx = t.closedAt.getDay()
@@ -211,7 +270,8 @@ export function groupByDayOfWeek(trades: Trade[]) {
     ...b,
     pnl: parseFloat(b.pnl.toFixed(2)),
     pips: parseFloat(b.pips.toFixed(1)),
-    winRate: b.trades > 0 ? parseFloat(((b.wins / b.trades) * 100).toFixed(1)) : 0,
+    winRate:
+      b.trades > 0 ? parseFloat(((b.wins / b.trades) * 100).toFixed(1)) : 0,
   }))
 }
 
@@ -257,16 +317,32 @@ export function groupByHour(trades: Trade[]) {
     ...b,
     pnl: parseFloat(b.pnl.toFixed(2)),
     pips: parseFloat(b.pips.toFixed(1)),
-    winRate: b.trades > 0 ? parseFloat(((b.wins / b.trades) * 100).toFixed(1)) : 0,
+    winRate:
+      b.trades > 0 ? parseFloat(((b.wins / b.trades) * 100).toFixed(1)) : 0,
   }))
 }
 
 export function groupByTimeframe(trades: Trade[]) {
-  const map = new Map<string, { timeframe: string; pnl: number; trades: number; wins: number; pips: number }>()
+  const map = new Map<
+    string,
+    {
+      timeframe: string
+      pnl: number
+      trades: number
+      wins: number
+      pips: number
+    }
+  >()
   for (const t of trades) {
     if (t.status === 'open') continue
     const key = t.timeframe ?? 'Unknown'
-    const cur = map.get(key) ?? { timeframe: key, pnl: 0, trades: 0, wins: 0, pips: 0 }
+    const cur = map.get(key) ?? {
+      timeframe: key,
+      pnl: 0,
+      trades: 0,
+      wins: 0,
+      pips: 0,
+    }
     cur.pnl += t.pnl
     cur.trades += 1
     cur.pips += t.pips
@@ -284,7 +360,10 @@ export function groupByTimeframe(trades: Trade[]) {
 }
 
 export function groupByEmotion(trades: Trade[]) {
-  const map = new Map<string, { emotion: string; pnl: number; trades: number; wins: number }>()
+  const map = new Map<
+    string,
+    { emotion: string; pnl: number; trades: number; wins: number }
+  >()
   for (const t of trades) {
     if (t.status === 'open') continue
     const key = t.emotion ?? 'Untagged'
@@ -333,7 +412,10 @@ export function holdTimeDistribution(trades: Trade[]) {
   ]
   for (const t of trades) {
     if (t.status === 'open') continue
-    const mins = Math.max(0, (t.closedAt.getTime() - t.openedAt.getTime()) / 60000)
+    const mins = Math.max(
+      0,
+      (t.closedAt.getTime() - t.openedAt.getTime()) / 60000
+    )
     const b = buckets.find((b) => mins < b.maxMin)
     if (b) b.count += 1
   }
@@ -450,7 +532,7 @@ export function dailyPnl(trades: Trade[]) {
   const map = new Map<string, { date: string; pnl: number; trades: number }>()
   for (const t of trades) {
     if (t.status === 'open') continue
-    const key = t.closedAt.toISOString().slice(0, 10)
+    const key = dateKey(t.closedAt)
     const cur = map.get(key) ?? { date: key, pnl: 0, trades: 0 }
     cur.pnl += t.pnl
     cur.trades += 1
@@ -481,7 +563,10 @@ export type AdvancedStats = {
   annualizedReturn: number
 }
 
-export function computeAdvancedStats(trades: Trade[], startingBalance = 10000): AdvancedStats {
+export function computeAdvancedStats(
+  trades: Trade[],
+  startingBalance = 10000
+): AdvancedStats {
   const closed = [...trades]
     .filter((t) => t.status !== 'open')
     .sort((a, b) => a.closedAt.getTime() - b.closedAt.getTime())
@@ -499,14 +584,16 @@ export function computeAdvancedStats(trades: Trade[], startingBalance = 10000): 
 
   const dailyMap = new Map<string, number>()
   for (const t of closed) {
-    const key = t.closedAt.toISOString().slice(0, 10)
+    const key = dateKey(t.closedAt)
     dailyMap.set(key, (dailyMap.get(key) ?? 0) + t.pnl)
   }
   const dailyReturns = Array.from(dailyMap.values())
   const n = dailyReturns.length
   const meanReturn = n ? dailyReturns.reduce((s, x) => s + x, 0) / n : 0
   const variance =
-    n > 1 ? dailyReturns.reduce((s, x) => s + (x - meanReturn) ** 2, 0) / (n - 1) : 0
+    n > 1
+      ? dailyReturns.reduce((s, x) => s + (x - meanReturn) ** 2, 0) / (n - 1)
+      : 0
   const std = Math.sqrt(variance)
   const sharpeRatio = std > 0 ? (meanReturn / std) * Math.sqrt(252) : 0
 
@@ -515,12 +602,15 @@ export function computeAdvancedStats(trades: Trade[], startingBalance = 10000): 
     ? negReturns.reduce((s, x) => s + x ** 2, 0) / negReturns.length
     : 0
   const downsideStd = Math.sqrt(downsideVar)
-  const sortinoRatio = downsideStd > 0 ? (meanReturn / downsideStd) * Math.sqrt(252) : 0
+  const sortinoRatio =
+    downsideStd > 0 ? (meanReturn / downsideStd) * Math.sqrt(252) : 0
 
   const totalPnl = closed.reduce((s, t) => s + t.pnl, 0)
   const tradingDays = dailyMap.size
   const annualizedReturn =
-    tradingDays > 0 ? (totalPnl / startingBalance) * (252 / tradingDays) * 100 : 0
+    tradingDays > 0
+      ? (totalPnl / startingBalance) * (252 / tradingDays) * 100
+      : 0
 
   const dd = drawdownSeries(trades, startingBalance)
   const maxDdPct = Math.abs(dd.maxDrawdownPct)
@@ -542,22 +632,29 @@ export function computeAdvancedStats(trades: Trade[], startingBalance = 10000): 
   const expectedRuns = N > 1 ? (2 * W * L) / N + 1 : 1
   const runsVariance =
     N > 2 ? (2 * W * L * (2 * W * L - N)) / (N * N * (N - 1)) : 0
-  const zScore = runsVariance > 0 ? (runs - expectedRuns) / Math.sqrt(runsVariance) : 0
+  const zScore =
+    runsVariance > 0 ? (runs - expectedRuns) / Math.sqrt(runsVariance) : 0
 
   const profitableDays = dailyReturns.filter((p) => p > 0).length
   const losingDays = dailyReturns.filter((p) => p < 0).length
   const neutralDays = tradingDays - profitableDays - losingDays
-  const consistencyPct = tradingDays > 0 ? (profitableDays / tradingDays) * 100 : 0
+  const consistencyPct =
+    tradingDays > 0 ? (profitableDays / tradingDays) * 100 : 0
 
   let avgTradesPerWeek = 0
   if (closed.length >= 2) {
     const firstDate = closed[0].openedAt.getTime()
     const lastDate = closed[closed.length - 1].closedAt.getTime()
-    const weeks = Math.max(1, (lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000))
+    const weeks = Math.max(
+      1,
+      (lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000)
+    )
     avgTradesPerWeek = closed.length / weeks
   }
 
-  const avgPipWin = wins.length ? wins.reduce((s, t) => s + t.pips, 0) / wins.length : 0
+  const avgPipWin = wins.length
+    ? wins.reduce((s, t) => s + t.pips, 0) / wins.length
+    : 0
   const avgPipLoss = losses.length
     ? Math.abs(losses.reduce((s, t) => s + t.pips, 0) / losses.length)
     : 0
@@ -592,20 +689,35 @@ export function rollingStats(trades: Trade[], n: number) {
   const wins = last.filter((t) => t.status === 'win').length
   const pnl = last.reduce((s, t) => s + t.pnl, 0)
   const winRate = last.length ? (wins / last.length) * 100 : 0
-  const avgR = last.length ? last.reduce((s, t) => s + t.rMultiple, 0) / last.length : 0
-  return { trades: last.length, wins, winRate: parseFloat(winRate.toFixed(1)), pnl: parseFloat(pnl.toFixed(2)), avgR: parseFloat(avgR.toFixed(2)) }
+  const avgR = last.length
+    ? last.reduce((s, t) => s + t.rMultiple, 0) / last.length
+    : 0
+  return {
+    trades: last.length,
+    wins,
+    winRate: parseFloat(winRate.toFixed(1)),
+    pnl: parseFloat(pnl.toFixed(2)),
+    avgR: parseFloat(avgR.toFixed(2)),
+  }
 }
 
 export function bestWorstPeriods(trades: Trade[]) {
   const dayMap = new Map<string, number>()
   for (const t of trades) {
     if (t.status === 'open') continue
-    const key = t.closedAt.toISOString().slice(0, 10)
+    const key = dateKey(t.closedAt)
     dayMap.set(key, (dayMap.get(key) ?? 0) + t.pnl)
   }
-  const days = Array.from(dayMap.entries()).map(([date, pnl]) => ({ date, pnl: parseFloat(pnl.toFixed(2)) }))
-  const bestDay = days.length ? days.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : { date: '—', pnl: 0 }
-  const worstDay = days.length ? days.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : { date: '—', pnl: 0 }
+  const days = Array.from(dayMap.entries()).map(([date, pnl]) => ({
+    date,
+    pnl: parseFloat(pnl.toFixed(2)),
+  }))
+  const bestDay = days.length
+    ? days.reduce((a, b) => (b.pnl > a.pnl ? b : a))
+    : { date: '—', pnl: 0 }
+  const worstDay = days.length
+    ? days.reduce((a, b) => (b.pnl < a.pnl ? b : a))
+    : { date: '—', pnl: 0 }
 
   const monthMap = new Map<string, number>()
   for (const t of trades) {
@@ -613,21 +725,32 @@ export function bestWorstPeriods(trades: Trade[]) {
     const key = `${t.closedAt.getFullYear()}-${String(t.closedAt.getMonth() + 1).padStart(2, '0')}`
     monthMap.set(key, (monthMap.get(key) ?? 0) + t.pnl)
   }
-  const months = Array.from(monthMap.entries()).map(([month, pnl]) => ({ month, pnl: parseFloat(pnl.toFixed(2)) }))
-  const bestMonth = months.length ? months.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : { month: '—', pnl: 0 }
-  const worstMonth = months.length ? months.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : { month: '—', pnl: 0 }
+  const months = Array.from(monthMap.entries()).map(([month, pnl]) => ({
+    month,
+    pnl: parseFloat(pnl.toFixed(2)),
+  }))
+  const bestMonth = months.length
+    ? months.reduce((a, b) => (b.pnl > a.pnl ? b : a))
+    : { month: '—', pnl: 0 }
+  const worstMonth = months.length
+    ? months.reduce((a, b) => (b.pnl < a.pnl ? b : a))
+    : { month: '—', pnl: 0 }
 
   return { bestDay, worstDay, bestMonth, worstMonth }
 }
 
 export function calendarHeatmap(trades: Trade[], months = 3) {
   const today = new Date()
-  const startDate = new Date(today.getFullYear(), today.getMonth() - months + 1, 1)
+  const startDate = new Date(
+    today.getFullYear(),
+    today.getMonth() - months + 1,
+    1
+  )
   const dayMap = new Map<string, number>()
   for (const t of trades) {
     if (t.status === 'open') continue
     if (t.closedAt < startDate) continue
-    const key = t.closedAt.toISOString().slice(0, 10)
+    const key = dateKey(t.closedAt)
     dayMap.set(key, (dayMap.get(key) ?? 0) + t.pnl)
   }
   return Array.from(dayMap.entries())
@@ -637,11 +760,19 @@ export function calendarHeatmap(trades: Trade[], months = 3) {
 
 export function plannedVsActualRR(trades: Trade[]) {
   return trades
-    .filter((t) => t.status !== 'open' && t.stopLoss != null && t.takeProfit != null)
+    .filter(
+      (t) => t.status !== 'open' && t.stopLoss != null && t.takeProfit != null
+    )
     .map((t) => {
       const slDist = Math.abs(t.entry - (t.stopLoss ?? t.entry))
       const tpDist = Math.abs((t.takeProfit ?? t.entry) - t.entry)
       const planned = slDist > 0 ? parseFloat((tpDist / slDist).toFixed(2)) : 0
-      return { pair: t.pair, planned, actual: t.rMultiple, pnl: t.pnl, status: t.status }
+      return {
+        pair: t.pair,
+        planned,
+        actual: t.rMultiple,
+        pnl: t.pnl,
+        status: t.status,
+      }
     })
 }

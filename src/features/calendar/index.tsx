@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useTrades } from '@/stores/trades-store'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,12 +17,13 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useTrades } from '@/stores/trades-store'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function fmtKey(d: Date) {
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`
 }
 
 export function Calendar() {
@@ -34,6 +36,7 @@ export function Calendar() {
   const map = useMemo(() => {
     const m = new Map<string, { pnl: number; count: number }>()
     for (const t of trades) {
+      if (t.status === 'open') continue
       const key = fmtKey(t.closedAt)
       const cur = m.get(key) ?? { pnl: 0, count: 0 }
       cur.pnl += t.pnl
@@ -82,10 +85,11 @@ export function Calendar() {
         acc.count += v.count
         if (v.pnl > 0) acc.greenDays++
         else if (v.pnl < 0) acc.redDays++
+        acc.tradingDays++
       }
       return acc
     },
-    { pnl: 0, count: 0, greenDays: 0, redDays: 0 }
+    { pnl: 0, count: 0, greenDays: 0, redDays: 0, tradingDays: 0 }
   )
 
   const monthName = cursor.toLocaleString(undefined, {
@@ -128,10 +132,28 @@ export function Calendar() {
         </div>
 
         <div className='grid gap-3 sm:grid-cols-4'>
-          <SummaryCard label='Month P&L' value={monthStats.pnl} format='money' />
-          <SummaryCard label='Trading Days' value={monthStats.count} format='int' />
-          <SummaryCard label='Green Days' value={monthStats.greenDays} format='int' tone='positive' />
-          <SummaryCard label='Red Days' value={monthStats.redDays} format='int' tone='negative' />
+          <SummaryCard
+            label='Month P&L'
+            value={monthStats.pnl}
+            format='money'
+          />
+          <SummaryCard
+            label='Trading Days'
+            value={monthStats.tradingDays}
+            format='int'
+          />
+          <SummaryCard
+            label='Green Days'
+            value={monthStats.greenDays}
+            format='int'
+            tone='positive'
+          />
+          <SummaryCard
+            label='Red Days'
+            value={monthStats.redDays}
+            format='int'
+            tone='negative'
+          />
         </div>
 
         <Card>
@@ -161,12 +183,17 @@ export function Calendar() {
                 return (
                   <div key={w} className='contents'>
                     {weekCells.map((d, idx) => (
-                      <DayCell key={idx} date={d} entry={d ? map.get(fmtKey(d)) : undefined} />
+                      <DayCell
+                        key={idx}
+                        date={d}
+                        entry={d ? map.get(fmtKey(d)) : undefined}
+                      />
                     ))}
                     <div
                       className={cn(
                         'flex flex-col items-center justify-center rounded-md border bg-muted/40 p-2 text-center',
-                        weekly.pnl > 0 && 'border-emerald-500/30 bg-emerald-500/10',
+                        weekly.pnl > 0 &&
+                          'border-emerald-500/30 bg-emerald-500/10',
                         weekly.pnl < 0 && 'border-red-500/30 bg-red-500/10'
                       )}
                     >
@@ -175,7 +202,9 @@ export function Calendar() {
                           <span
                             className={cn(
                               'text-xs font-semibold tabular-nums',
-                              weekly.pnl >= 0 ? 'text-emerald-600' : 'text-red-600'
+                              weekly.pnl >= 0
+                                ? 'text-emerald-600'
+                                : 'text-red-600'
                             )}
                           >
                             {weekly.pnl >= 0 ? '+' : ''}$
@@ -196,7 +225,10 @@ export function Calendar() {
               })}
             </div>
             <div className='mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground'>
-              <LegendSwatch className='bg-emerald-500/80' label='Big winning day' />
+              <LegendSwatch
+                className='bg-emerald-500/80'
+                label='Big winning day'
+              />
               <LegendSwatch className='bg-emerald-500/30' label='Winning day' />
               <LegendSwatch className='bg-muted' label='No trades' />
               <LegendSwatch className='bg-red-500/30' label='Losing day' />
@@ -217,12 +249,13 @@ function DayCell({
   entry: { pnl: number; count: number } | undefined
 }) {
   if (!date)
-    return <div className='aspect-square rounded-md border border-transparent' />
+    return (
+      <div className='aspect-square rounded-md border border-transparent' />
+    )
 
   const pnl = entry?.pnl ?? 0
   const count = entry?.count ?? 0
-  const intensity =
-    Math.min(1, Math.abs(pnl) / 400) // scale by $400
+  const intensity = Math.min(1, Math.abs(pnl) / 400) // scale by $400
   const bg =
     !entry || count === 0
       ? 'bg-muted/40 border'
@@ -263,7 +296,9 @@ function DayCell({
         <div
           className={cn(
             'text-xs font-semibold tabular-nums',
-            pnl >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'
+            pnl >= 0
+              ? 'text-emerald-700 dark:text-emerald-300'
+              : 'text-red-700 dark:text-red-300'
           )}
         >
           {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(0)}
@@ -315,10 +350,18 @@ function SummaryCard({
   )
 }
 
-function LegendSwatch({ className, label }: { className: string; label: string }) {
+function LegendSwatch({
+  className,
+  label,
+}: {
+  className: string
+  label: string
+}) {
   return (
     <span className='inline-flex items-center gap-1.5'>
-      <span className={cn('inline-block size-3 rounded-sm border', className)} />
+      <span
+        className={cn('inline-block size-3 rounded-sm border', className)}
+      />
       {label}
     </span>
   )
