@@ -1,16 +1,4 @@
 import {
-  Activity,
-  BarChart3,
-  type LucideIcon,
-  Scale,
-  ShieldAlert,
-  Sigma,
-  Target,
-  TrendingDown,
-  TrendingUp,
-  Wallet,
-} from 'lucide-react'
-import {
   Bar,
   BarChart,
   CartesianGrid,
@@ -58,22 +46,29 @@ const ACCOUNT_COLORS = [
   '#8b5cf6',
 ]
 
-function groupByAccount(trades: Trade[]) {
+type AccountRow = {
+  account: string
+  pnl: number
+  trades: number
+  wins: number
+  pips: number
+  pipsWon: number
+  pipsLost: number
+  lots: number
+  winRate: number
+  avgTrade: number
+  profitFactor: number
+}
+
+function groupByAccount(trades: Trade[]): AccountRow[] {
   const map = new Map<
     string,
-    {
-      account: string
-      pnl: number
-      trades: number
-      wins: number
-      pips: number
-      pipsWon: number
-      pipsLost: number
-      lots: number
+    Omit<AccountRow, 'winRate' | 'avgTrade' | 'profitFactor'> & {
       grossProfit: number
       grossLoss: number
     }
   >()
+
   for (const t of trades) {
     if (t.status === 'open') continue
     const key = t.account || 'Default'
@@ -100,10 +95,13 @@ function groupByAccount(trades: Trade[]) {
     if (t.status === 'win') cur.wins += 1
     map.set(key, cur)
   }
+
   return Array.from(map.values())
     .map((g) => ({
-      ...g,
+      account: g.account,
       pnl: parseFloat(g.pnl.toFixed(2)),
+      trades: g.trades,
+      wins: g.wins,
       pips: parseFloat(g.pips.toFixed(1)),
       pipsWon: parseFloat(g.pipsWon.toFixed(1)),
       pipsLost: parseFloat(g.pipsLost.toFixed(1)),
@@ -142,41 +140,35 @@ function formatPct(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
 }
 
-function PortfolioMetric({
+function SummaryCell({
   label,
   value,
   detail,
-  icon: Icon,
   positive,
 }: {
   label: string
   value: string
-  detail: string
-  icon: LucideIcon
+  detail?: string
   positive?: boolean
 }) {
   return (
-    <Card>
-      <CardContent className='pt-6'>
-        <div className='flex items-center justify-between gap-3'>
-          <p className='text-sm font-medium text-muted-foreground'>{label}</p>
-          <Icon className='size-4 text-muted-foreground' />
-        </div>
-        <p
-          className={cn(
-            'mt-1 text-2xl font-bold tabular-nums',
-            positive === undefined
-              ? ''
-              : positive
-                ? 'text-emerald-600'
-                : 'text-red-500'
-          )}
-        >
-          {value}
-        </p>
-        <p className='mt-1 text-xs text-muted-foreground'>{detail}</p>
-      </CardContent>
-    </Card>
+    <td className='w-1/4 px-4 py-3 align-top'>
+      <div className='text-xs font-medium text-muted-foreground uppercase'>
+        {label}
+      </div>
+      <div
+        className={cn(
+          'mt-1 text-lg font-semibold tabular-nums',
+          positive === true && 'text-emerald-600',
+          positive === false && 'text-red-500'
+        )}
+      >
+        {value}
+      </div>
+      {detail && (
+        <div className='mt-0.5 text-xs text-muted-foreground'>{detail}</div>
+      )}
+    </td>
   )
 }
 
@@ -191,7 +183,6 @@ export function Portfolio() {
   const stats = computeStats(portfolioTrades)
   const byAccount = groupByAccount(portfolioTrades)
   const totalTrades = byAccount.reduce((s, a) => s + a.trades, 0)
-
   const startingBalance = activeAccounts.reduce(
     (sum, account) => sum + account.startingBalance,
     0
@@ -212,6 +203,8 @@ export function Portfolio() {
   const drawdownPct = maxDrawdownPct(equityPoints)
   const returnDrawdownRatio =
     drawdownPct > 0 ? growthPct / drawdownPct : growthPct > 0 ? Infinity : 0
+  const winningAccounts = byAccount.filter((a) => a.pnl > 0).length
+  const losingAccounts = byAccount.filter((a) => a.pnl < 0).length
 
   const allocationData = byAccount.map((a) => ({
     name: a.account,
@@ -219,12 +212,10 @@ export function Portfolio() {
   }))
 
   const pnlByAccount = byAccount.map((a) => ({
-    account: a.account.length > 12 ? a.account.slice(0, 12) + '…' : a.account,
+    account: a.account.length > 12 ? `${a.account.slice(0, 12)}...` : a.account,
     fullName: a.account,
     pnl: a.pnl,
   }))
-  const winningAccounts = byAccount.filter((a) => a.pnl > 0).length
-  const losingAccounts = byAccount.filter((a) => a.pnl < 0).length
 
   return (
     <>
@@ -235,7 +226,7 @@ export function Portfolio() {
         <ProfileDropdown />
       </Header>
 
-      <Main className='flex flex-1 flex-col gap-6'>
+      <Main className='flex flex-1 flex-col gap-5'>
         <div>
           <h2 className='text-2xl font-bold tracking-tight'>Portfolio</h2>
           <p className='text-muted-foreground'>
@@ -243,155 +234,95 @@ export function Portfolio() {
           </p>
         </div>
 
-        {/* Top KPIs */}
-        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-          <Card>
-            <CardContent className='pt-6'>
-              <div className='flex items-center justify-between'>
-                <p className='text-sm font-medium text-muted-foreground'>
-                  Portfolio Value
-                </p>
-                <Wallet className='size-4 text-muted-foreground' />
-              </div>
-              <p className='mt-1 text-2xl font-bold tabular-nums'>
-                ${currentEquity.toLocaleString()}
-              </p>
-              <p
-                className={cn(
-                  'mt-1 text-xs font-medium',
-                  growthPct >= 0 ? 'text-emerald-600' : 'text-red-500'
-                )}
-              >
-                {growthPct >= 0 ? '+' : ''}
-                {growthPct.toFixed(2)}% from $
-                {baseline.toLocaleString(undefined, {
-                  maximumFractionDigits: 0,
-                })}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className='pt-6'>
-              <div className='flex items-center justify-between'>
-                <p className='text-sm font-medium text-muted-foreground'>
-                  Net P&L
-                </p>
-                {stats.totalPnl >= 0 ? (
-                  <TrendingUp className='size-4 text-emerald-600' />
-                ) : (
-                  <TrendingDown className='size-4 text-red-500' />
-                )}
-              </div>
-              <p
-                className={cn(
-                  'mt-1 text-2xl font-bold tabular-nums',
-                  stats.totalPnl >= 0 ? 'text-emerald-600' : 'text-red-500'
-                )}
-              >
-                {stats.totalPnl >= 0 ? '+' : ''}${stats.totalPnl.toFixed(2)}
-              </p>
-              <p className='mt-1 text-xs text-muted-foreground'>
-                {stats.total} total trades
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className='pt-6'>
-              <p className='text-sm font-medium text-muted-foreground'>
-                Win Rate
-              </p>
-              <p
-                className={cn(
-                  'mt-1 text-2xl font-bold tabular-nums',
-                  stats.winRate >= 50 ? 'text-emerald-600' : 'text-amber-500'
-                )}
-              >
-                {stats.winRate.toFixed(1)}%
-              </p>
-              <p className='mt-1 text-xs text-muted-foreground'>
-                {stats.wins}W · {stats.losses}L · {stats.breakeven}BE
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className='pt-6'>
-              <p className='text-sm font-medium text-muted-foreground'>
-                Accounts
-              </p>
-              <p className='mt-1 text-2xl font-bold tabular-nums'>
-                {byAccount.length}
-              </p>
-              <p className='mt-1 text-xs text-muted-foreground'>
-                Active trading accounts
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className='pb-3'>
+            <CardTitle>Portfolio Summary</CardTitle>
+            <CardDescription>
+              Myfxbook-style account metrics in one compact view
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className='overflow-x-auto'>
+              <table className='w-full min-w-[760px] text-sm'>
+                <tbody>
+                  <tr className='border-b'>
+                    <SummaryCell
+                      label='Portfolio Value'
+                      value={`$${currentEquity.toLocaleString()}`}
+                    />
+                    <SummaryCell
+                      label='Growth'
+                      value={formatPct(growthPct)}
+                      positive={growthPct >= 0}
+                    />
+                    <SummaryCell
+                      label='Absolute Gain'
+                      value={formatPct(absoluteGainPct)}
+                      positive={absoluteGainPct >= 0}
+                    />
+                    <SummaryCell
+                      label='Drawdown'
+                      value={`${drawdownPct.toFixed(2)}%`}
+                      positive={drawdownPct <= 10}
+                    />
+                  </tr>
+                  <tr className='border-b'>
+                    <SummaryCell
+                      label='Net P&L'
+                      value={formatMoney(stats.totalPnl)}
+                      positive={stats.totalPnl >= 0}
+                    />
+                    <SummaryCell
+                      label='Win Rate'
+                      value={`${stats.winRate.toFixed(1)}%`}
+                      detail={`${stats.wins}W / ${stats.losses}L / ${stats.breakeven}BE`}
+                      positive={stats.winRate >= 50}
+                    />
+                    <SummaryCell
+                      label='Profit Factor'
+                      value={formatProfitFactor(stats.profitFactor)}
+                      positive={stats.profitFactor >= 1}
+                    />
+                    <SummaryCell
+                      label='Expectancy'
+                      value={formatMoney(stats.expectancy)}
+                      positive={stats.expectancy >= 0}
+                    />
+                  </tr>
+                  <tr>
+                    <SummaryCell
+                      label='Gross Pips'
+                      value={`+${stats.totalPipsWon.toFixed(1)} / -${stats.totalPipsLost.toFixed(1)}`}
+                      detail={`${stats.totalPips.toFixed(1)} net`}
+                      positive={stats.totalPips >= 0}
+                    />
+                    <SummaryCell
+                      label='Return / DD'
+                      value={
+                        Number.isFinite(returnDrawdownRatio)
+                          ? returnDrawdownRatio.toFixed(2)
+                          : 'Infinity'
+                      }
+                      positive={returnDrawdownRatio >= 1}
+                    />
+                    <SummaryCell
+                      label='Accounts'
+                      value={`${byAccount.length}`}
+                      detail={`${winningAccounts} positive / ${losingAccounts} negative`}
+                      positive={losingAccounts === 0}
+                    />
+                    <SummaryCell
+                      label='Trades'
+                      value={`${stats.closed}`}
+                      detail={`${stats.open} open`}
+                    />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-          <PortfolioMetric
-            label='Profit Factor'
-            value={formatProfitFactor(stats.profitFactor)}
-            detail='Gross profit divided by gross loss'
-            icon={Scale}
-            positive={stats.profitFactor >= 1}
-          />
-          <PortfolioMetric
-            label='Drawdown'
-            value={`${drawdownPct.toFixed(2)}%`}
-            detail='Peak-to-valley portfolio equity'
-            icon={ShieldAlert}
-            positive={drawdownPct <= 10}
-          />
-          <PortfolioMetric
-            label='Absolute Gain'
-            value={formatPct(absoluteGainPct)}
-            detail='Net P&L against starting balance'
-            icon={Activity}
-            positive={absoluteGainPct >= 0}
-          />
-          <PortfolioMetric
-            label='Expectancy'
-            value={formatMoney(stats.expectancy)}
-            detail='Average expected result per trade'
-            icon={Target}
-            positive={stats.expectancy >= 0}
-          />
-          <PortfolioMetric
-            label='Gross Pips'
-            value={`+${stats.totalPipsWon.toFixed(1)} / -${stats.totalPipsLost.toFixed(1)}`}
-            detail={`${stats.totalPips.toFixed(1)} net pips`}
-            icon={Sigma}
-            positive={stats.totalPips >= 0}
-          />
-          <PortfolioMetric
-            label='Return / DD'
-            value={
-              Number.isFinite(returnDrawdownRatio)
-                ? returnDrawdownRatio.toFixed(2)
-                : '∞'
-            }
-            detail='Growth divided by drawdown'
-            icon={BarChart3}
-            positive={returnDrawdownRatio >= 1}
-          />
-          <PortfolioMetric
-            label='Pip Average'
-            value={`${stats.avgPips >= 0 ? '+' : ''}${stats.avgPips.toFixed(1)}`}
-            detail='Net pips per closed trade'
-            icon={TrendingUp}
-            positive={stats.avgPips >= 0}
-          />
-          <PortfolioMetric
-            label='Account Health'
-            value={`${winningAccounts}/${byAccount.length}`}
-            detail={`${losingAccounts} account${losingAccounts === 1 ? '' : 's'} negative`}
-            icon={Wallet}
-            positive={losingAccounts === 0}
-          />
-        </div>
-
-        {/* Equity Curve */}
         <Card>
           <CardHeader>
             <CardTitle>Portfolio Equity Curve</CardTitle>
@@ -439,14 +370,15 @@ export function Portfolio() {
           </CardContent>
         </Card>
 
-        <div className='grid gap-4 lg:grid-cols-2'>
-          {/* P&L by Account */}
-          <Card>
-            <CardHeader>
-              <CardTitle>P&L by Account</CardTitle>
-              <CardDescription>Net profit per trading account</CardDescription>
-            </CardHeader>
-            <CardContent className='h-[280px] px-2'>
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Charts</CardTitle>
+            <CardDescription>
+              Net profit and trade allocation by account
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='grid gap-6 lg:grid-cols-2'>
+            <div className='h-[260px]'>
               <ResponsiveContainer width='100%' height='100%'>
                 <BarChart
                   data={pnlByAccount}
@@ -491,16 +423,9 @@ export function Portfolio() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Trade Allocation Donut */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Trade Allocation</CardTitle>
-              <CardDescription>Share of trades across accounts</CardDescription>
-            </CardHeader>
-            <CardContent className='h-[280px]'>
+            <div className='h-[260px]'>
               <ResponsiveContainer width='100%' height='100%'>
                 <PieChart>
                   <Pie
@@ -529,11 +454,10 @@ export function Portfolio() {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Account Performance Table */}
         <Card>
           <CardHeader>
             <CardTitle>Account Breakdown</CardTitle>

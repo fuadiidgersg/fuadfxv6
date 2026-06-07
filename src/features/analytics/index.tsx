@@ -117,34 +117,34 @@ function Stat({
   icon?: React.ElementType
   tooltip?: string
 }) {
-  const card = (
-    <Card className='cursor-default'>
-      <CardContent className='pt-6'>
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center gap-1'>
-            <p className='text-sm font-medium text-muted-foreground'>{label}</p>
-            {tooltip && <Info className='size-3 text-muted-foreground/50' />}
-          </div>
-          {Icon && <Icon className='size-4 text-muted-foreground' />}
+  const cell = (
+    <div className='cursor-default border-b px-1 py-3 last:border-r-0 sm:border-r sm:border-b-0 sm:px-4'>
+      <div className='flex items-center justify-between gap-2'>
+        <div className='flex items-center gap-1'>
+          <p className='text-xs font-medium text-muted-foreground uppercase'>
+            {label}
+          </p>
+          {tooltip && <Info className='size-3 text-muted-foreground/50' />}
         </div>
-        <p
-          className={cn(
-            'mt-1 text-2xl font-bold tabular-nums',
-            positive === true && 'text-emerald-600',
-            positive === false && 'text-red-500'
-          )}
-        >
-          {value}
-        </p>
-        {sub && <p className='mt-1 text-xs text-muted-foreground'>{sub}</p>}
-      </CardContent>
-    </Card>
+        {Icon && <Icon className='size-3.5 text-muted-foreground' />}
+      </div>
+      <p
+        className={cn(
+          'mt-1 text-lg font-semibold tabular-nums',
+          positive === true && 'text-emerald-600',
+          positive === false && 'text-red-500'
+        )}
+      >
+        {value}
+      </p>
+      {sub && <p className='mt-0.5 text-xs text-muted-foreground'>{sub}</p>}
+    </div>
   )
 
-  if (!tooltip) return card
+  if (!tooltip) return cell
   return (
     <UITooltip>
-      <TooltipTrigger asChild>{card}</TooltipTrigger>
+      <TooltipTrigger asChild>{cell}</TooltipTrigger>
       <TooltipContent className='max-w-56 text-xs' side='top'>
         {tooltip}
       </TooltipContent>
@@ -164,22 +164,20 @@ function RiskRow({
   positive?: boolean
 }) {
   return (
-    <div className='flex items-center gap-3'>
-      <div className='flex size-8 items-center justify-center rounded-full bg-muted'>
-        <Icon className='size-4 text-muted-foreground' />
-      </div>
-      <div className='flex flex-1 items-center justify-between'>
-        <span className='text-sm text-muted-foreground'>{label}</span>
-        <span
-          className={cn(
-            'text-sm font-semibold tabular-nums',
-            positive === true && 'text-emerald-600',
-            positive === false && 'text-red-500'
-          )}
-        >
-          {value}
-        </span>
-      </div>
+    <div className='flex items-center justify-between gap-3 border-b py-2 last:border-b-0'>
+      <span className='flex items-center gap-2 text-sm text-muted-foreground'>
+        <Icon className='size-3.5' />
+        {label}
+      </span>
+      <span
+        className={cn(
+          'text-sm font-semibold tabular-nums',
+          positive === true && 'text-emerald-600',
+          positive === false && 'text-red-500'
+        )}
+      >
+        {value}
+      </span>
     </div>
   )
 }
@@ -291,22 +289,20 @@ function CoachCard({
   tone?: 'good' | 'warn' | 'bad' | 'neutral'
 }) {
   return (
-    <Card className={cn('border', coachToneClass(tone))}>
-      <CardContent className='pt-6'>
-        <div className='flex items-start justify-between gap-3'>
-          <div className='min-w-0'>
-            <p className='text-xs font-medium text-muted-foreground uppercase'>
-              {title}
-            </p>
-            <p className='mt-1 text-lg leading-tight font-semibold'>{value}</p>
-          </div>
-          <div className='flex size-9 shrink-0 items-center justify-center rounded-md bg-background/80'>
-            <Icon className='size-4 text-muted-foreground' />
-          </div>
+    <div
+      className={cn('border-b px-1 py-3 last:border-b-0', coachToneClass(tone))}
+    >
+      <div className='flex items-start justify-between gap-3'>
+        <div className='min-w-0'>
+          <p className='text-xs font-medium text-muted-foreground uppercase'>
+            {title}
+          </p>
+          <p className='mt-1 text-base leading-tight font-semibold'>{value}</p>
         </div>
-        <p className='mt-3 text-sm text-muted-foreground'>{description}</p>
-      </CardContent>
-    </Card>
+        <Icon className='size-4 shrink-0 text-muted-foreground' />
+      </div>
+      <p className='mt-2 text-sm text-muted-foreground'>{description}</p>
+    </div>
   )
 }
 
@@ -527,36 +523,44 @@ export function Analytics() {
           <EmptyAnalyticsState hasAnyTrades={allTrades.length > 0} />
         ) : (
           <>
-            <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
-              <CoachCard
-                title='Next focus'
-                value={primaryFocus.value}
-                description={primaryFocus.description}
-                icon={Target}
-                tone={primaryFocus.tone}
-              />
-              <CoachCard
-                title='Best edge'
-                value={bestEdge.value}
-                description={bestEdge.description}
-                icon={Trophy}
-                tone={bestPair || bestStrategy ? 'good' : 'neutral'}
-              />
-              <CoachCard
-                title='Risk status'
-                value={riskValue}
-                description={riskDescription}
-                icon={Shield}
-                tone={riskTone}
-              />
-              <CoachCard
-                title='Discipline check'
-                value={disciplineValue}
-                description={disciplineDescription}
-                icon={Brain}
-                tone={disciplineTone}
-              />
-            </div>
+            <Card>
+              <CardHeader className='pb-2'>
+                <CardTitle>Trading Report</CardTitle>
+                <CardDescription>
+                  Focus, edge, risk, and discipline without the extra clutter
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='grid gap-x-6 md:grid-cols-2 xl:grid-cols-4'>
+                <CoachCard
+                  title='Next focus'
+                  value={primaryFocus.value}
+                  description={primaryFocus.description}
+                  icon={Target}
+                  tone={primaryFocus.tone}
+                />
+                <CoachCard
+                  title='Best edge'
+                  value={bestEdge.value}
+                  description={bestEdge.description}
+                  icon={Trophy}
+                  tone={bestPair || bestStrategy ? 'good' : 'neutral'}
+                />
+                <CoachCard
+                  title='Risk status'
+                  value={riskValue}
+                  description={riskDescription}
+                  icon={Shield}
+                  tone={riskTone}
+                />
+                <CoachCard
+                  title='Discipline check'
+                  value={disciplineValue}
+                  description={disciplineDescription}
+                  icon={Brain}
+                  tone={disciplineTone}
+                />
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue='overview' className='space-y-6'>
               <TabsList className='grid w-full grid-cols-3 lg:grid-cols-6'>
@@ -688,7 +692,7 @@ export function Analytics() {
                 </Card>
 
                 {/* KPI Cards */}
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
                   <Stat
                     label='Net P&L'
                     value={`${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toFixed(2)}`}
@@ -713,7 +717,7 @@ export function Analytics() {
                     positive={stats.expectancy >= 0}
                   />
                 </div>
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
                   <Stat
                     label='Avg R Multiple'
                     value={`${stats.avgR.toFixed(2)}R`}
@@ -738,7 +742,7 @@ export function Analytics() {
                 </div>
 
                 {/* Advanced Ratios Row 1 */}
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
                   <Stat
                     label='Sharpe Ratio'
                     value={
@@ -785,7 +789,7 @@ export function Analytics() {
                 </div>
 
                 {/* Advanced Ratios Row 2 */}
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
                   <Stat
                     label='Recovery Factor'
                     value={
@@ -1145,7 +1149,7 @@ export function Analytics() {
                 </div>
 
                 {/* KPIs */}
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
                   <Stat
                     label='Win Rate'
                     value={`${stats.winRate.toFixed(1)}%`}
@@ -1996,7 +2000,7 @@ export function Analytics() {
                 </div>
 
                 {/* Risk KPIs */}
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
                   <Stat
                     label='Max Drawdown'
                     value={`$${Math.abs(dd.maxDrawdown).toFixed(2)}`}
