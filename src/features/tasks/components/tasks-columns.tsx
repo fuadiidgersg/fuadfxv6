@@ -8,6 +8,19 @@ import { directions, statuses } from '../data/data'
 import { type Task as Trade } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
 
+function tagValue(tags: string[] = [], key: string) {
+  return (
+    tags.find((tag) => tag.startsWith(`${key}:`))?.slice(key.length + 1) ?? ''
+  )
+}
+
+function labelize(value: string) {
+  return value
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 export const tasksColumns: ColumnDef<Trade>[] = [
   {
     id: 'select',
@@ -86,7 +99,9 @@ export const tasksColumns: ColumnDef<Trade>[] = [
       <DataTableColumnHeader column={column} title='Lots' />
     ),
     cell: ({ row }) => (
-      <div className='tabular-nums'>{(row.getValue('lotSize') as number).toFixed(2)}</div>
+      <div className='tabular-nums'>
+        {(row.getValue('lotSize') as number).toFixed(2)}
+      </div>
     ),
   },
   {
@@ -95,7 +110,9 @@ export const tasksColumns: ColumnDef<Trade>[] = [
       <DataTableColumnHeader column={column} title='Entry' />
     ),
     cell: ({ row }) => (
-      <div className='tabular-nums text-sm'>{(row.getValue('entry') as number).toFixed(5)}</div>
+      <div className='text-sm tabular-nums'>
+        {(row.getValue('entry') as number).toFixed(5)}
+      </div>
     ),
   },
   {
@@ -104,7 +121,9 @@ export const tasksColumns: ColumnDef<Trade>[] = [
       <DataTableColumnHeader column={column} title='Exit' />
     ),
     cell: ({ row }) => (
-      <div className='tabular-nums text-sm'>{(row.getValue('exit') as number).toFixed(5)}</div>
+      <div className='text-sm tabular-nums'>
+        {(row.getValue('exit') as number).toFixed(5)}
+      </div>
     ),
   },
   {
@@ -117,7 +136,7 @@ export const tasksColumns: ColumnDef<Trade>[] = [
       return (
         <div
           className={cn(
-            'tabular-nums text-sm font-medium',
+            'text-sm font-medium tabular-nums',
             v >= 0 ? 'text-emerald-600' : 'text-red-600'
           )}
         >
@@ -137,7 +156,7 @@ export const tasksColumns: ColumnDef<Trade>[] = [
       return (
         <div
           className={cn(
-            'tabular-nums text-sm font-semibold',
+            'text-sm font-semibold tabular-nums',
             v >= 0 ? 'text-emerald-600' : 'text-red-600'
           )}
         >
@@ -148,15 +167,54 @@ export const tasksColumns: ColumnDef<Trade>[] = [
   },
   {
     accessorKey: 'rMultiple',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='R' />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title='R' />,
     cell: ({ row }) => {
       const v = row.getValue('rMultiple') as number
       return (
         <Badge variant='outline' className='tabular-nums'>
           {v >= 0 ? '+' : ''}
           {v.toFixed(2)}R
+        </Badge>
+      )
+    },
+  },
+  {
+    id: 'executionGrade',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Grade' />
+    ),
+    cell: ({ row }) => {
+      const entry = tagValue(row.original.tags, 'entry')
+      const exit = tagValue(row.original.tags, 'exit')
+      if (!entry && !exit)
+        return <span className='text-muted-foreground'>-</span>
+      return (
+        <Badge variant='outline' className='font-normal tabular-nums'>
+          {entry || '-'} / {exit || '-'}
+        </Badge>
+      )
+    },
+  },
+  {
+    id: 'planAdherence',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Plan' />
+    ),
+    cell: ({ row }) => {
+      const plan = tagValue(row.original.tags, 'plan')
+      if (!plan) return <span className='text-muted-foreground'>-</span>
+      return (
+        <Badge
+          variant={
+            plan === 'broken'
+              ? 'destructive'
+              : plan === 'followed'
+                ? 'default'
+                : 'secondary'
+          }
+          className='font-normal'
+        >
+          {labelize(plan)}
         </Badge>
       )
     },

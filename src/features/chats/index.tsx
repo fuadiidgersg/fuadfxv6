@@ -9,7 +9,19 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  type JournalMood,
+  moodColors,
+  moodLabels,
+} from '@/stores/journal-store'
 import { cn } from '@/lib/utils'
+import { useActiveAccount } from '@/hooks/use-accounts-query'
+import {
+  useCreateJournal,
+  useUpdateJournal,
+  useDeleteJournal,
+  useNotesForActiveAccount,
+} from '@/hooks/use-journals-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,18 +40,6 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { useActiveAccount } from '@/hooks/use-accounts-query'
-import {
-  useCreateJournal,
-  useUpdateJournal,
-  useDeleteJournal,
-  useNotesForActiveAccount,
-} from '@/hooks/use-journals-query'
-import {
-  type JournalMood,
-  moodColors,
-  moodLabels,
-} from '@/stores/journal-store'
 
 const moodOptions: JournalMood[] = [
   'great',
@@ -47,6 +47,29 @@ const moodOptions: JournalMood[] = [
   'neutral',
   'frustrated',
   'tilted',
+]
+
+const journalTemplates = [
+  {
+    title: 'Daily prep',
+    tags: ['prep', 'plan'],
+    body: 'Market bias:\n\nKey levels:\n\nNews to avoid:\n\nA+ setups allowed today:\n\nMax risk / daily loss limit:\n\nWhat would make me stop trading today:\n',
+  },
+  {
+    title: 'Post-session review',
+    tags: ['review', 'session'],
+    body: 'Session result:\n\nBest decision:\n\nWorst decision:\n\nDid I follow my plan?\n\nMistake repeated:\n\nOne adjustment for next session:\n',
+  },
+  {
+    title: 'Mistake review',
+    tags: ['mistake', 'discipline'],
+    body: 'Mistake:\n\nTrigger:\n\nCost in money / pips:\n\nWhat rule would have prevented it:\n\nHow I will catch it next time:\n',
+  },
+  {
+    title: 'Weekly review',
+    tags: ['weekly', 'review'],
+    body: 'Weekly P&L:\n\nBest setup:\n\nWorst setup:\n\nMost expensive mistake:\n\nBest trading hour/session:\n\nFocus for next week:\n',
+  },
 ]
 
 export function Chats() {
@@ -112,6 +135,23 @@ export function Chats() {
       const note = await createJournal.mutateAsync({
         accountId: account.id,
         title: 'New journal entry',
+      })
+      setSelectedId(note.id)
+    } catch {
+      toast.error('Failed to create journal entry.')
+    }
+  }
+
+  const handleNewTemplate = async (
+    template: (typeof journalTemplates)[number]
+  ) => {
+    if (!account) return
+    try {
+      const note = await createJournal.mutateAsync({
+        accountId: account.id,
+        title: template.title,
+        body: template.body,
+        tags: template.tags,
       })
       setSelectedId(note.id)
     } catch {
@@ -204,6 +244,23 @@ export function Chats() {
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </label>
+
+              {account && (
+                <div className='mt-2 grid grid-cols-2 gap-1'>
+                  {journalTemplates.map((template) => (
+                    <Button
+                      key={template.title}
+                      size='sm'
+                      variant='outline'
+                      className='h-8 justify-start px-2 text-xs'
+                      onClick={() => handleNewTemplate(template)}
+                      disabled={createJournal.isPending}
+                    >
+                      {template.title}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <ScrollArea className='-mx-3 h-full overflow-scroll p-3'>
@@ -235,7 +292,7 @@ export function Chats() {
                       </span>
                       <span
                         className={cn(
-                          'shrink-0 rounded-full px-2 py-[1px] text-[10px] font-medium uppercase tracking-wide',
+                          'shrink-0 rounded-full px-2 py-[1px] text-[10px] font-medium tracking-wide uppercase',
                           moodColors[note.mood]
                         )}
                       >
@@ -271,8 +328,8 @@ export function Chats() {
                   <p className='text-xs text-muted-foreground'>
                     {account?.name ?? 'No account'} · created{' '}
                     {format(new Date(selected.createdAt), 'd MMM yyyy')} ·
-                    edited{' '}
-                    {formatDistanceToNow(new Date(selected.updatedAt))} ago
+                    edited {formatDistanceToNow(new Date(selected.updatedAt))}{' '}
+                    ago
                   </p>
                 </div>
                 <div className='flex items-center gap-2'>

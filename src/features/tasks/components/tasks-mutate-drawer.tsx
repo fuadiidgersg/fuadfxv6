@@ -6,20 +6,6 @@ import { ImagePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useActiveAccount } from '@/hooks/use-accounts-query'
 import { useCreateTrade, useUpdateTrade } from '@/hooks/use-trades-query'
-import {
-  EMOTIONS,
-  PAIRS,
-  SESSIONS,
-  STRATEGIES,
-  TIMEFRAMES,
-  type Trade,
-  type TradeDirection,
-  type TradeStrategy,
-  type TradeSession,
-  type TradeStatus,
-  type TradeTimeframe,
-  type TradeEmotion,
-} from '@/features/trades/data/schema'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -42,12 +28,42 @@ import {
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { SelectDropdown } from '@/components/select-dropdown'
+import {
+  EMOTIONS,
+  PAIRS,
+  SESSIONS,
+  STRATEGIES,
+  TIMEFRAMES,
+  type Trade,
+  type TradeDirection,
+  type TradeStrategy,
+  type TradeSession,
+  type TradeStatus,
+  type TradeTimeframe,
+  type TradeEmotion,
+} from '@/features/trades/data/schema'
 
 type TradeMutateDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   currentRow?: Trade
 }
+
+const gradeOptions = ['A+', 'A', 'B', 'C', 'D'] as const
+const marketConditionOptions = [
+  'trend',
+  'range',
+  'breakout',
+  'news',
+  'choppy',
+] as const
+const managementOptions = [
+  'held-plan',
+  'early-exit',
+  'late-exit',
+  'moved-stop',
+  'scaled-well',
+] as const
 
 const formSchema = z.object({
   pair: z.string().min(1, 'Select a pair.'),
@@ -56,9 +72,16 @@ const formSchema = z.object({
   session: z.string().min(1, 'Pick a session.'),
   timeframe: z.string().optional(),
   emotion: z.string().optional(),
+  entryGrade: z.string().optional(),
+  exitGrade: z.string().optional(),
+  planAdherence: z.string().optional(),
+  marketCondition: z.string().optional(),
+  managementReview: z.string().optional(),
   entry: z.coerce.number({ message: 'Entry must be a number.' }),
   exit: z.coerce.number({ message: 'Exit must be a number.' }),
-  lotSize: z.coerce.number({ message: 'Lot size must be a number.' }).positive(),
+  lotSize: z.coerce
+    .number({ message: 'Lot size must be a number.' })
+    .positive(),
   pnl: z.coerce.number({ message: 'P&L must be a number.' }),
   riskAmount: z.coerce.number().optional(),
   stopLoss: z.coerce.number().optional(),
@@ -89,7 +112,11 @@ export function TasksMutateDrawer({
     setPreview(currentRow?.screenshotUrl)
   }
 
-  const form = useForm<z.input<typeof formSchema>, any, z.output<typeof formSchema>>({
+  const form = useForm<
+    z.input<typeof formSchema>,
+    any,
+    z.output<typeof formSchema>
+  >({
     resolver: zodResolver(formSchema),
     defaultValues: currentRow
       ? {
@@ -99,6 +126,11 @@ export function TasksMutateDrawer({
           session: currentRow.session,
           timeframe: currentRow.timeframe ?? '',
           emotion: currentRow.emotion ?? '',
+          entryGrade: tagValue(currentRow.tags, 'entry'),
+          exitGrade: tagValue(currentRow.tags, 'exit'),
+          planAdherence: tagValue(currentRow.tags, 'plan'),
+          marketCondition: tagValue(currentRow.tags, 'market'),
+          managementReview: tagValue(currentRow.tags, 'manage'),
           entry: currentRow.entry,
           exit: currentRow.exit,
           lotSize: currentRow.lotSize,
@@ -118,6 +150,11 @@ export function TasksMutateDrawer({
           session: '',
           timeframe: '',
           emotion: '',
+          entryGrade: '',
+          exitGrade: '',
+          planAdherence: '',
+          marketCondition: '',
+          managementReview: '',
           entry: 0,
           exit: 0,
           lotSize: 0.1,
@@ -156,7 +193,9 @@ export function TasksMutateDrawer({
       form.reset()
       setPreview(undefined)
     } catch {
-      toast.error(isUpdate ? 'Failed to update trade.' : 'Failed to save trade.')
+      toast.error(
+        isUpdate ? 'Failed to update trade.' : 'Failed to save trade.'
+      )
     }
   }
 
@@ -288,7 +327,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.00001'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
@@ -306,7 +347,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.00001'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
@@ -324,7 +367,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.00001'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) =>
                           field.onChange(
                             e.target.value ? Number(e.target.value) : undefined
@@ -346,7 +391,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.00001'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) =>
                           field.onChange(
                             e.target.value ? Number(e.target.value) : undefined
@@ -368,7 +415,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.01'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
@@ -386,7 +435,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.01'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) =>
                           field.onChange(
                             e.target.value ? Number(e.target.value) : undefined
@@ -408,7 +459,9 @@ export function TasksMutateDrawer({
                       <Input
                         type='number'
                         step='0.01'
-                        value={typeof field.value === 'number' ? field.value : ''}
+                        value={
+                          typeof field.value === 'number' ? field.value : ''
+                        }
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
@@ -477,6 +530,103 @@ export function TasksMutateDrawer({
               )}
             />
 
+            <FormSection
+              title='Execution quality'
+              description='Grade the process, not only the outcome.'
+            />
+            <div className='grid grid-cols-2 gap-3'>
+              <FormField
+                control={form.control}
+                name='entryGrade'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Entry grade</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='Grade entry'
+                      items={gradeOptions.map((g) => ({ label: g, value: g }))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='exitGrade'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Exit grade</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='Grade exit'
+                      items={gradeOptions.map((g) => ({ label: g, value: g }))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='planAdherence'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plan</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='Did you follow it?'
+                      items={[
+                        { label: 'Followed plan', value: 'followed' },
+                        { label: 'Minor deviation', value: 'minor-deviation' },
+                        { label: 'Broke plan', value: 'broken' },
+                      ]}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='marketCondition'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Market condition</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='Select context'
+                      items={marketConditionOptions.map((m) => ({
+                        label: labelize(m),
+                        value: m,
+                      }))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='managementReview'
+                render={({ field }) => (
+                  <FormItem className='col-span-2'>
+                    <FormLabel>Trade management</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='How was it managed?'
+                      items={managementOptions.map((m) => ({
+                        label: labelize(m),
+                        value: m,
+                      }))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name='screenshotUrl'
@@ -500,7 +650,7 @@ export function TasksMutateDrawer({
                           <img
                             src={preview}
                             alt='Trade screenshot'
-                            className='max-h-64 w-full object-contain bg-muted/40'
+                            className='max-h-64 w-full bg-muted/40 object-contain'
                           />
                           <Button
                             type='button'
@@ -640,7 +790,8 @@ function buildTradeFromForm(
 ): Trade {
   const factor = pipFactor(data.pair)
   const directionMul = data.direction === 'long' ? 1 : -1
-  const pips = factor > 0 ? ((data.exit - data.entry) / factor) * directionMul : 0
+  const pips =
+    factor > 0 ? ((data.exit - data.entry) / factor) * directionMul : 0
   const risk = data.riskAmount ?? 0
   const rMultiple = risk > 0 ? data.pnl / risk : 0
   const status = computeStatus(data.pnl)
@@ -672,6 +823,37 @@ function buildTradeFromForm(
     mistakes: data.mistakes || undefined,
     lessons: data.lessons || undefined,
     screenshotUrl: data.screenshotUrl || undefined,
-    tags: base?.tags ?? [],
+    tags: buildReviewTags(data, base?.tags ?? []),
   }
+}
+
+function labelize(value: string) {
+  return value
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function tagValue(tags: string[] = [], key: string) {
+  return (
+    tags.find((tag) => tag.startsWith(`${key}:`))?.slice(key.length + 1) ?? ''
+  )
+}
+
+function buildReviewTags(data: TradeForm, existing: string[]) {
+  const structuredKeys = ['entry', 'exit', 'plan', 'market', 'manage']
+  const tags = existing.filter(
+    (tag) => !structuredKeys.some((key) => tag.startsWith(`${key}:`))
+  )
+  const pairs = [
+    ['entry', data.entryGrade],
+    ['exit', data.exitGrade],
+    ['plan', data.planAdherence],
+    ['market', data.marketCondition],
+    ['manage', data.managementReview],
+  ] as const
+  for (const [key, value] of pairs) {
+    if (value) tags.push(`${key}:${value}`)
+  }
+  return tags
 }

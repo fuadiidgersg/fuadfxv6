@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  BookOpen,
   Brain,
   CandlestickChart,
   Clock,
@@ -223,6 +224,68 @@ function detectRevengeTrades(trades: Trade[]) {
   }
 }
 
+function tagValue(tags: string[] = [], key: string) {
+  return (
+    tags.find((tag) => tag.startsWith(`${key}:`))?.slice(key.length + 1) ?? ''
+  )
+}
+
+function labelize(value: string) {
+  return value
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function computeProcessReview(trades: Trade[]) {
+  const closed = trades.filter((t) => t.status !== 'open')
+  const reviewed = closed.filter((t) =>
+    ['entry', 'exit', 'plan', 'market', 'manage'].some((key) =>
+      t.tags?.some((tag) => tag.startsWith(`${key}:`))
+    )
+  )
+  const followedPlan = closed.filter(
+    (t) => tagValue(t.tags, 'plan') === 'followed'
+  )
+  const brokenPlan = closed.filter((t) => tagValue(t.tags, 'plan') === 'broken')
+  const aGrade = closed.filter((t) =>
+    ['A+', 'A'].includes(tagValue(t.tags, 'entry'))
+  )
+  const management = new Map<
+    string,
+    { label: string; trades: number; pnl: number }
+  >()
+  for (const trade of closed) {
+    const key = tagValue(trade.tags, 'manage')
+    if (!key) continue
+    const cur = management.get(key) ?? { label: key, trades: 0, pnl: 0 }
+    cur.trades += 1
+    cur.pnl += trade.pnl
+    management.set(key, cur)
+  }
+  const managementRows = Array.from(management.values())
+    .map((row) => ({
+      ...row,
+      label: labelize(row.label),
+      pnl: parseFloat(row.pnl.toFixed(2)),
+      avg: row.trades ? parseFloat((row.pnl / row.trades).toFixed(2)) : 0,
+    }))
+    .sort((a, b) => b.pnl - a.pnl)
+
+  return {
+    reviewed,
+    reviewedPct: closed.length ? (reviewed.length / closed.length) * 100 : 0,
+    followedPlanPct: closed.length
+      ? (followedPlan.length / closed.length) * 100
+      : 0,
+    brokenPlan: brokenPlan.length,
+    aGradePct: closed.length ? (aGrade.length / closed.length) * 100 : 0,
+    bestManagement: managementRows[0],
+    worstManagement: managementRows[managementRows.length - 1],
+    managementRows,
+  }
+}
+
 function detectWeaknesses(
   stats: ReturnType<typeof computeStats>,
   emotionData: ReturnType<typeof groupByEmotion>,
@@ -362,6 +425,7 @@ export function Analytics() {
   const rrData = plannedVsActualRR(trades)
   const emotionData = groupByEmotion(trades)
   const revenge = detectRevengeTrades(trades)
+  const processReview = computeProcessReview(trades)
   const weaknesses = detectWeaknesses(stats, emotionData, revenge)
   const traderScore = computeTraderScore(stats, emotionData)
 
@@ -1718,6 +1782,94 @@ export function Analytics() {
                     </CardContent>
                   </Card>
                 </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Process Review</CardTitle>
+                    <CardDescription>
+                      Execution quality, plan discipline, and trade management
+                      from your reviewed trades
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    <div className='grid overflow-hidden rounded-md border sm:grid-cols-2 lg:grid-cols-4'>
+                      <Stat
+                        label='Reviewed'
+                        value={`${processReview.reviewedPct.toFixed(0)}%`}
+                        sub={`${processReview.reviewed.length}/${stats.closed} closed trades`}
+                        icon={BookOpen}
+                        positive={processReview.reviewedPct >= 70}
+                      />
+                      <Stat
+                        label='Followed Plan'
+                        value={`${processReview.followedPlanPct.toFixed(0)}%`}
+                        icon={Shield}
+                        positive={processReview.followedPlanPct >= 70}
+                      />
+                      <Stat
+                        label='Broken Plan'
+                        value={`${processReview.brokenPlan}`}
+                        icon={AlertTriangle}
+                        positive={processReview.brokenPlan === 0}
+                      />
+                      <Stat
+                        label='A-Grade Entry'
+                        value={`${processReview.aGradePct.toFixed(0)}%`}
+                        icon={Trophy}
+                        positive={processReview.aGradePct >= 50}
+                      />
+                    </div>
+
+                    {processReview.managementRows.length > 0 && (
+                      <div className='overflow-x-auto rounded-md border'>
+                        <table className='w-full min-w-[520px] text-sm'>
+                          <thead className='bg-muted/50 text-xs text-muted-foreground uppercase'>
+                            <tr>
+                              <th className='px-3 py-2 text-start'>
+                                Management
+                              </th>
+                              <th className='px-3 py-2 text-end'>Trades</th>
+                              <th className='px-3 py-2 text-end'>Avg P&L</th>
+                              <th className='px-3 py-2 text-end'>Net P&L</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {processReview.managementRows.map((row) => (
+                              <tr key={row.label} className='border-t'>
+                                <td className='px-3 py-2 font-medium'>
+                                  {row.label}
+                                </td>
+                                <td className='px-3 py-2 text-end tabular-nums'>
+                                  {row.trades}
+                                </td>
+                                <td
+                                  className={cn(
+                                    'px-3 py-2 text-end tabular-nums',
+                                    row.avg >= 0
+                                      ? 'text-emerald-600'
+                                      : 'text-red-500'
+                                  )}
+                                >
+                                  ${row.avg.toFixed(2)}
+                                </td>
+                                <td
+                                  className={cn(
+                                    'px-3 py-2 text-end font-semibold tabular-nums',
+                                    row.pnl >= 0
+                                      ? 'text-emerald-600'
+                                      : 'text-red-500'
+                                  )}
+                                >
+                                  {row.pnl >= 0 ? '+' : ''}${row.pnl.toFixed(2)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Emotion P&L Chart */}
                 <Card>
