@@ -108,4 +108,19 @@ describe('parseMT5Html', () => {
 
     expect(result.trades.map((trade) => trade.pips)).toEqual([15, 25, 12, 25])
   })
+
+  it('keeps imported trades unassigned unless a default strategy is provided', () => {
+    const rows = positionRow({
+      ticket: 55,
+      symbol: 'EURUSD',
+      type: 'buy',
+      entry: 1.1,
+      exit: 1.101,
+    })
+
+    expect(parseMT5Html(report(rows)).trades[0].strategy).toBe('Unassigned')
+    expect(
+      parseMT5Html(report(rows), { strategy: 'Breakout' }).trades[0].strategy
+    ).toBe('Breakout')
+  })
 })

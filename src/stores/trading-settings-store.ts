@@ -1,7 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type CurrencySymbol = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'AUD' | 'CAD' | 'CHF'
+export type CurrencySymbol =
+  | 'USD'
+  | 'EUR'
+  | 'GBP'
+  | 'JPY'
+  | 'AUD'
+  | 'CAD'
+  | 'CHF'
 
 export type TradingSettingsState = {
   timezone: string
@@ -16,6 +23,8 @@ export type TradingSettingsState = {
   monthlyTargetUsd: number
   dailyLossLimitUsd: number
   showPipsInsteadOfPoints: boolean
+  autoAssignImportedStrategy: boolean
+  importedTradeStrategy: string
   setTimezone: (tz: string) => void
   setCurrencySymbol: (c: CurrencySymbol) => void
   setDefaultRiskPct: (v: number) => void
@@ -28,6 +37,8 @@ export type TradingSettingsState = {
   setMonthlyTargetUsd: (v: number) => void
   setDailyLossLimitUsd: (v: number) => void
   setShowPipsInsteadOfPoints: (v: boolean) => void
+  setAutoAssignImportedStrategy: (v: boolean) => void
+  setImportedTradeStrategy: (v: string) => void
 }
 
 export const useTradingSettings = create<TradingSettingsState>()(
@@ -45,6 +56,8 @@ export const useTradingSettings = create<TradingSettingsState>()(
       monthlyTargetUsd: 0,
       dailyLossLimitUsd: 0,
       showPipsInsteadOfPoints: true,
+      autoAssignImportedStrategy: false,
+      importedTradeStrategy: 'Unassigned',
 
       setTimezone: (tz) => set({ timezone: tz }),
       setCurrencySymbol: (c) => set({ currencySymbol: c }),
@@ -58,6 +71,9 @@ export const useTradingSettings = create<TradingSettingsState>()(
       setMonthlyTargetUsd: (v) => set({ monthlyTargetUsd: v }),
       setDailyLossLimitUsd: (v) => set({ dailyLossLimitUsd: v }),
       setShowPipsInsteadOfPoints: (v) => set({ showPipsInsteadOfPoints: v }),
+      setAutoAssignImportedStrategy: (v) =>
+        set({ autoAssignImportedStrategy: v }),
+      setImportedTradeStrategy: (v) => set({ importedTradeStrategy: v }),
     }),
     { name: 'fuadfx-trading-settings', version: 1 }
   )

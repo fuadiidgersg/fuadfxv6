@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { CheckCircle2, FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
-import { parseMT5Html } from '@/lib/mt5-import'
 import { useAccountsStore } from '@/stores/accounts-store'
-import {
-  useUpsertAccountFromImport,
-} from '@/hooks/use-accounts-query'
+import { useTradingSettings } from '@/stores/trading-settings-store'
+import { parseMT5Html } from '@/lib/mt5-import'
+import { useUpsertAccountFromImport } from '@/hooks/use-accounts-query'
 import {
   useBulkCreateTrades,
   useClearTradesForAccount,
@@ -24,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { TradeStrategy } from '@/features/trades/data/schema'
 
 type TaskImportDialogProps = {
   open: boolean
@@ -38,6 +38,12 @@ export function TasksImportDialog({
 }: TaskImportDialogProps) {
   const activeAccountId = useAccountsStore((s) => s.activeAccountId)
   const setActiveAccount = useAccountsStore((s) => s.setActive)
+  const autoAssignImportedStrategy = useTradingSettings(
+    (s) => s.autoAssignImportedStrategy
+  )
+  const importedTradeStrategy = useTradingSettings(
+    (s) => s.importedTradeStrategy
+  )
   const { data: allTrades = [] } = useAllTradesQuery()
   const upsertAccount = useUpsertAccountFromImport()
   const bulkCreate = useBulkCreateTrades()
@@ -96,7 +102,11 @@ export function TasksImportDialog({
     setParsing(true)
     try {
       const text = await decodeMT5File(file)
-      const result = parseMT5Html(text)
+      const result = parseMT5Html(text, {
+        strategy: autoAssignImportedStrategy
+          ? (importedTradeStrategy as TradeStrategy)
+          : 'Unassigned',
+      })
       setPreview(result)
       if (result.trades.length === 0) {
         toast.warning(
@@ -236,15 +246,15 @@ export function TasksImportDialog({
                 </div>
                 <div className='grid grid-cols-2 gap-y-1 text-xs text-muted-foreground'>
                   <span>Rows scanned</span>
-                  <span className='text-end tabular-nums text-foreground'>
+                  <span className='text-end text-foreground tabular-nums'>
                     {preview.totalRows}
                   </span>
                   <span>Trades detected</span>
-                  <span className='text-end tabular-nums font-semibold text-emerald-600'>
+                  <span className='text-end font-semibold text-emerald-600 tabular-nums'>
                     {preview.trades.length}
                   </span>
                   <span>Skipped (non-trade rows)</span>
-                  <span className='text-end tabular-nums text-foreground'>
+                  <span className='text-end text-foreground tabular-nums'>
                     {preview.skipped}
                   </span>
                   {preview.account && (
@@ -263,6 +273,12 @@ export function TasksImportDialog({
                       </span>
                     </>
                   )}
+                  <span>Strategy</span>
+                  <span className='text-end text-foreground'>
+                    {autoAssignImportedStrategy
+                      ? importedTradeStrategy
+                      : 'Unassigned'}
+                  </span>
                 </div>
 
                 {preview.trades.length > 0 && (
@@ -289,7 +305,7 @@ export function TasksImportDialog({
                             </td>
                             <td
                               className={
-                                'px-2 py-1 text-end tabular-nums font-semibold ' +
+                                'px-2 py-1 text-end font-semibold tabular-nums ' +
                                 (t.pnl >= 0
                                   ? 'text-emerald-600'
                                   : 'text-red-600')
@@ -348,7 +364,9 @@ export function TasksImportDialog({
             className='text-muted-foreground hover:text-destructive'
           >
             <Trash2 className='size-4' />
-            Clear {tradesCountForActive > 0 ? `(${tradesCountForActive})` : ''}{' '}
+            Clear {tradesCountForActive > 0
+              ? `(${tradesCountForActive})`
+              : ''}{' '}
             in current
           </Button>
 

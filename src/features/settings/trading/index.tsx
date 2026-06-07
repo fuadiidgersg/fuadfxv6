@@ -1,6 +1,12 @@
+import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { toast } from 'sonner'
+import {
+  useTradingSettings,
+  TIMEZONES,
+  type CurrencySymbol,
+} from '@/stores/trading-settings-store'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -12,7 +18,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -21,9 +26,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { toast } from 'sonner'
+import { Switch } from '@/components/ui/switch'
+import { STRATEGIES } from '@/features/trades/data/schema'
 import { ContentSection } from '../components/content-section'
-import { useTradingSettings, TIMEZONES, type CurrencySymbol } from '@/stores/trading-settings-store'
 
 const schema = z.object({
   timezone: z.string().min(1),
@@ -37,6 +42,8 @@ const schema = z.object({
   weeklyTargetUsd: z.coerce.number().min(0),
   monthlyTargetUsd: z.coerce.number().min(0),
   dailyLossLimitUsd: z.coerce.number().min(0),
+  autoAssignImportedStrategy: z.boolean(),
+  importedTradeStrategy: z.enum(STRATEGIES),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -58,10 +65,14 @@ export function SettingsTrading() {
       weeklyTargetUsd: settings.weeklyTargetUsd,
       monthlyTargetUsd: settings.monthlyTargetUsd,
       dailyLossLimitUsd: settings.dailyLossLimitUsd,
+      autoAssignImportedStrategy: settings.autoAssignImportedStrategy,
+      importedTradeStrategy:
+        settings.importedTradeStrategy as (typeof STRATEGIES)[number],
     },
   })
 
   const ftmoMode = form.watch('ftmoMode')
+  const autoAssignImportedStrategy = form.watch('autoAssignImportedStrategy')
 
   function onSubmit(values: FormValues) {
     settings.setTimezone(values.timezone)
@@ -75,6 +86,8 @@ export function SettingsTrading() {
     settings.setWeeklyTargetUsd(values.weeklyTargetUsd)
     settings.setMonthlyTargetUsd(values.monthlyTargetUsd)
     settings.setDailyLossLimitUsd(values.dailyLossLimitUsd)
+    settings.setAutoAssignImportedStrategy(values.autoAssignImportedStrategy)
+    settings.setImportedTradeStrategy(values.importedTradeStrategy)
     toast.success('Trading settings saved.')
   }
 
@@ -93,10 +106,13 @@ export function SettingsTrading() {
               <FormItem>
                 <FormLabel>Account / Broker Timezone</FormLabel>
                 <FormDescription>
-                  Used for session labels (London, NY, Tokyo) and hour-of-day analytics. Set this
-                  to your broker's server time zone.
+                  Used for session labels (London, NY, Tokyo) and hour-of-day
+                  analytics. Set this to your broker's server time zone.
                 </FormDescription>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger className='w-full max-w-sm'>
                       <SelectValue placeholder='Select timezone' />
@@ -125,20 +141,31 @@ export function SettingsTrading() {
                 <FormDescription>
                   The currency your P&L is denominated in.
                 </FormDescription>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger className='w-40'>
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {(['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'] as CurrencySymbol[]).map(
-                      (c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      )
-                    )}
+                    {(
+                      [
+                        'USD',
+                        'EUR',
+                        'GBP',
+                        'JPY',
+                        'AUD',
+                        'CAD',
+                        'CHF',
+                      ] as CurrencySymbol[]
+                    ).map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -173,6 +200,68 @@ export function SettingsTrading() {
 
           <Separator />
 
+          <div className='space-y-4'>
+            <FormField
+              control={form.control}
+              name='autoAssignImportedStrategy'
+              render={({ field }) => (
+                <FormItem className='flex items-center justify-between rounded-lg border p-4'>
+                  <div>
+                    <FormLabel className='text-base'>
+                      Auto-assign Strategy on Imports
+                    </FormLabel>
+                    <FormDescription>
+                      MT5 statements do not include your playbook. Keep this off
+                      to import trades as Unassigned, or turn it on to tag every
+                      imported trade with one default strategy.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {autoAssignImportedStrategy && (
+              <FormField
+                control={form.control}
+                name='importedTradeStrategy'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Imported Trade Strategy</FormLabel>
+                    <FormDescription>
+                      Applied only when auto-assignment is enabled.
+                    </FormDescription>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className='w-full max-w-sm'>
+                          <SelectValue placeholder='Select strategy' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {STRATEGIES.map((strategy) => (
+                          <SelectItem key={strategy} value={strategy}>
+                            {strategy}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+
+          <Separator />
+
           {/* Goals */}
           <div className='space-y-4'>
             <div>
@@ -192,7 +281,9 @@ export function SettingsTrading() {
                     <FormControl>
                       <Input type='number' min='0' {...field} />
                     </FormControl>
-                    <FormDescription className='text-[11px]'>0 = no limit</FormDescription>
+                    <FormDescription className='text-[11px]'>
+                      0 = no limit
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -206,7 +297,9 @@ export function SettingsTrading() {
                     <FormControl>
                       <Input type='number' min='0' {...field} />
                     </FormControl>
-                    <FormDescription className='text-[11px]'>0 = no target</FormDescription>
+                    <FormDescription className='text-[11px]'>
+                      0 = no target
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -220,7 +313,9 @@ export function SettingsTrading() {
                     <FormControl>
                       <Input type='number' min='0' {...field} />
                     </FormControl>
-                    <FormDescription className='text-[11px]'>0 = no target</FormDescription>
+                    <FormDescription className='text-[11px]'>
+                      0 = no target
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -238,22 +333,29 @@ export function SettingsTrading() {
               render={({ field }) => (
                 <FormItem className='flex items-center justify-between rounded-lg border p-4'>
                   <div>
-                    <FormLabel className='text-base'>Prop Firm / FTMO Mode</FormLabel>
+                    <FormLabel className='text-base'>
+                      Prop Firm / FTMO Mode
+                    </FormLabel>
                     <FormDescription>
-                      Track your account against funded account challenge rules. Shows a compliance
-                      tracker on the Risk analytics tab.
+                      Track your account against funded account challenge rules.
+                      Shows a compliance tracker on the Risk analytics tab.
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
             {ftmoMode && (
-              <div className='rounded-lg border p-4 space-y-4'>
-                <p className='text-sm font-medium text-muted-foreground'>Prop Firm Rules</p>
+              <div className='space-y-4 rounded-lg border p-4'>
+                <p className='text-sm font-medium text-muted-foreground'>
+                  Prop Firm Rules
+                </p>
                 <div className='grid gap-4 sm:grid-cols-2'>
                   <FormField
                     control={form.control}
@@ -275,9 +377,16 @@ export function SettingsTrading() {
                       <FormItem>
                         <FormLabel>Profit Target (%)</FormLabel>
                         <FormControl>
-                          <Input type='number' min='0.1' step='0.1' {...field} />
+                          <Input
+                            type='number'
+                            min='0.1'
+                            step='0.1'
+                            {...field}
+                          />
                         </FormControl>
-                        <FormDescription className='text-[11px]'>FTMO: 10%</FormDescription>
+                        <FormDescription className='text-[11px]'>
+                          FTMO: 10%
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -289,9 +398,16 @@ export function SettingsTrading() {
                       <FormItem>
                         <FormLabel>Daily Loss Limit (%)</FormLabel>
                         <FormControl>
-                          <Input type='number' min='0.1' step='0.1' {...field} />
+                          <Input
+                            type='number'
+                            min='0.1'
+                            step='0.1'
+                            {...field}
+                          />
                         </FormControl>
-                        <FormDescription className='text-[11px]'>FTMO: 5%</FormDescription>
+                        <FormDescription className='text-[11px]'>
+                          FTMO: 5%
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -303,9 +419,16 @@ export function SettingsTrading() {
                       <FormItem>
                         <FormLabel>Max Drawdown (%)</FormLabel>
                         <FormControl>
-                          <Input type='number' min='0.1' step='0.1' {...field} />
+                          <Input
+                            type='number'
+                            min='0.1'
+                            step='0.1'
+                            {...field}
+                          />
                         </FormControl>
-                        <FormDescription className='text-[11px]'>FTMO: 10%</FormDescription>
+                        <FormDescription className='text-[11px]'>
+                          FTMO: 10%
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -1,5 +1,6 @@
 import {
   PAIRS,
+  type STRATEGIES,
   type SESSIONS,
   type Trade,
 } from '@/features/trades/data/schema'
@@ -10,6 +11,10 @@ export type MT5ParseResult = {
   skipped: number
   account?: string
   broker?: string
+}
+
+export type MT5ParseOptions = {
+  strategy?: (typeof STRATEGIES)[number]
 }
 
 const KNOWN_PAIRS = new Set<string>(PAIRS)
@@ -97,18 +102,17 @@ function pipMultiplier(pair: string): number {
   return 1
 }
 
-function pipsBetween(pair: string, entry: number, exit: number, dir: 'long' | 'short'): number {
+function pipsBetween(
+  pair: string,
+  entry: number,
+  exit: number,
+  dir: 'long' | 'short'
+): number {
   const diff = dir === 'long' ? exit - entry : entry - exit
   return Math.round(diff * pipMultiplier(pair) * 10) / 10
 }
 
-type Section =
-  | 'unknown'
-  | 'positions'
-  | 'open'
-  | 'orders'
-  | 'deals'
-  | 'summary'
+type Section = 'unknown' | 'positions' | 'open' | 'orders' | 'deals' | 'summary'
 
 function detectSection(joined: string): Section | null {
   const t = joined.toLowerCase().trim()
@@ -128,7 +132,10 @@ function detectSection(joined: string): Section | null {
   return null
 }
 
-export function parseMT5Html(html: string): MT5ParseResult {
+export function parseMT5Html(
+  html: string,
+  options: MT5ParseOptions = {}
+): MT5ParseResult {
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, 'text/html')
   const rows = Array.from(doc.querySelectorAll('tr'))
@@ -164,7 +171,9 @@ export function parseMT5Html(html: string): MT5ParseResult {
       if (m) account = m[1]
     }
     if (!broker) {
-      const m = joined.match(/(?:Broker|Company)\s*[:]?\s*([^\s,|][^|,]{2,60})/i)
+      const m = joined.match(
+        /(?:Broker|Company)\s*[:]?\s*([^\s,|][^|,]{2,60})/i
+      )
       if (m) broker = m[1].trim()
     }
   }
@@ -215,7 +224,10 @@ export function parseMT5Html(html: string): MT5ParseResult {
     const closeTime = parseMT5Date(closeTimeStr)
     if (!openTime || !closeTime) continue
 
-    if (!symbol || /^[a-z]+$/i.test(symbol) === false && !/[A-Z]{3}/i.test(symbol)) {
+    if (
+      !symbol ||
+      (/^[a-z]+$/i.test(symbol) === false && !/[A-Z]{3}/i.test(symbol))
+    ) {
       // Symbol must contain letters
       if (!/[A-Z]/i.test(symbol)) continue
     }
@@ -260,7 +272,7 @@ export function parseMT5Html(html: string): MT5ParseResult {
               Math.abs(entry - sl)
             ).toFixed(2)
           : 0,
-      strategy: 'Smart Money',
+      strategy: options.strategy ?? 'Unassigned',
       session: sessionFromDate(openTime),
       status,
       openedAt: openTime,

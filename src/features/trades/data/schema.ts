@@ -16,6 +16,7 @@ export const PAIRS = [
 ] as const
 
 export const STRATEGIES = [
+  'Unassigned',
   'Breakout',
   'Trend Following',
   'Mean Reversion',
