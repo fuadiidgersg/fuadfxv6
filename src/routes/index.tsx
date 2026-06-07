@@ -8,7 +8,6 @@ import {
   LockKeyhole,
   NotebookPen,
   ShieldCheck,
-  Target,
   UploadCloud,
 } from 'lucide-react'
 import {
@@ -24,41 +23,37 @@ export const Route = createFileRoute('/')({
   component: LandingPage,
 })
 
-const heroMetrics = [
-  ['Net pips', '+184'],
-  ['Profit factor', '2.14'],
-  ['Plan followed', '76%'],
-  ['Max drawdown', '4.2%'],
-]
-
-const features = [
+const productPillars = [
   {
     icon: UploadCloud,
-    title: 'MT5 import',
-    body: 'Import trade history, swaps, commissions, lots and pips without turning your review into admin work.',
+    title: 'Import',
+    body: 'Bring MT5 trade history into one journal without rebuilding every position manually.',
   },
   {
     icon: BarChart3,
-    title: 'Trader analytics',
-    body: 'Review profit factor, drawdown, pips won and lost, session quality, pairs and long versus short performance.',
+    title: 'Analyze',
+    body: 'Review pips, profit factor, drawdown, pairs, sessions and long versus short execution.',
   },
   {
     icon: NotebookPen,
-    title: 'Structured journal',
-    body: 'Grade entry, exit, plan quality, market condition and management so each trade has useful context.',
-  },
-  {
-    icon: Target,
-    title: 'Strategy review',
-    body: 'See which setups deserve more size, which mistakes are expensive, and what to improve next week.',
+    title: 'Journal',
+    body: 'Capture the setup, plan quality, entry, exit, management and lesson behind each trade.',
   },
 ]
 
+const reviewItems = [
+  ['Performance', 'Net P&L, win rate, profit factor, pips won and lost.'],
+  ['Risk', 'Drawdown, position size, losing patterns and account-level exposure.'],
+  ['Execution', 'Entry grade, exit grade, plan adherence and trade management.'],
+  ['Context', 'Pair, session, setup, notes, screenshots and economic news.'],
+]
+
 const workflow = [
-  'Import MT5 history',
-  'Review risk, pips and pairs',
+  'Import or log trades',
+  'Review account and pair performance',
   'Grade execution quality',
   'Write the session lesson',
+  'Adjust the next trading plan',
 ]
 
 function LandingPage() {
@@ -73,8 +68,8 @@ function LandingPage() {
             <a href='#product' className='transition hover:text-foreground'>
               Product
             </a>
-            <a href='#features' className='transition hover:text-foreground'>
-              Features
+            <a href='#review' className='transition hover:text-foreground'>
+              Review
             </a>
             <a href='#workflow' className='transition hover:text-foreground'>
               Workflow
@@ -95,94 +90,106 @@ function LandingPage() {
       </header>
 
       <section className='border-b'>
-        <div className='mx-auto flex w-full max-w-6xl flex-col items-center px-4 py-14 text-center sm:px-6 sm:py-20 lg:py-24'>
-          <Badge variant='outline' className='mb-6'>
-            Forex journal for disciplined traders
-          </Badge>
-          <BrandLogoStacked className='mb-7 h-24 w-[146px]' />
-          <h1 className='max-w-4xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl'>
-            Review trades like a professional forex desk.
-          </h1>
-          <p className='mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg'>
-            FUADFX turns MT5 history into clean analytics, structured journal
-            notes and repeatable review workflows for serious forex traders.
-          </p>
-          <div className='mt-8 flex w-full max-w-sm flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row'>
-            <Button size='lg' asChild>
-              <Link to='/sign-up'>
-                Create account
-                <ArrowRight />
-              </Link>
-            </Button>
-            <Button size='lg' variant='outline' asChild>
-              <Link to='/sign-in'>Login to journal</Link>
-            </Button>
+        <div className='mx-auto grid w-full max-w-6xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[0.82fr_1.18fr] lg:items-center lg:py-24'>
+          <div>
+            <Badge variant='outline' className='mb-6'>
+              Forex journal for MT5 traders
+            </Badge>
+            <BrandLogoStacked className='mb-8 h-24 w-[146px]' />
+            <h1 className='max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl'>
+              A cleaner review system for every forex trade.
+            </h1>
+            <p className='mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg'>
+              FUADFX helps traders import MT5 history, analyze performance,
+              grade execution and turn each session into a practical next step.
+            </p>
+            <div className='mt-8 flex w-full max-w-sm flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row'>
+              <Button size='lg' asChild>
+                <Link to='/sign-up'>
+                  Create account
+                  <ArrowRight />
+                </Link>
+              </Button>
+              <Button size='lg' variant='outline' asChild>
+                <Link to='/sign-in'>Login to journal</Link>
+              </Button>
+            </div>
           </div>
 
-          <div id='product' className='mt-12 w-full'>
+          <div id='product'>
             <ProductPreview />
           </div>
         </div>
       </section>
 
       <section className='border-b'>
-        <div className='mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:grid-cols-4 sm:px-6'>
-          {heroMetrics.map(([label, value]) => (
-            <div key={label} className='text-center sm:text-start'>
-              <div className='text-2xl font-semibold tracking-tight'>{value}</div>
-              <div className='mt-1 text-sm text-muted-foreground'>{label}</div>
+        <div className='mx-auto grid w-full max-w-6xl gap-0 px-4 py-10 sm:px-6 md:grid-cols-3'>
+          {productPillars.map((pillar, index) => (
+            <div
+              key={pillar.title}
+              className='border-b py-6 md:border-b-0 md:px-8 md:first:pl-0 md:last:pr-0 md:[&:not(:last-child)]:border-r'
+            >
+              <div className='mb-4 flex size-9 items-center justify-center rounded-md border bg-muted/40'>
+                <pillar.icon className='size-4' />
+              </div>
+              <div className='text-sm text-muted-foreground'>
+                0{index + 1}
+              </div>
+              <h2 className='mt-1 text-xl font-semibold'>{pillar.title}</h2>
+              <p className='mt-3 text-sm leading-6 text-muted-foreground'>
+                {pillar.body}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      <section id='features' className='border-b'>
-        <div className='mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:py-20'>
-          <div className='grid gap-10 lg:grid-cols-[0.78fr_1.22fr]'>
-            <div>
-              <Badge variant='secondary' className='mb-4'>
-                Built for the review loop
-              </Badge>
-              <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl'>
-                Everything a forex journal needs, without clutter.
-              </h2>
-              <p className='mt-4 leading-7 text-muted-foreground'>
-                The page is shaped around what traders actually check after a
-                session: risk, pips, execution quality, mistakes, setups and
-                the next action.
-              </p>
-            </div>
-            <div className='grid gap-x-8 gap-y-9 sm:grid-cols-2'>
-              {features.map((feature) => (
-                <div key={feature.title} className='flex gap-4'>
-                  <div className='mt-1 flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted/40'>
-                    <feature.icon className='size-4' />
-                  </div>
-                  <div>
-                    <h3 className='font-semibold'>{feature.title}</h3>
-                    <p className='mt-2 text-sm leading-6 text-muted-foreground'>
-                      {feature.body}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+      <section id='review' className='border-b'>
+        <div className='mx-auto grid w-full max-w-6xl gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:py-20'>
+          <div>
+            <Badge variant='secondary' className='mb-4'>
+              What gets reviewed
+            </Badge>
+            <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl'>
+              Built around the questions traders ask after a session.
+            </h2>
+            <p className='mt-4 leading-7 text-muted-foreground'>
+              The journal is structured around decision quality, not vanity
+              dashboards. Each section should help answer what worked, what
+              failed and what changes tomorrow.
+            </p>
+          </div>
+          <div className='rounded-lg border'>
+            {reviewItems.map(([title, body], index) => (
+              <div
+                key={title}
+                className='grid gap-2 border-b p-5 last:border-b-0 sm:grid-cols-[160px_1fr]'
+              >
+                <div className='font-medium'>{title}</div>
+                <p className='text-sm leading-6 text-muted-foreground'>
+                  {body}
+                </p>
+                {index === 0 && (
+                  <span className='sr-only'>Primary review categories</span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       <section id='workflow' className='border-b bg-muted/20'>
-        <div className='mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:py-20'>
+        <div className='mx-auto grid w-full max-w-6xl gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20'>
           <div>
             <Badge variant='outline' className='mb-4'>
               Workflow
             </Badge>
             <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl'>
-              A calm process after every trading session.
+              A repeatable process, not another dashboard to ignore.
             </h2>
             <p className='mt-4 leading-7 text-muted-foreground'>
-              The app keeps the workflow simple enough to repeat every day,
-              while still collecting the detail needed for serious improvement.
+              The app is organized so a trader can finish a daily review
+              quickly, then come back at the end of the week with useful data.
             </p>
           </div>
           <div className='grid gap-3'>
@@ -260,7 +267,7 @@ function LandingPage() {
 function ProductPreview() {
   return (
     <div
-      className='mx-auto max-w-5xl overflow-hidden rounded-lg border bg-card text-start'
+      className='overflow-hidden rounded-lg border bg-card text-start'
       aria-label='FUADFX product preview'
     >
       <div className='flex items-center justify-between border-b px-4 py-3 sm:px-5'>
@@ -268,37 +275,37 @@ function ProductPreview() {
           <BrandIcon className='size-6' />
           FUADFX Journal
         </div>
-        <Badge variant='secondary'>Live account review</Badge>
+        <Badge variant='secondary'>Account review</Badge>
       </div>
 
-      <div className='grid gap-0 lg:grid-cols-[0.9fr_1.1fr]'>
+      <div className='grid gap-0 lg:grid-cols-[0.92fr_1.08fr]'>
         <div className='border-b p-5 lg:border-r lg:border-b-0'>
           <div className='flex items-start justify-between gap-4'>
             <div>
-              <div className='text-sm text-muted-foreground'>Net P&L</div>
+              <div className='text-sm text-muted-foreground'>Closed P&L</div>
               <div className='mt-2 text-4xl font-semibold tracking-tight text-emerald-600'>
                 +$3,428
               </div>
               <div className='mt-1 text-sm text-muted-foreground'>
-                41 closed trades this month
+                Month-to-date sample account
               </div>
             </div>
-            <Badge variant='outline'>MT5 import</Badge>
+            <Badge variant='outline'>MT5</Badge>
           </div>
 
           <div className='mt-6 grid grid-cols-2 gap-3'>
             <PreviewStat label='Win rate' value='58.5%' />
             <PreviewStat label='Profit factor' value='2.14' />
-            <PreviewStat label='Pips won' value='+612' />
-            <PreviewStat label='Pips lost' value='-428' />
+            <PreviewStat label='Net pips' value='+184' />
+            <PreviewStat label='Plan followed' value='76%' />
           </div>
         </div>
 
         <div className='p-5'>
           <div className='mb-5'>
-            <div className='font-semibold'>Performance by pair</div>
+            <div className='font-semibold'>Pair review</div>
             <div className='text-sm text-muted-foreground'>
-              Pips, risk and execution quality
+              Pips, direction and execution grade
             </div>
           </div>
           <div className='space-y-4'>
