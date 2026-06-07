@@ -37,6 +37,7 @@ export function TasksImportDialog({
   onOpenChange,
 }: TaskImportDialogProps) {
   const activeAccountId = useAccountsStore((s) => s.activeAccountId)
+  const setActiveAccount = useAccountsStore((s) => s.setActive)
   const { data: allTrades = [] } = useAllTradesQuery()
   const upsertAccount = useUpsertAccountFromImport()
   const bulkCreate = useBulkCreateTrades()
@@ -122,6 +123,7 @@ export function TasksImportDialog({
           ? `${preview.broker ?? 'MT5'} ${preview.account}`
           : preview.broker,
       })
+      setActiveAccount(account.id)
 
       const res = await bulkCreate.mutateAsync({
         trades: preview.trades,
@@ -130,7 +132,7 @@ export function TasksImportDialog({
 
       if (res.added === 0 && res.duplicates > 0) {
         toast.message(
-          `All ${res.duplicates} trades were already in "${account.name}".`
+          `All ${res.duplicates} trades were already in "${account.name}". Switched to that account.`
         )
       } else if (res.duplicates > 0) {
         toast.success(
