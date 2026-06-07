@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useSidebar } from '@/components/ui/sidebar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -36,12 +37,14 @@ export function Dashboard() {
   const trades = useTrades()
   const stats = useMemo(() => computeStats(trades), [trades])
   const hasTrades = trades.length > 0
+  const { state: sidebarState, isMobile, openMobile } = useSidebar()
+  const showTopNav = isMobile ? !openMobile : sidebarState === 'collapsed'
 
   return (
     <>
       <Header>
-        <TopNav links={topNav} className='me-auto' />
-        <Search />
+        {showTopNav && <TopNav links={topNav} className='me-auto' />}
+        <Search className={showTopNav ? '' : 'me-auto'} />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
