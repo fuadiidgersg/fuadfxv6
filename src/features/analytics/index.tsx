@@ -15,6 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { Link } from '@tanstack/react-router'
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -35,7 +37,9 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Brain,
+  CandlestickChart,
   Clock,
+  Download,
   Flame,
   Shield,
   Snowflake,
@@ -232,6 +236,86 @@ function detectWeaknesses(
   return issues
 }
 
+function formatMoney(value: number) {
+  return `${value >= 0 ? '+' : '-'}$${Math.abs(value).toFixed(2)}`
+}
+
+function coachToneClass(tone: 'good' | 'warn' | 'bad' | 'neutral') {
+  if (tone === 'good') return 'border-emerald-500/30 bg-emerald-500/5'
+  if (tone === 'warn') return 'border-amber-500/30 bg-amber-500/5'
+  if (tone === 'bad') return 'border-red-500/30 bg-red-500/5'
+  return 'bg-card'
+}
+
+function CoachCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  tone = 'neutral',
+}: {
+  title: string
+  value: string
+  description: string
+  icon: React.ElementType
+  tone?: 'good' | 'warn' | 'bad' | 'neutral'
+}) {
+  return (
+    <Card className={cn('border', coachToneClass(tone))}>
+      <CardContent className='pt-6'>
+        <div className='flex items-start justify-between gap-3'>
+          <div className='min-w-0'>
+            <p className='text-xs font-medium uppercase text-muted-foreground'>
+              {title}
+            </p>
+            <p className='mt-1 text-lg font-semibold leading-tight'>{value}</p>
+          </div>
+          <div className='flex size-9 shrink-0 items-center justify-center rounded-md bg-background/80'>
+            <Icon className='size-4 text-muted-foreground' />
+          </div>
+        </div>
+        <p className='mt-3 text-sm text-muted-foreground'>{description}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function EmptyAnalyticsState({ hasAnyTrades }: { hasAnyTrades: boolean }) {
+  return (
+    <Card className='border-dashed'>
+      <CardHeader className='items-center text-center'>
+        <div className='mb-2 flex size-12 items-center justify-center rounded-full bg-muted'>
+          <TrendingUp className='size-5' />
+        </div>
+        <CardTitle className='text-base'>
+          {hasAnyTrades ? 'No trades in this date range' : 'Analytics starts after your first trades'}
+        </CardTitle>
+        <CardDescription className='max-w-xl'>
+          {hasAnyTrades
+            ? 'Change the date range to bring trades back into the report.'
+            : 'Import an MT5 detailed report to unlock your edge, risk, timing and psychology breakdowns.'}
+        </CardDescription>
+      </CardHeader>
+      {!hasAnyTrades && (
+        <CardContent className='flex flex-wrap justify-center gap-2'>
+          <Button asChild>
+            <Link to='/tasks' search={{ import: true }}>
+              <Download className='size-4' />
+              Import MT5 report
+            </Link>
+          </Button>
+          <Button variant='outline' asChild>
+            <Link to='/tasks' search={{ new: true }}>
+              <CandlestickChart className='size-4' />
+              Log one trade
+            </Link>
+          </Button>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
 export function Analytics() {
   const allTrades = useTrades()
   const dateRange = useDateRangeStore()
@@ -298,6 +382,83 @@ export function Analytics() {
 
   const goodEmotions = ['disciplined', 'calm', 'confident']
   const badEmotions = ['fomo', 'revenge', 'tilted', 'greedy', 'fearful']
+  const closedTrades = stats.wins + stats.losses + stats.breakeven
+  const bestPair = byPairDetailed[0]
+  const bestStrategy = byStrategy[0]
+  const bestSession = [...bySession].sort((a, b) => b.pnl - a.pnl)[0]
+  const hasFilteredTrades = trades.length > 0
+  const primaryFocus =
+    closedTrades < 10
+      ? {
+          value: 'Collect more data',
+          description:
+            'Log at least 10 closed trades before trusting the deeper signals.',
+          tone: 'neutral' as const,
+        }
+      : weaknesses[0]
+        ? {
+            value: weaknesses[0].split(' — ')[0],
+            description: weaknesses[0].split(' — ')[1] ?? 'Review this area before taking the next setup.',
+            tone: 'warn' as const,
+          }
+        : stats.totalPnl >= 0 && stats.profitFactor >= 1.2
+          ? {
+              value: 'Protect what is working',
+              description:
+                'Your edge is positive. Focus on repeating the same A-grade setups.',
+              tone: 'good' as const,
+            }
+          : {
+              value: 'Tighten risk first',
+              description:
+                'Before chasing win rate, reduce losses and keep risk consistent.',
+              tone: 'bad' as const,
+            }
+  const bestEdge =
+    bestPair && bestPair.trades >= 2
+      ? {
+          value: bestPair.pair,
+          description: `${formatMoney(bestPair.pnl)} across ${bestPair.trades} trades, ${bestPair.winRate}% win rate.`,
+        }
+      : bestStrategy
+        ? {
+            value: bestStrategy.strategy,
+            description: `${formatMoney(bestStrategy.pnl)} across ${bestStrategy.trades} trades, ${bestStrategy.winRate.toFixed(1)}% win rate.`,
+          }
+        : bestSession
+          ? {
+              value: `${bestSession.session} session`,
+              description: `${formatMoney(bestSession.pnl)} across ${bestSession.trades} trades, ${bestSession.winRate}% win rate.`,
+            }
+          : {
+              value: 'No clear edge yet',
+              description: 'Your best pair or setup will appear once you have more closed trades.',
+            }
+  const riskTone =
+    dd.maxDrawdownPct >= tradingSettings.ftmoMaxDrawdownPct * 0.75
+      ? 'bad'
+      : stats.profitFactor >= 1.2
+        ? 'good'
+        : 'warn'
+  const riskValue =
+    dd.maxDrawdownPct > 0
+      ? `${dd.maxDrawdownPct.toFixed(1)}% drawdown`
+      : 'No drawdown yet'
+  const riskDescription =
+    riskTone === 'bad'
+      ? 'Drawdown is getting close to your limit. Reduce size until the curve stabilizes.'
+      : riskTone === 'good'
+        ? 'Risk is under control relative to your current results.'
+        : 'Keep position size consistent while the edge is still forming.'
+  const disciplineValue =
+    revenge.count > 0
+      ? `${revenge.count} revenge trade${revenge.count === 1 ? '' : 's'}`
+      : 'No revenge pattern'
+  const disciplineTone = revenge.pct > 20 ? 'bad' : revenge.count > 0 ? 'warn' : 'good'
+  const disciplineDescription =
+    revenge.count > 0
+      ? `${revenge.pct.toFixed(0)}% of post-loss trades happened within 15 minutes.`
+      : 'No fast post-loss revenge pattern detected in this range.'
 
   return (
     <>
@@ -313,18 +474,54 @@ export function Analytics() {
         <div>
           <h2 className='text-2xl font-bold tracking-tight'>Analytics</h2>
           <p className='text-muted-foreground'>
-            Deep dive into your trading performance, edge, psychology, and risk.
+            Start with the coaching cards, then open the deeper reports when you
+            need the detail.
           </p>
         </div>
 
+        {!hasFilteredTrades ? (
+          <EmptyAnalyticsState hasAnyTrades={allTrades.length > 0} />
+        ) : (
+          <>
+            <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
+              <CoachCard
+                title='Next focus'
+                value={primaryFocus.value}
+                description={primaryFocus.description}
+                icon={Target}
+                tone={primaryFocus.tone}
+              />
+              <CoachCard
+                title='Best edge'
+                value={bestEdge.value}
+                description={bestEdge.description}
+                icon={Trophy}
+                tone={bestPair || bestStrategy ? 'good' : 'neutral'}
+              />
+              <CoachCard
+                title='Risk status'
+                value={riskValue}
+                description={riskDescription}
+                icon={Shield}
+                tone={riskTone}
+              />
+              <CoachCard
+                title='Discipline check'
+                value={disciplineValue}
+                description={disciplineDescription}
+                icon={Brain}
+                tone={disciplineTone}
+              />
+            </div>
+
         <Tabs defaultValue='overview' className='space-y-6'>
           <TabsList className='grid w-full grid-cols-3 lg:grid-cols-6'>
-            <TabsTrigger value='overview'>Overview</TabsTrigger>
-            <TabsTrigger value='performance'>Performance</TabsTrigger>
-            <TabsTrigger value='psychology'>Psychology</TabsTrigger>
+            <TabsTrigger value='overview'>Coach</TabsTrigger>
+            <TabsTrigger value='performance'>Results</TabsTrigger>
+            <TabsTrigger value='psychology'>Mindset</TabsTrigger>
             <TabsTrigger value='risk'>Risk</TabsTrigger>
-            <TabsTrigger value='time'>Time</TabsTrigger>
-            <TabsTrigger value='symbols'>Symbols</TabsTrigger>
+            <TabsTrigger value='time'>Timing</TabsTrigger>
+            <TabsTrigger value='symbols'>Pairs</TabsTrigger>
           </TabsList>
 
           {/* ─── OVERVIEW ─── */}
@@ -2199,6 +2396,8 @@ export function Analytics() {
             </Card>
           </TabsContent>
         </Tabs>
+          </>
+        )}
       </Main>
     </>
   )
