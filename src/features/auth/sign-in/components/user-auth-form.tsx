@@ -55,7 +55,7 @@ export function UserAuthForm({
     try {
       await signIn(data.email, data.password)
       toast.success(`Welcome back, ${data.email}!`)
-      const targetPath = redirectTo || '/'
+      const targetPath = redirectTo || '/dashboard'
       navigate({ to: targetPath, replace: true })
     } catch (err: any) {
       toast.error(err?.message ?? 'Sign in failed. Please check your credentials.')
