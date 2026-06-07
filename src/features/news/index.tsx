@@ -36,7 +36,8 @@ import { news, type NewsImpact } from './data/news'
 
 const impactColor: Record<NewsImpact, string> = {
   high: 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30',
-  medium: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
+  medium:
+    'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
   low: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
 }
 
@@ -99,7 +100,8 @@ export function News() {
         <div>
           <h2 className='text-2xl font-bold tracking-tight'>Economic News</h2>
           <p className='text-muted-foreground'>
-            Upcoming high-impact data releases that move FX volatility.
+            Upcoming FX volatility events. Verify timing with your broker
+            calendar before placing trades.
           </p>
         </div>
 
@@ -113,7 +115,10 @@ export function News() {
               className='h-9 w-60 ps-9'
             />
           </div>
-          <Select value={impact} onValueChange={(v) => setImpact(v as typeof impact)}>
+          <Select
+            value={impact}
+            onValueChange={(v) => setImpact(v as typeof impact)}
+          >
             <SelectTrigger className='w-32'>
               <SelectValue />
             </SelectTrigger>
@@ -179,24 +184,32 @@ export function News() {
                   </TableHeader>
                   <TableBody>
                     {group.items.map((ev) => {
-                      const t = new Date(ev.time).toLocaleTimeString(undefined, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
+                      const t = new Date(ev.time).toLocaleTimeString(
+                        undefined,
+                        {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }
+                      )
                       const beat =
                         ev.actual && ev.forecast
                           ? parseFloat(ev.actual) > parseFloat(ev.forecast)
                           : undefined
                       return (
                         <TableRow key={ev.id}>
-                          <TableCell className='font-mono text-xs'>{t}</TableCell>
+                          <TableCell className='font-mono text-xs'>
+                            {t}
+                          </TableCell>
                           <TableCell>
                             <Badge variant='secondary'>{ev.currency}</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant='outline'
-                              className={cn('capitalize', impactColor[ev.impact])}
+                              className={cn(
+                                'capitalize',
+                                impactColor[ev.impact]
+                              )}
                             >
                               {ev.impact}
                             </Badge>
@@ -210,7 +223,7 @@ export function News() {
                           <TableCell className='text-end tabular-nums'>
                             {ev.forecast}
                           </TableCell>
-                          <TableCell className='text-end tabular-nums text-muted-foreground'>
+                          <TableCell className='text-end text-muted-foreground tabular-nums'>
                             {ev.previous}
                           </TableCell>
                           <TableCell
@@ -220,7 +233,7 @@ export function News() {
                               beat === false && 'text-red-600'
                             )}
                           >
-                            {ev.actual ?? '—'}
+                            {ev.actual ?? '-'}
                           </TableCell>
                         </TableRow>
                       )

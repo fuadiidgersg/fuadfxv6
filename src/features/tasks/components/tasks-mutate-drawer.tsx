@@ -202,7 +202,7 @@ export function TasksMutateDrawer({
   const handleFile = (file: File) => {
     if (!file) return
     if (file.size > 5_000_000) {
-      alert('Screenshot must be under 5 MB')
+      toast.error('Screenshot must be under 5 MB.')
       return
     }
     const reader = new FileReader()

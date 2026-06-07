@@ -30,7 +30,7 @@ function fromRow(row: any) {
     pips: row.pips != null ? parseFloat(row.pips) : 0,
     rMultiple: row.r_multiple != null ? parseFloat(row.r_multiple) : 0,
     riskAmount: row.risk_amount != null ? parseFloat(row.risk_amount) : undefined,
-    strategy: (row.strategy || 'Smart Money') as string,
+    strategy: (row.strategy || 'Unassigned') as string,
     session: (row.session || 'London') as string,
     status: outcome as string,
     openedAt: row.open_time ? new Date(row.open_time).toISOString() : new Date().toISOString(),

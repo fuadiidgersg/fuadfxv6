@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { CheckCircle2, FileText, Loader2, Trash2, Upload } from 'lucide-react'
+import { FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAccountsStore } from '@/stores/accounts-store'
 import { useTradingSettings } from '@/stores/trading-settings-store'
 import { parseMT5Html } from '@/lib/mt5-import'
 import { useUpsertAccountFromImport } from '@/hooks/use-accounts-query'
 import {
+  useAllTradesQuery,
   useBulkCreateTrades,
   useClearTradesForAccount,
-  useAllTradesQuery,
 } from '@/hooks/use-trades-query'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { TradeStrategy } from '@/features/trades/data/schema'
 
 type TaskImportDialogProps = {
@@ -53,19 +52,15 @@ export function TasksImportDialog({
     ? allTrades.filter((t) => t.accountId === activeAccountId).length
     : 0
 
-  const [csvFile, setCsvFile] = useState<File | null>(null)
   const [htmlFile, setHtmlFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Mt5Preview>(null)
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
-  const [tab, setTab] = useState<'mt5' | 'csv'>('mt5')
 
   const reset = () => {
-    setCsvFile(null)
     setHtmlFile(null)
     setPreview(null)
     setParsing(false)
-    setTab('mt5')
   }
 
   const decodeMT5File = async (file: File): Promise<string> => {
@@ -88,9 +83,7 @@ export function TasksImportDialog({
     if (bytes.length > 64) {
       let zeros = 0
       for (let i = 1; i < 64; i += 2) if (bytes[i] === 0) zeros++
-      if (zeros > 24) {
-        return new TextDecoder('utf-16le').decode(bytes)
-      }
+      if (zeros > 24) return new TextDecoder('utf-16le').decode(bytes)
     }
     return new TextDecoder('utf-8').decode(bytes)
   }
@@ -110,7 +103,7 @@ export function TasksImportDialog({
       setPreview(result)
       if (result.trades.length === 0) {
         toast.warning(
-          'No trades were found in this HTML file. Make sure you exported the "Detailed Report" or "History" from MT5.'
+          'No trades were found. Export the MT5 History or Detailed HTML report and try again.'
         )
       }
     } catch (err) {
@@ -164,16 +157,6 @@ export function TasksImportDialog({
     }
   }
 
-  const handleImportCsv = () => {
-    if (!csvFile) return
-    toast.message(
-      'CSV import isn\u2019t wired to a parser yet \u2014 use the MT5 HTML import for now.',
-      { description: csvFile.name }
-    )
-    reset()
-    onOpenChange(false)
-  }
-
   const handleClearActive = async () => {
     if (!activeAccountId) return
     try {
@@ -198,161 +181,131 @@ export function TasksImportDialog({
     >
       <DialogContent className='gap-3 sm:max-w-lg'>
         <DialogHeader className='text-start'>
-          <DialogTitle>Import Trades</DialogTitle>
+          <DialogTitle>Import MT5 Trades</DialogTitle>
           <DialogDescription>
-            Bring in your trade history from a MetaTrader 5 detailed report.
-            Trades are assigned to the account detected in the file.
+            Bring in your MetaTrader 5 HTML history. Trades are assigned to the
+            account detected in the file.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as 'mt5' | 'csv')}>
-          <TabsList className='grid w-full grid-cols-2'>
-            <TabsTrigger value='mt5'>MT5 (HTML)</TabsTrigger>
-            <TabsTrigger value='csv' disabled>
-              CSV soon
-            </TabsTrigger>
-          </TabsList>
+        <div className='space-y-3'>
+          <div className='rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground'>
+            In MT5, open <strong>Toolbox - History</strong>, right-click and
+            choose <strong>Report - HTML (Detailed)</strong>. Upload the saved
+            .htm or .html file below.
+          </div>
 
-          <TabsContent value='mt5' className='space-y-3 pt-3'>
-            <div className='rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground'>
-              In MT5, open <strong>Toolbox → History</strong>, right-click and
-              choose <strong>Report → HTML (Detailed)</strong>. Drop the saved
-              file below.
+          <div className='grid gap-2'>
+            <Label htmlFor='mt5-html'>MT5 statement (.htm or .html)</Label>
+            <Input
+              id='mt5-html'
+              type='file'
+              accept='.htm,.html,text/html'
+              className='h-9 py-1.5'
+              onChange={(e) => handleHtml(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          {parsing && (
+            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+              <Loader2 className='size-4 animate-spin' />
+              Parsing your statement...
             </div>
+          )}
 
-            <div className='grid gap-2'>
-              <Label htmlFor='mt5-html'>MT5 statement (.htm or .html)</Label>
-              <Input
-                id='mt5-html'
-                type='file'
-                accept='.htm,.html,text/html'
-                className='h-9 py-1.5'
-                onChange={(e) => handleHtml(e.target.files?.[0] ?? null)}
-              />
-            </div>
-
-            {parsing && (
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                <Loader2 className='size-4 animate-spin' />
-                Parsing your statement...
+          {!parsing && htmlFile && preview && (
+            <div className='rounded-md border p-3 text-sm'>
+              <div className='mb-2 flex items-center gap-2 font-medium'>
+                <FileText className='size-4' />
+                {htmlFile.name}
               </div>
-            )}
-
-            {!parsing && htmlFile && preview && (
-              <div className='rounded-md border p-3 text-sm'>
-                <div className='mb-2 flex items-center gap-2 font-medium'>
-                  <FileText className='size-4' />
-                  {htmlFile.name}
-                </div>
-                <div className='grid grid-cols-2 gap-y-1 text-xs text-muted-foreground'>
-                  <span>Rows scanned</span>
-                  <span className='text-end text-foreground tabular-nums'>
-                    {preview.totalRows}
-                  </span>
-                  <span>Trades detected</span>
-                  <span className='text-end font-semibold text-emerald-600 tabular-nums'>
-                    {preview.trades.length}
-                  </span>
-                  <span>Skipped (non-trade rows)</span>
-                  <span className='text-end text-foreground tabular-nums'>
-                    {preview.skipped}
-                  </span>
-                  {preview.account && (
-                    <>
-                      <span>Account</span>
-                      <span className='text-end text-foreground'>
-                        {preview.account}
-                      </span>
-                    </>
-                  )}
-                  {preview.broker && (
-                    <>
-                      <span>Broker</span>
-                      <span className='text-end text-foreground'>
-                        {preview.broker}
-                      </span>
-                    </>
-                  )}
-                  <span>Strategy</span>
-                  <span className='text-end text-foreground'>
-                    {autoAssignImportedStrategy
-                      ? importedTradeStrategy
-                      : 'Unassigned'}
-                  </span>
-                </div>
-
-                {preview.trades.length > 0 && (
-                  <div className='mt-3 max-h-40 overflow-y-auto rounded border'>
-                    <table className='w-full text-xs'>
-                      <thead className='bg-muted text-muted-foreground'>
-                        <tr>
-                          <th className='px-2 py-1 text-start'>Pair</th>
-                          <th className='px-2 py-1 text-start'>Side</th>
-                          <th className='px-2 py-1 text-end'>Lots</th>
-                          <th className='px-2 py-1 text-end'>P&L</th>
-                          <th className='px-2 py-1 text-end'>Closed</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.trades.slice(0, 6).map((t) => (
-                          <tr key={t.id} className='border-t'>
-                            <td className='px-2 py-1 font-medium'>{t.pair}</td>
-                            <td className='px-2 py-1 capitalize'>
-                              {t.direction}
-                            </td>
-                            <td className='px-2 py-1 text-end tabular-nums'>
-                              {t.lotSize.toFixed(2)}
-                            </td>
-                            <td
-                              className={
-                                'px-2 py-1 text-end font-semibold tabular-nums ' +
-                                (t.pnl >= 0
-                                  ? 'text-emerald-600'
-                                  : 'text-red-600')
-                              }
-                            >
-                              {t.pnl >= 0 ? '+' : ''}
-                              {t.pnl.toFixed(2)}
-                            </td>
-                            <td className='px-2 py-1 text-end text-muted-foreground'>
-                              {t.closedAt instanceof Date
-                                ? t.closedAt.toISOString().slice(0, 10)
-                                : String(t.closedAt).slice(0, 10)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {preview.trades.length > 6 && (
-                      <div className='border-t bg-muted/30 px-2 py-1 text-center text-xs text-muted-foreground'>
-                        + {preview.trades.length - 6} more
-                      </div>
-                    )}
-                  </div>
+              <div className='grid grid-cols-2 gap-y-1 text-xs text-muted-foreground'>
+                <span>Rows scanned</span>
+                <span className='text-end text-foreground tabular-nums'>
+                  {preview.totalRows}
+                </span>
+                <span>Trades detected</span>
+                <span className='text-end font-semibold text-emerald-600 tabular-nums'>
+                  {preview.trades.length}
+                </span>
+                <span>Skipped rows</span>
+                <span className='text-end text-foreground tabular-nums'>
+                  {preview.skipped}
+                </span>
+                {preview.account && (
+                  <>
+                    <span>Account</span>
+                    <span className='text-end text-foreground'>
+                      {preview.account}
+                    </span>
+                  </>
                 )}
+                {preview.broker && (
+                  <>
+                    <span>Broker</span>
+                    <span className='text-end text-foreground'>
+                      {preview.broker}
+                    </span>
+                  </>
+                )}
+                <span>Strategy</span>
+                <span className='text-end text-foreground'>
+                  {autoAssignImportedStrategy
+                    ? importedTradeStrategy
+                    : 'Unassigned'}
+                </span>
               </div>
-            )}
-          </TabsContent>
 
-          <TabsContent value='csv' className='space-y-3 pt-3'>
-            <div className='grid gap-2'>
-              <Label htmlFor='csv-file'>CSV statement</Label>
-              <Input
-                id='csv-file'
-                type='file'
-                accept='.csv,text/csv'
-                className='h-9 py-1.5'
-                onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
-              />
-              {csvFile && (
-                <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                  <CheckCircle2 className='size-4 text-emerald-500' />
-                  {csvFile.name}
+              {preview.trades.length > 0 && (
+                <div className='mt-3 max-h-40 overflow-y-auto rounded border'>
+                  <table className='w-full text-xs'>
+                    <thead className='bg-muted text-muted-foreground'>
+                      <tr>
+                        <th className='px-2 py-1 text-start'>Pair</th>
+                        <th className='px-2 py-1 text-start'>Side</th>
+                        <th className='px-2 py-1 text-end'>Lots</th>
+                        <th className='px-2 py-1 text-end'>P&L</th>
+                        <th className='px-2 py-1 text-end'>Closed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.trades.slice(0, 6).map((t) => (
+                        <tr key={t.id} className='border-t'>
+                          <td className='px-2 py-1 font-medium'>{t.pair}</td>
+                          <td className='px-2 py-1 capitalize'>
+                            {t.direction}
+                          </td>
+                          <td className='px-2 py-1 text-end tabular-nums'>
+                            {t.lotSize.toFixed(2)}
+                          </td>
+                          <td
+                            className={
+                              'px-2 py-1 text-end font-semibold tabular-nums ' +
+                              (t.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')
+                            }
+                          >
+                            {t.pnl >= 0 ? '+' : ''}
+                            {t.pnl.toFixed(2)}
+                          </td>
+                          <td className='px-2 py-1 text-end text-muted-foreground'>
+                            {t.closedAt instanceof Date
+                              ? t.closedAt.toISOString().slice(0, 10)
+                              : String(t.closedAt).slice(0, 10)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {preview.trades.length > 6 && (
+                    <div className='border-t bg-muted/30 px-2 py-1 text-center text-xs text-muted-foreground'>
+                      + {preview.trades.length - 6} more
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
 
         <DialogFooter className='flex-row items-center justify-between gap-2 sm:justify-between'>
           <Button
@@ -376,26 +329,19 @@ export function TasksImportDialog({
                 Close
               </Button>
             </DialogClose>
-            {tab === 'mt5' ? (
-              <Button
-                onClick={handleImportMt5}
-                disabled={!preview || preview.trades.length === 0 || isBusy}
-              >
-                {importing ? (
-                  <Loader2 className='size-4 animate-spin' />
-                ) : (
-                  <Upload className='size-4' />
-                )}
-                {importing
-                  ? 'Importing…'
-                  : `Import ${preview?.trades.length ?? 0} trades`}
-              </Button>
-            ) : (
-              <Button onClick={handleImportCsv} disabled={!csvFile || isBusy}>
+            <Button
+              onClick={handleImportMt5}
+              disabled={!preview || preview.trades.length === 0 || isBusy}
+            >
+              {importing ? (
+                <Loader2 className='size-4 animate-spin' />
+              ) : (
                 <Upload className='size-4' />
-                Import CSV
-              </Button>
-            )}
+              )}
+              {importing
+                ? 'Importing...'
+                : `Import ${preview?.trades.length ?? 0} trades`}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

@@ -9,6 +9,7 @@ import {
   Clock,
   Download,
   Flame,
+  Info,
   Shield,
   Snowflake,
   Target,
@@ -17,7 +18,6 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react'
-import { Info } from 'lucide-react'
 import {
   Area,
   AreaChart,
