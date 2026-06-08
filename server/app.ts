@@ -19,17 +19,30 @@ function isAllowedOrigin(origin: string | undefined): boolean {
 
   if (envOrigins.includes(origin)) return true
 
-  // Always allow Vercel preview + production deployments
-  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)) return true
+  const isProduction = process.env.NODE_ENV === 'production'
 
-  // Always allow localhost in any port (dev)
-  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true
+  // Local and Replit origins are for development only. Production origins must
+  // be explicitly listed in FRONTEND_URL, comma-separated when needed.
+  if (!isProduction && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return true
 
-  // Allow Replit dev domains
-  if (/\.replit\.dev$/.test(origin)) return true
+  if (!isProduction && /^https:\/\/[a-z0-9-]+\.replit\.dev$/.test(origin)) {
+    return true
+  }
 
   return false
 }
+
+app.disable('x-powered-by')
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=()'
+  )
+  next()
+})
 
 app.use(
   cors({
