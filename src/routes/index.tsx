@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import type { ElementType } from 'react'
 import {
   ArrowRight,
   BarChart3,
@@ -202,7 +203,7 @@ function LandingPage() {
                   {index + 1}
                 </div>
                 <span className='font-medium'>{step}</span>
-                <CheckCircle2 className='ml-auto size-4 text-emerald-600' />
+                <CheckCircle2 className='ml-auto size-4 text-primary' />
               </div>
             ))}
           </div>
@@ -283,7 +284,7 @@ function ProductPreview() {
           <div className='flex items-start justify-between gap-4'>
             <div>
               <div className='text-sm text-muted-foreground'>Closed P&L</div>
-              <div className='mt-2 text-4xl font-semibold tracking-tight text-emerald-600'>
+              <div className='mt-2 text-4xl font-semibold tracking-tight'>
                 +$3,428
               </div>
               <div className='mt-1 text-sm text-muted-foreground'>
@@ -347,7 +348,7 @@ function PairRow({
       <div className='flex items-center justify-between gap-3 text-sm'>
         <span className='font-medium'>{pair}</span>
         <div className='flex items-center gap-3'>
-          <span className={muted ? 'text-red-500' : 'text-emerald-600'}>
+          <span className={muted ? 'text-destructive' : 'text-foreground'}>
             {pips}
           </span>
           <Badge variant='secondary'>{grade}</Badge>
@@ -355,7 +356,7 @@ function PairRow({
       </div>
       <div className='h-2 overflow-hidden rounded-full bg-muted'>
         <div
-          className={muted ? 'h-full bg-red-500' : 'h-full bg-emerald-500'}
+          className={muted ? 'h-full bg-destructive' : 'h-full bg-primary'}
           style={{ width }}
         />
       </div>
@@ -368,7 +369,7 @@ function TrustItem({
   title,
   body,
 }: {
-  icon: React.ElementType
+  icon: ElementType
   title: string
   body: string
 }) {
