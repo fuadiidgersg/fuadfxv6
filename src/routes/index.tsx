@@ -14,7 +14,6 @@ import {
 import {
   BrandIcon,
   BrandLogoHorizontal,
-  BrandLogoStacked,
 } from '@/assets/logo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -96,7 +95,6 @@ function LandingPage() {
             <Badge variant='outline' className='mb-6'>
               Forex journal for MT5 traders
             </Badge>
-            <BrandLogoStacked className='mb-8 h-24 w-[146px]' />
             <h1 className='max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl'>
               A cleaner review system for every forex trade.
             </h1>
