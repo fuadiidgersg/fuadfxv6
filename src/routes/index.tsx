@@ -5,14 +5,12 @@ import {
   BarChart3,
   BookOpenCheck,
   CheckCircle2,
-  FileSpreadsheet,
   Gauge,
   LineChart,
   LockKeyhole,
   NotebookPen,
   ShieldCheck,
   Tags,
-  UploadCloud,
 } from 'lucide-react'
 import { BrandIcon, BrandLogoHorizontal } from '@/assets/logo'
 import { Badge } from '@/components/ui/badge'
@@ -26,38 +24,38 @@ export const Route = createFileRoute('/')({
 const metrics = [
   ['Profit factor', '2.14'],
   ['Win rate', '58.5%'],
-  ['Net pips', '+184'],
-  ['Drawdown', '4.8%'],
+  ['Backtest match', '72%'],
+  ['Risk drift', '4.8%'],
 ] as const
 
 const features = [
   {
-    icon: UploadCloud,
-    title: 'MT5 imports that stay reviewable',
-    body: 'Upload account history and keep symbol, direction, close time, pips and P&L structured for fast review.',
+    icon: LineChart,
+    title: 'Modern analysis for MT5 traders',
+    body: 'See performance, pips, drawdown, pairs and execution behavior in a cleaner interface than MT5 reports.',
   },
   {
     icon: BarChart3,
-    title: 'Analytics traders actually use',
-    body: 'Track profit factor, pips won and lost, drawdown, pair performance, sessions and long versus short behavior.',
+    title: 'Know what is helping or hurting your edge',
+    body: 'Compare sessions, symbols, direction, risk and consistency so the story behind the numbers is obvious.',
   },
   {
     icon: NotebookPen,
-    title: 'Journal the decision behind the result',
-    body: 'Add notes, screenshots, emotion, execution grade and lessons so the next plan is based on evidence.',
+    title: 'Review the decision behind the result',
+    body: 'Add notes, screenshots, emotion, execution grade and lessons so each trade improves the next one.',
   },
   {
     icon: Tags,
-    title: 'Strategy tagging stays optional',
-    body: 'Imported trades do not need forced strategy labels. Turn strategy prompts on only when it fits the workflow.',
+    title: 'Backtest ideas against real behavior',
+    body: 'Review setups, strategy tags and trade context to validate what deserves more risk and what should be removed.',
   },
 ] as const
 
 const workflow = [
   {
-    icon: FileSpreadsheet,
-    title: 'Import',
-    body: 'Bring MT5 statement data into a clean trading record.',
+    icon: LineChart,
+    title: 'Analyze',
+    body: 'Turn MT5 account history into clear performance and risk insight.',
   },
   {
     icon: Gauge,
@@ -66,8 +64,8 @@ const workflow = [
   },
   {
     icon: BookOpenCheck,
-    title: 'Improve',
-    body: 'Write one practical lesson before the next session.',
+    title: 'Backtest',
+    body: 'Compare ideas against past trades before changing your plan.',
   },
 ] as const
 
@@ -108,20 +106,20 @@ function LandingPage() {
         <div className='mx-auto grid w-full max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.86fr_1.14fr] lg:px-8 lg:py-24'>
           <div className='flex flex-col justify-center'>
             <Badge variant='outline' className='mb-6 w-fit rounded-full px-4 py-1'>
-              Forex journal for disciplined traders
+              Modern MT5 companion for serious traders
             </Badge>
             <h1 className='max-w-4xl text-balance text-5xl font-semibold leading-tight tracking-tight sm:text-6xl lg:text-7xl'>
-              Turn every trade into a cleaner decision.
+              MT5 shows the trades. FUADFX shows the edge.
             </h1>
             <p className='mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg'>
-              FUADFX is a premium forex journal for importing MT5 trades,
-              analyzing performance and building a repeatable review process
-              around execution, risk and psychology.
+              FUADFX is a premium companion for MT5 traders who want to
+              analyze, review and backtest their trading data without fighting
+              outdated reports, scattered notes or hard-to-read account history.
             </p>
             <div className='mt-9 flex w-full max-w-sm flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row'>
               <Button size='lg' asChild>
                 <Link to='/sign-up'>
-                  Start journaling
+                  Start reviewing
                   <ArrowRight />
                 </Link>
               </Button>
@@ -130,7 +128,7 @@ function LandingPage() {
               </Button>
             </div>
             <div className='mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground'>
-              {['Supabase Google Auth', 'MT5 imports', 'Pips analytics'].map(
+              {['MT5 companion', 'Review workspace', 'Backtest-ready insights'].map(
                 (item) => (
                   <span key={item} className='flex items-center gap-2'>
                     <CheckCircle2 className='size-4 text-foreground' />
@@ -149,8 +147,8 @@ function LandingPage() {
         <div className='mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20'>
           <SectionIntro
             eyebrow='Platform'
-            title='Everything a trader needs after the trade closes.'
-            body='The landing page now leads with the real product promise: fast imports, accurate review metrics and a journal that improves behavior.'
+            title='The analysis layer MT5 should have had.'
+            body='MT5 is powerful for execution, but its reporting experience makes it hard to study your own behavior. FUADFX turns trading data into a workspace for clarity, review and better decisions.'
           />
           <div className='mt-10 grid gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-2'>
             {features.map((feature) => (
@@ -164,8 +162,8 @@ function LandingPage() {
         <div className='mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20'>
           <SectionIntro
             eyebrow='Workflow'
-            title='A simple loop traders can repeat every day.'
-            body='Import the evidence, review what happened, then write the one rule that improves the next session.'
+            title='Analyze, review, backtest, improve.'
+            body='A simple loop for traders who want to understand their edge instead of guessing from raw MT5 history.'
           />
           <div className='mt-10 grid gap-4 md:grid-cols-3'>
             {workflow.map((step, index) => (
@@ -224,10 +222,11 @@ function LandingPage() {
           <div className='flex flex-col items-start justify-between gap-6 rounded-lg border bg-card p-6 sm:flex-row sm:items-center lg:p-8'>
             <div>
               <h2 className='text-2xl font-semibold tracking-tight'>
-                Ready to review trades with more discipline?
+                Ready to see your MT5 data clearly?
               </h2>
               <p className='mt-2 text-sm text-muted-foreground'>
-                Start with your next MT5 import and build the review habit.
+                Build the review habit now, with auto-sync designed into the
+                future direction of the platform.
               </p>
             </div>
             <Button size='lg' asChild>
@@ -240,7 +239,7 @@ function LandingPage() {
 
           <footer className='mt-12 flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between'>
             <BrandLogoHorizontal className='h-6 w-[108px]' />
-            <span>Built for import, review and execution discipline.</span>
+            <span>Built for analysis, review, backtesting and discipline.</span>
           </footer>
         </div>
       </section>
@@ -277,19 +276,19 @@ function ProductPreview() {
         <div className='flex items-center justify-between border-b px-4 py-3 sm:px-5'>
           <div className='flex items-center gap-2 font-semibold'>
             <BrandIcon className='size-6' />
-            FUADFX Journal
+            FUADFX Companion
           </div>
-          <Badge variant='secondary'>Account review</Badge>
+          <Badge variant='secondary'>Analysis view</Badge>
         </div>
 
         <div className='grid gap-0 lg:grid-cols-[0.82fr_1.18fr]'>
           <div className='border-b p-5 lg:border-r lg:border-b-0'>
-            <div className='text-sm text-muted-foreground'>Closed P&L</div>
+            <div className='text-sm text-muted-foreground'>Edge snapshot</div>
             <div className='mt-2 text-4xl font-semibold tracking-tight'>
               +$3,428
             </div>
             <div className='mt-1 text-sm text-muted-foreground'>
-              Month-to-date sample account
+              Performance, risk and behavior in one place
             </div>
             <div className='mt-6 grid grid-cols-2 gap-3'>
               {metrics.map(([label, value]) => (
@@ -304,9 +303,9 @@ function ProductPreview() {
           <div className='p-5'>
             <div className='mb-5 flex items-start justify-between gap-4'>
               <div>
-                <div className='font-semibold'>Pair performance</div>
+                <div className='font-semibold'>Backtest candidates</div>
                 <div className='text-sm text-muted-foreground'>
-                  Direction, pips and execution grade
+                  Pair, outcome and execution grade
                 </div>
               </div>
               <BarChart3 className='size-5 text-muted-foreground' />
