@@ -76,27 +76,42 @@ const insightRows = [
 function LandingPage() {
   return (
     <main className='min-h-svh overflow-x-hidden bg-background text-foreground'>
-      <header className='sticky top-0 z-40 border-b bg-background/85 backdrop-blur-xl'>
-        <div className='mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8'>
-          <Link to='/' aria-label='FUADFX home' className='text-black dark:text-white'>
-            <BrandLogoHorizontal className='h-7 w-[126px]' />
-          </Link>
-          <nav className='hidden items-center gap-8 text-sm text-muted-foreground md:flex'>
-            <a href='#platform' className='transition hover:text-foreground'>
-              Platform
-            </a>
-            <a href='#workflow' className='transition hover:text-foreground'>
-              Workflow
-            </a>
-            <a href='#security' className='transition hover:text-foreground'>
-              Security
-            </a>
-          </nav>
+      <header className='sticky top-0 z-40 px-3 pt-3 sm:px-4'>
+        <div className='mx-auto flex h-16 w-full max-w-7xl items-center justify-between rounded-xl border bg-background/80 px-3 shadow-sm backdrop-blur-xl sm:px-4 lg:px-5'>
+          <div className='flex items-center gap-8'>
+            <Link
+              to='/'
+              aria-label='FUADFX home'
+              className='flex h-10 items-center rounded-lg px-2 text-black transition hover:bg-muted/60 dark:text-white'
+            >
+              <BrandLogoHorizontal className='h-7 w-[126px]' />
+            </Link>
+            <nav className='hidden items-center rounded-lg border bg-muted/30 p-1 text-sm text-muted-foreground md:flex'>
+              <a
+                href='#platform'
+                className='rounded-md px-3 py-1.5 transition hover:bg-background hover:text-foreground'
+              >
+                Platform
+              </a>
+              <a
+                href='#workflow'
+                className='rounded-md px-3 py-1.5 transition hover:bg-background hover:text-foreground'
+              >
+                Workflow
+              </a>
+              <a
+                href='#security'
+                className='rounded-md px-3 py-1.5 transition hover:bg-background hover:text-foreground'
+              >
+                Security
+              </a>
+            </nav>
+          </div>
           <div className='flex items-center gap-2'>
-            <Button variant='ghost' asChild>
+            <Button variant='ghost' className='hidden sm:inline-flex' asChild>
               <Link to='/sign-in'>Login</Link>
             </Button>
-            <Button asChild>
+            <Button className='rounded-lg' asChild>
               <Link to='/sign-up'>
                 Start
                 <ArrowRight />
