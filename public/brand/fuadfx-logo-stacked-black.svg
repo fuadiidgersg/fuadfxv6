@@ -4,8 +4,8 @@
     <polygon points="52,151 157,99 139,154 34,206"/>
   </g>
   <g fill="#000000" transform="translate(152 305)">
-    <text x="0" y="82" font-family="Manrope, Inter, Avenir Next, Arial, sans-serif" font-size="88" font-weight="800" letter-spacing="2">FU</text>
-    <path d="M126 84 L158 12 H178 L211 84 H190 L184 68 H153 L147 84 Z M160 52 H177 L169 31 Z"/>
-    <text x="218" y="82" font-family="Manrope, Inter, Avenir Next, Arial, sans-serif" font-size="88" font-weight="800" letter-spacing="2">DFX</text>
+    <text x="0" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">FU</text>
+    <path d="M137 84 L169 11 H186 L218 84 H199 L193 69 H162 L156 84 Z M168 53 H187 L178 31 Z"/>
+    <text x="231" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">DFX</text>
   </g>
 </svg>
