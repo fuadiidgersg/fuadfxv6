@@ -7,6 +7,7 @@ type ResolvedTheme = Exclude<Theme, 'system'>
 const DEFAULT_THEME = 'dark'
 const THEME_COOKIE_NAME = 'vite-ui-theme'
 const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
+const THEMES: Theme[] = ['dark', 'light', 'system']
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -38,9 +39,17 @@ export function ThemeProvider({
   storageKey = THEME_COOKIE_NAME,
   ...props
 }: ThemeProviderProps) {
-  const [theme, _setTheme] = useState<Theme>(
-    () => (getCookie(storageKey) as Theme) || defaultTheme
-  )
+  const [theme, _setTheme] = useState<Theme>(() => {
+    const savedTheme = getCookie(storageKey) as Theme | undefined
+    return savedTheme && THEMES.includes(savedTheme) ? savedTheme : defaultTheme
+  })
+
+  useEffect(() => {
+    const savedTheme = getCookie(storageKey) as Theme | undefined
+    if (!savedTheme || !THEMES.includes(savedTheme)) {
+      setCookie(storageKey, defaultTheme, THEME_COOKIE_MAX_AGE)
+    }
+  }, [defaultTheme, storageKey])
 
   // Optimized: Memoize the resolved theme calculation to prevent unnecessary re-computations
   const resolvedTheme = useMemo((): ResolvedTheme => {

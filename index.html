@@ -56,6 +56,7 @@
         try {
           var m = document.cookie.match(/(?:^|; )vite-ui-theme=([^;]+)/)
           var t = m ? decodeURIComponent(m[1]) : 'dark'
+          if (t !== 'dark' && t !== 'light' && t !== 'system') t = 'dark'
           var resolved =
             t === 'system'
               ? window.matchMedia('(prefers-color-scheme: dark)').matches
