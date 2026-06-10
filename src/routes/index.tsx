@@ -86,22 +86,22 @@ function LandingPage() {
             >
               <BrandLogoHorizontal className='h-7 w-[126px]' />
             </Link>
-            <nav className='hidden items-center rounded-lg border bg-muted/30 p-1 text-sm text-muted-foreground md:flex'>
+            <nav className='hidden items-center gap-7 text-sm text-muted-foreground md:flex'>
               <a
                 href='#platform'
-                className='rounded-md px-3 py-1.5 transition hover:bg-background hover:text-foreground'
+                className='transition hover:text-foreground'
               >
                 Platform
               </a>
               <a
                 href='#workflow'
-                className='rounded-md px-3 py-1.5 transition hover:bg-background hover:text-foreground'
+                className='transition hover:text-foreground'
               >
                 Workflow
               </a>
               <a
                 href='#security'
-                className='rounded-md px-3 py-1.5 transition hover:bg-background hover:text-foreground'
+                className='transition hover:text-foreground'
               >
                 Security
               </a>
