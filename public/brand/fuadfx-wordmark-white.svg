@@ -1,7 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 455 110" role="img" aria-label="FUADFX wordmark">
   <g fill="#ffffff">
-    <text x="0" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">FU</text>
-    <path d="M137 84 L169 11 H186 L218 84 H199 L193 69 H162 L156 84 Z M168 53 H187 L178 31 Z"/>
-    <text x="231" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">DFX</text>
+    <text x="0" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">FUADFX</text>
   </g>
 </svg>
