@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,8 +7,11 @@ import {
   useTradingSettings,
   TIMEZONES,
   type CurrencySymbol,
+  type NewsImpactFilter,
 } from '@/stores/trading-settings-store'
+import { formatDateInputValue } from '@/lib/platform-time'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -27,11 +31,13 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { news } from '@/features/news/data/news'
 import { STRATEGIES } from '@/features/trades/data/schema'
 import { ContentSection } from '../components/content-section'
 
 const schema = z.object({
   timezone: z.string().min(1),
+  platformDateOverride: z.string(),
   currencySymbol: z.enum(['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']),
   defaultRiskPct: z.coerce.number().min(0.1).max(100),
   ftmoMode: z.boolean(),
@@ -44,17 +50,54 @@ const schema = z.object({
   dailyLossLimitUsd: z.coerce.number().min(0),
   autoAssignImportedStrategy: z.boolean(),
   importedTradeStrategy: z.enum(STRATEGIES),
+  newsNotificationsEnabled: z.boolean(),
+  newsNotificationLeadMinutes: z.coerce.number().min(1).max(240),
+  newsFilterCountries: z.array(z.string()),
+  newsFilterImpacts: z.array(z.enum(['high', 'medium', 'low'])).min(1),
 })
 
 type FormValues = z.infer<typeof schema>
 
+const NEWS_IMPACTS: {
+  value: NewsImpactFilter
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'high',
+    label: 'High',
+    description: 'Rate decisions, CPI, NFP, GDP and major central-bank events.',
+  },
+  {
+    value: 'medium',
+    label: 'Medium',
+    description: 'Speeches, secondary inflation, employment and activity data.',
+  },
+  {
+    value: 'low',
+    label: 'Low',
+    description: 'Low-volatility releases and minor survey data.',
+  },
+]
+
 export function SettingsTrading() {
   const settings = useTradingSettings()
+  const [notificationPermission, setNotificationPermission] = useState(
+    typeof Notification === 'undefined'
+      ? 'unsupported'
+      : Notification.permission
+  )
+
+  const countries = useMemo(
+    () => Array.from(new Set(news.map((event) => event.country))).sort(),
+    []
+  )
 
   const form = useForm<FormValues, unknown, FormValues>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
       timezone: settings.timezone,
+      platformDateOverride: settings.platformDateOverride,
       currencySymbol: settings.currencySymbol,
       defaultRiskPct: settings.defaultRiskPct,
       ftmoMode: settings.ftmoMode,
@@ -68,14 +111,34 @@ export function SettingsTrading() {
       autoAssignImportedStrategy: settings.autoAssignImportedStrategy,
       importedTradeStrategy:
         settings.importedTradeStrategy as (typeof STRATEGIES)[number],
+      newsNotificationsEnabled: settings.newsNotificationsEnabled,
+      newsNotificationLeadMinutes: settings.newsNotificationLeadMinutes,
+      newsFilterCountries: settings.newsFilterCountries,
+      newsFilterImpacts: settings.newsFilterImpacts,
     },
   })
 
   const ftmoMode = form.watch('ftmoMode')
   const autoAssignImportedStrategy = form.watch('autoAssignImportedStrategy')
+  const newsNotificationsEnabled = form.watch('newsNotificationsEnabled')
 
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
+    if (
+      values.newsNotificationsEnabled &&
+      typeof Notification !== 'undefined' &&
+      Notification.permission === 'default'
+    ) {
+      const permission = await Notification.requestPermission()
+      setNotificationPermission(permission)
+      if (permission !== 'granted') {
+        values.newsNotificationsEnabled = false
+        form.setValue('newsNotificationsEnabled', false)
+        toast.error('Browser notification permission was not granted.')
+      }
+    }
+
     settings.setTimezone(values.timezone)
+    settings.setPlatformDateOverride(values.platformDateOverride)
     settings.setCurrencySymbol(values.currencySymbol as CurrencySymbol)
     settings.setDefaultRiskPct(values.defaultRiskPct)
     settings.setFtmoMode(values.ftmoMode)
@@ -88,6 +151,10 @@ export function SettingsTrading() {
     settings.setDailyLossLimitUsd(values.dailyLossLimitUsd)
     settings.setAutoAssignImportedStrategy(values.autoAssignImportedStrategy)
     settings.setImportedTradeStrategy(values.importedTradeStrategy)
+    settings.setNewsNotificationsEnabled(values.newsNotificationsEnabled)
+    settings.setNewsNotificationLeadMinutes(values.newsNotificationLeadMinutes)
+    settings.setNewsFilterCountries(values.newsFilterCountries)
+    settings.setNewsFilterImpacts(values.newsFilterImpacts)
     toast.success('Trading settings saved.')
   }
 
@@ -126,6 +193,46 @@ export function SettingsTrading() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='platformDateOverride'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Platform Date</FormLabel>
+                <FormDescription>
+                  Overrides the app's working date for the top navigation clock
+                  and economic-news alerts. Leave empty to use today's real
+                  date.
+                </FormDescription>
+                <div className='flex flex-wrap gap-2'>
+                  <FormControl>
+                    <Input type='date' className='w-48' {...field} />
+                  </FormControl>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() =>
+                      form.setValue(
+                        'platformDateOverride',
+                        formatDateInputValue(new Date())
+                      )
+                    }
+                  >
+                    Use today
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    onClick={() => form.setValue('platformDateOverride', '')}
+                  >
+                    Clear
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -197,6 +304,161 @@ export function SettingsTrading() {
               </FormItem>
             )}
           />
+
+          <Separator />
+
+          <div className='space-y-4'>
+            <div>
+              <h4 className='text-sm font-semibold'>Economic News Alerts</h4>
+              <p className='text-xs text-muted-foreground'>
+                Filter the calendar and receive browser alerts before matching
+                events drop.
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name='newsNotificationsEnabled'
+              render={({ field }) => (
+                <FormItem className='flex items-center justify-between rounded-lg border p-4'>
+                  <div>
+                    <FormLabel className='text-base'>
+                      News Notifications
+                    </FormLabel>
+                    <FormDescription>
+                      Alert me before filtered economic-calendar events. Current
+                      browser permission: {notificationPermission}.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={notificationPermission === 'unsupported'}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {newsNotificationsEnabled && (
+              <FormField
+                control={form.control}
+                name='newsNotificationLeadMinutes'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notify Before News Drops</FormLabel>
+                    <FormDescription>
+                      Minutes before the event time. Use 5-60 minutes for most
+                      trading workflows.
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        min='1'
+                        max='240'
+                        className='w-32'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField
+              control={form.control}
+              name='newsFilterImpacts'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Impact Levels</FormLabel>
+                  <FormDescription>
+                    Controls the Economic News page and alert matching.
+                  </FormDescription>
+                  <div className='grid gap-2 sm:grid-cols-3'>
+                    {NEWS_IMPACTS.map((impact) => {
+                      const checked = field.value.includes(impact.value)
+                      return (
+                        <label
+                          key={impact.value}
+                          className='flex cursor-pointer gap-3 rounded-lg border p-3'
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) => {
+                              const next = value
+                                ? [...field.value, impact.value]
+                                : field.value.filter((v) => v !== impact.value)
+                              if (next.length > 0) field.onChange(next)
+                            }}
+                          />
+                          <span className='space-y-1'>
+                            <span className='block text-sm font-medium'>
+                              {impact.label}
+                            </span>
+                            <span className='block text-xs text-muted-foreground'>
+                              {impact.description}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='newsFilterCountries'
+              render={({ field }) => (
+                <FormItem>
+                  <div className='flex flex-wrap items-end justify-between gap-2'>
+                    <div>
+                      <FormLabel>Countries</FormLabel>
+                      <FormDescription>
+                        Leave empty to include all countries.
+                      </FormDescription>
+                    </div>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() => field.onChange([])}
+                    >
+                      All countries
+                    </Button>
+                  </div>
+                  <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+                    {countries.map((country) => {
+                      const checked = field.value.includes(country)
+                      return (
+                        <label
+                          key={country}
+                          className='flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm'
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) => {
+                              field.onChange(
+                                value
+                                  ? [...field.value, country]
+                                  : field.value.filter((v) => v !== country)
+                              )
+                            }}
+                          />
+                          {country}
+                        </label>
+                      )
+                    })}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <Separator />
 

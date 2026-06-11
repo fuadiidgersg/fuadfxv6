@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { EconomicNewsNotifier } from '@/components/economic-news-notifier'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { ProductTourDialog } from '@/components/product-tour-dialog'
 import { SkipToMain } from '@/components/skip-to-main'
@@ -34,6 +35,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
           >
             {children ?? <Outlet />}
           </SidebarInset>
+          <EconomicNewsNotifier />
           <ProductTourDialog />
         </SidebarProvider>
       </LayoutProvider>

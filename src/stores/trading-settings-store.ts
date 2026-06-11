@@ -10,8 +10,11 @@ export type CurrencySymbol =
   | 'CAD'
   | 'CHF'
 
+export type NewsImpactFilter = 'high' | 'medium' | 'low'
+
 export type TradingSettingsState = {
   timezone: string
+  platformDateOverride: string
   currencySymbol: CurrencySymbol
   defaultRiskPct: number
   ftmoMode: boolean
@@ -25,7 +28,12 @@ export type TradingSettingsState = {
   showPipsInsteadOfPoints: boolean
   autoAssignImportedStrategy: boolean
   importedTradeStrategy: string
+  newsNotificationsEnabled: boolean
+  newsNotificationLeadMinutes: number
+  newsFilterCountries: string[]
+  newsFilterImpacts: NewsImpactFilter[]
   setTimezone: (tz: string) => void
+  setPlatformDateOverride: (date: string) => void
   setCurrencySymbol: (c: CurrencySymbol) => void
   setDefaultRiskPct: (v: number) => void
   setFtmoMode: (v: boolean) => void
@@ -39,12 +47,17 @@ export type TradingSettingsState = {
   setShowPipsInsteadOfPoints: (v: boolean) => void
   setAutoAssignImportedStrategy: (v: boolean) => void
   setImportedTradeStrategy: (v: string) => void
+  setNewsNotificationsEnabled: (v: boolean) => void
+  setNewsNotificationLeadMinutes: (v: number) => void
+  setNewsFilterCountries: (v: string[]) => void
+  setNewsFilterImpacts: (v: NewsImpactFilter[]) => void
 }
 
 export const useTradingSettings = create<TradingSettingsState>()(
   persist(
     (set) => ({
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      platformDateOverride: '',
       currencySymbol: 'USD',
       defaultRiskPct: 1,
       ftmoMode: false,
@@ -58,8 +71,13 @@ export const useTradingSettings = create<TradingSettingsState>()(
       showPipsInsteadOfPoints: true,
       autoAssignImportedStrategy: false,
       importedTradeStrategy: 'Unassigned',
+      newsNotificationsEnabled: false,
+      newsNotificationLeadMinutes: 15,
+      newsFilterCountries: [],
+      newsFilterImpacts: ['high'],
 
       setTimezone: (tz) => set({ timezone: tz }),
+      setPlatformDateOverride: (date) => set({ platformDateOverride: date }),
       setCurrencySymbol: (c) => set({ currencySymbol: c }),
       setDefaultRiskPct: (v) => set({ defaultRiskPct: v }),
       setFtmoMode: (v) => set({ ftmoMode: v }),
@@ -74,8 +92,24 @@ export const useTradingSettings = create<TradingSettingsState>()(
       setAutoAssignImportedStrategy: (v) =>
         set({ autoAssignImportedStrategy: v }),
       setImportedTradeStrategy: (v) => set({ importedTradeStrategy: v }),
+      setNewsNotificationsEnabled: (v) => set({ newsNotificationsEnabled: v }),
+      setNewsNotificationLeadMinutes: (v) =>
+        set({ newsNotificationLeadMinutes: v }),
+      setNewsFilterCountries: (v) => set({ newsFilterCountries: v }),
+      setNewsFilterImpacts: (v) => set({ newsFilterImpacts: v }),
     }),
-    { name: 'fuadfx-trading-settings', version: 1 }
+    {
+      name: 'fuadfx-trading-settings',
+      version: 2,
+      migrate: (state: any) => ({
+        ...state,
+        platformDateOverride: state?.platformDateOverride ?? '',
+        newsNotificationsEnabled: state?.newsNotificationsEnabled ?? false,
+        newsNotificationLeadMinutes: state?.newsNotificationLeadMinutes ?? 15,
+        newsFilterCountries: state?.newsFilterCountries ?? [],
+        newsFilterImpacts: state?.newsFilterImpacts ?? ['high'],
+      }),
+    }
   )
 )
 

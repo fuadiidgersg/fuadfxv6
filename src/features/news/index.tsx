@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Calendar as CalendarIcon, Filter } from 'lucide-react'
+import { useTradingSettings } from '@/stores/trading-settings-store'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,20 +52,40 @@ function formatGroupKey(date: Date) {
 }
 
 export function News() {
+  const newsFilterCountries = useTradingSettings((s) => s.newsFilterCountries)
+  const newsFilterImpacts = useTradingSettings((s) => s.newsFilterImpacts)
+  const newsNotificationsEnabled = useTradingSettings(
+    (s) => s.newsNotificationsEnabled
+  )
+  const newsNotificationLeadMinutes = useTradingSettings(
+    (s) => s.newsNotificationLeadMinutes
+  )
+  const setNewsFilterCountries = useTradingSettings(
+    (s) => s.setNewsFilterCountries
+  )
+  const setNewsFilterImpacts = useTradingSettings((s) => s.setNewsFilterImpacts)
   const [search, setSearch] = useState('')
-  const [impact, setImpact] = useState<'all' | NewsImpact>('all')
   const [currency, setCurrency] = useState<'all' | string>('all')
 
   const filtered = useMemo(
     () =>
       news.filter((n) => {
-        if (impact !== 'all' && n.impact !== impact) return false
+        if (
+          newsFilterImpacts.length > 0 &&
+          !newsFilterImpacts.includes(n.impact)
+        )
+          return false
+        if (
+          newsFilterCountries.length > 0 &&
+          !newsFilterCountries.includes(n.country)
+        )
+          return false
         if (currency !== 'all' && n.currency !== currency) return false
         if (search && !n.title.toLowerCase().includes(search.toLowerCase()))
           return false
         return true
       }),
-    [search, impact, currency]
+    [search, newsFilterImpacts, newsFilterCountries, currency]
   )
 
   const grouped = useMemo(() => {
@@ -84,6 +105,11 @@ export function News() {
   }, [filtered])
 
   const currencies = Array.from(new Set(news.map((n) => n.currency))).sort()
+  const countries = Array.from(new Set(news.map((n) => n.country))).sort()
+  const impactValue =
+    newsFilterImpacts.length === 3 ? 'all' : newsFilterImpacts[0] || 'all'
+  const countryValue =
+    newsFilterCountries.length === 1 ? newsFilterCountries[0] : 'all'
 
   const todayKey = formatGroupKey(new Date())
 
@@ -103,6 +129,11 @@ export function News() {
             Upcoming FX volatility events. Verify timing with your broker
             calendar before placing trades.
           </p>
+          <p className='mt-1 text-xs text-muted-foreground'>
+            {newsNotificationsEnabled
+              ? `Alerts are on ${newsNotificationLeadMinutes} minutes before matching events.`
+              : 'Alerts are off. Enable them in Trading Settings.'}
+          </p>
         </div>
 
         <div className='flex flex-wrap items-center gap-2'>
@@ -116,8 +147,12 @@ export function News() {
             />
           </div>
           <Select
-            value={impact}
-            onValueChange={(v) => setImpact(v as typeof impact)}
+            value={impactValue}
+            onValueChange={(v) =>
+              setNewsFilterImpacts(
+                v === 'all' ? ['high', 'medium', 'low'] : [v as NewsImpact]
+              )
+            }
           >
             <SelectTrigger className='w-32'>
               <SelectValue />
@@ -127,6 +162,24 @@ export function News() {
               <SelectItem value='high'>High</SelectItem>
               <SelectItem value='medium'>Medium</SelectItem>
               <SelectItem value='low'>Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={countryValue}
+            onValueChange={(v) =>
+              setNewsFilterCountries(v === 'all' ? [] : [v])
+            }
+          >
+            <SelectTrigger className='w-44'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className='max-h-64'>
+              <SelectItem value='all'>All countries</SelectItem>
+              {countries.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={currency} onValueChange={setCurrency}>
