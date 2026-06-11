@@ -4,9 +4,12 @@ import {
   CheckCircle2,
   FileText,
   LifeBuoy,
+  PlayCircle,
   Settings,
   Upload,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { useProductTourStore } from '@/stores/product-tour-store'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -63,6 +66,13 @@ const guides = [
 ]
 
 function HelpCenter() {
+  const resetTour = useProductTourStore((s) => s.reset)
+
+  const handleRestartTour = () => {
+    resetTour()
+    toast.message('Tutorial restarted.')
+  }
+
   return (
     <>
       <Header fixed>
@@ -73,12 +83,18 @@ function HelpCenter() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-6'>
-        <div>
-          <h2 className='text-2xl font-bold tracking-tight'>Help Center</h2>
-          <p className='text-muted-foreground'>
-            Quick launch guide for importing, reviewing, and improving your
-            trading journal.
-          </p>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight'>Help Center</h2>
+            <p className='text-muted-foreground'>
+              Quick launch guide for importing, reviewing, and improving your
+              trading journal.
+            </p>
+          </div>
+          <Button type='button' variant='outline' onClick={handleRestartTour}>
+            <PlayCircle className='size-4' />
+            Restart tutorial
+          </Button>
         </div>
 
         <div className='grid gap-4 md:grid-cols-2'>
