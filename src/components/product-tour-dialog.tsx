@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import {
   AreaChart,
   BookOpenText,
@@ -68,6 +68,7 @@ const tourSteps = [
 ] as const
 
 export function ProductTourDialog() {
+  const location = useLocation()
   const completed = useProductTourStore((s) => s.completed)
   const complete = useProductTourStore((s) => s.complete)
   const [open, setOpen] = useState(false)
@@ -82,11 +83,11 @@ export function ProductTourDialog() {
   )
 
   useEffect(() => {
-    if (!completed) {
+    if (!completed && location.pathname !== '/tasks') {
       const timer = window.setTimeout(() => setOpen(true), 700)
       return () => window.clearTimeout(timer)
     }
-  }, [completed])
+  }, [completed, location.pathname])
 
   const finish = () => {
     complete()

@@ -180,10 +180,10 @@ export function TasksImportDialog({
     >
       <DialogContent className='gap-3 sm:max-w-lg'>
         <DialogHeader className='text-start'>
-          <DialogTitle>Import MT5 Trades</DialogTitle>
+          <DialogTitle>Connect MT5 Account</DialogTitle>
           <DialogDescription>
-            Bring in your MetaTrader 5 HTML history. Trades are assigned to the
-            account detected in the file.
+            Upload your MetaTrader 5 HTML history. FUADFX will create or select
+            the detected trading account and import the trades into it.
           </DialogDescription>
         </DialogHeader>
 
@@ -191,7 +191,7 @@ export function TasksImportDialog({
           <div className='rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground'>
             In MT5, open <strong>Toolbox - History</strong>, right-click and
             choose <strong>Report - HTML (Detailed)</strong>. Upload the saved
-            .htm or .html file below.
+            .htm or .html file below to connect the account immediately.
           </div>
 
           <div className='grid gap-2'>

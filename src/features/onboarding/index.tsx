@@ -1,10 +1,10 @@
-import { useNavigate } from '@tanstack/react-router'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { useProfileStore } from '@/stores/profile-store'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,8 @@ export default function Onboarding() {
   const form = useForm<FormData>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
-      displayName: user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? '',
+      displayName:
+        user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? '',
       experience: 'beginner',
       preferredPair: '',
       startingCapital: 10000,
@@ -56,8 +57,8 @@ export default function Onboarding() {
         startingCapital: data.startingCapital,
       })
       completeOnboarding()
-      toast.success('Welcome to FUADFX! Your profile is set up.')
-      navigate({ to: '/dashboard' })
+      toast.success('Welcome to FUADFX! Connect your trading account next.')
+      navigate({ to: '/tasks', search: { import: true } })
     } catch (err: any) {
       toast.error(err?.message ?? 'Something went wrong. Please try again.')
     } finally {
@@ -73,16 +74,13 @@ export default function Onboarding() {
             Welcome to FUADFX
           </h1>
           <p className='text-sm text-muted-foreground'>
-            Set your trading profile, then import your statement or log your
-            first trade.
+            Set your trading profile, then connect your MT5 account by uploading
+            your trading history.
           </p>
         </div>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className='space-y-4'
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <FormField
               control={form.control}
               name='displayName'
@@ -156,7 +154,7 @@ export default function Onboarding() {
 
             <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading && <Loader2 className='animate-spin' />}
-              Create profile
+              Continue to connect account
             </Button>
           </form>
         </Form>
