@@ -19,15 +19,19 @@ function isAllowedOrigin(origin: string | undefined): boolean {
 
   if (envOrigins.includes(origin)) return true
 
-  const isProduction = process.env.NODE_ENV === 'production'
-
-  // Local and Replit origins are for development only. Production origins must
-  // be explicitly listed in FRONTEND_URL, comma-separated when needed.
-  if (!isProduction && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return true
-
-  if (!isProduction && /^https:\/\/[a-z0-9-]+\.replit\.dev$/.test(origin)) {
+  // Localhost must work even when the frontend points at the Render API.
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     return true
   }
+
+  if (/^https:\/\/[a-z0-9-]+\.replit\.dev$/.test(origin)) {
+    return true
+  }
+
+  // Vercel preview and production deployments change hostnames. Data routes
+  // still require Supabase bearer auth, so this keeps deploy previews usable
+  // without opening unauthenticated access.
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)) return true
 
   return false
 }
