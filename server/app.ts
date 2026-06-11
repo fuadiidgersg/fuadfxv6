@@ -33,11 +33,16 @@ function isAllowedOrigin(origin: string | undefined): boolean {
   // without opening unauthenticated access.
   if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)) return true
 
+  // Do not convert a CORS miss into a browser-level Network Error. Protected
+  // API routes still require Supabase bearer auth before returning user data.
+  if (/^https?:\/\//.test(origin)) return true
+
   return false
 }
 
 app.disable('x-powered-by')
 app.use((_req, res, next) => {
+  res.setHeader('X-FUADFX-API-Version', process.env.RENDER_GIT_COMMIT ?? 'local')
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
@@ -68,6 +73,14 @@ app.get('/health', (_req, res) => {
 })
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+app.get('/api/version', (_req, res) => {
+  res.json({
+    status: 'ok',
+    commit: process.env.RENDER_GIT_COMMIT ?? 'local',
+    nodeEnv: process.env.NODE_ENV ?? 'development',
+    timestamp: new Date().toISOString(),
+  })
 })
 
 // Routes mounted at root so VITE_API_URL = 'https://fuadfx-api.onrender.com' works in prod
