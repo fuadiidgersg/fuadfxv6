@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import apiClient from '@/lib/api'
-import type { JournalNote } from '@/stores/journal-store'
 import { useAccountsStore } from '@/stores/accounts-store'
+import type { JournalNote } from '@/stores/journal-store'
+import apiClient from '@/lib/api'
 
 export const JOURNALS_KEY = ['journals'] as const
 
@@ -35,6 +35,7 @@ export function useCreateJournal() {
       body?: string
       mood?: string
       tags?: string[]
+      createdAt?: string
     }) => {
       const { data } = await apiClient.post('/journals', payload)
       return data as JournalNote

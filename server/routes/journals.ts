@@ -5,6 +5,13 @@ import { requireAuth, type AuthRequest } from '../middleware/auth'
 const router = Router()
 router.use(requireAuth)
 
+function isoDate(value: unknown, fallback = new Date()) {
+  const date = value ? new Date(value as any) : fallback
+  return Number.isFinite(date.getTime())
+    ? date.toISOString()
+    : fallback.toISOString()
+}
+
 function fromRow(row: any) {
   return {
     id: row.id as string,
@@ -34,7 +41,7 @@ router.get('/', async (req: AuthRequest, res) => {
 
 router.post('/', async (req: AuthRequest, res) => {
   try {
-    const { accountId, title, body, mood, tags } = req.body
+    const { accountId, title, body, mood, tags, createdAt } = req.body
     const { data, error } = await supabaseAdmin
       .from('journals')
       .insert({
@@ -44,6 +51,7 @@ router.post('/', async (req: AuthRequest, res) => {
         content: body ?? '',
         mood: mood ?? 'neutral',
         tags: tags ?? [],
+        created_at: createdAt ? isoDate(createdAt) : new Date().toISOString(),
       })
       .select()
       .single()
@@ -56,12 +64,13 @@ router.post('/', async (req: AuthRequest, res) => {
 
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
-    const { title, body, mood, tags } = req.body
+    const { title, body, mood, tags, createdAt } = req.body
     const patch: Record<string, any> = { updated_at: new Date().toISOString() }
     if (title !== undefined) patch.title = title
     if (body !== undefined) patch.content = body
     if (mood !== undefined) patch.mood = mood
     if (tags !== undefined) patch.tags = tags
+    if (createdAt !== undefined) patch.created_at = isoDate(createdAt)
 
     const { data, error } = await supabaseAdmin
       .from('journals')

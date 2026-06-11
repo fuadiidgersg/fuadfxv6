@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
   BookOpen,
+  CalendarClock,
   Loader2,
   Plus,
   Search as SearchIcon,
@@ -72,6 +73,18 @@ const journalTemplates = [
   },
 ]
 
+function toDatetimeLocal(value: string) {
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return ''
+  const offsetMs = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
+}
+
+function datetimeLocalToIso(value: string) {
+  const date = new Date(value)
+  return Number.isFinite(date.getTime()) ? date.toISOString() : undefined
+}
+
 export function Chats() {
   const account = useActiveAccount()
   const notes = useNotesForActiveAccount()
@@ -91,7 +104,7 @@ export function Chats() {
   const filtered = useMemo(() => {
     const sorted = [...notes].sort(
       (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     if (!query.trim()) return sorted
     const q = query.toLowerCase()
@@ -191,6 +204,16 @@ export function Chats() {
   const handleMoodChange = (mood: JournalMood) => {
     if (!selected) return
     updateJournal.mutate({ id: selected.id, mood })
+  }
+
+  const handleCreatedAtChange = (value: string) => {
+    if (!selected) return
+    const createdAt = datetimeLocalToIso(value)
+    if (!createdAt) {
+      toast.error('Pick a valid journal date and time.')
+      return
+    }
+    updateJournal.mutate({ id: selected.id, createdAt })
   }
 
   return (
@@ -303,7 +326,7 @@ export function Chats() {
                       {note.body || 'Empty entry — add your reflections.'}
                     </span>
                     <span className='text-[11px] text-muted-foreground'>
-                      {format(new Date(note.updatedAt), 'd MMM yyyy · HH:mm')}
+                      {format(new Date(note.createdAt), 'd MMM yyyy · HH:mm')}
                     </span>
                   </button>
                 ))
@@ -326,13 +349,21 @@ export function Chats() {
                     className='h-9 border-none bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0 md:text-lg'
                   />
                   <p className='text-xs text-muted-foreground'>
-                    {account?.name ?? 'No account'} · created{' '}
-                    {format(new Date(selected.createdAt), 'd MMM yyyy')} ·
-                    edited {formatDistanceToNow(new Date(selected.updatedAt))}{' '}
-                    ago
+                    {account?.name ?? 'No account'} · edited{' '}
+                    {formatDistanceToNow(new Date(selected.updatedAt))} ago
                   </p>
                 </div>
                 <div className='flex items-center gap-2'>
+                  <label className='hidden items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground lg:flex'>
+                    <CalendarClock className='size-3.5' />
+                    <span className='sr-only'>Journal date and time</span>
+                    <Input
+                      type='datetime-local'
+                      value={toDatetimeLocal(selected.createdAt)}
+                      onChange={(e) => handleCreatedAtChange(e.target.value)}
+                      className='h-6 w-[170px] border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0'
+                    />
+                  </label>
                   <Select
                     value={selected.mood}
                     onValueChange={(v) => handleMoodChange(v as JournalMood)}
@@ -365,6 +396,16 @@ export function Chats() {
               </div>
 
               <div className='flex flex-1 flex-col gap-3 overflow-y-auto p-4'>
+                <label className='flex flex-col gap-1.5 text-xs font-medium text-muted-foreground lg:hidden'>
+                  Journal date and time
+                  <Input
+                    type='datetime-local'
+                    value={toDatetimeLocal(selected.createdAt)}
+                    onChange={(e) => handleCreatedAtChange(e.target.value)}
+                    className='h-9'
+                  />
+                </label>
+
                 <div className='flex flex-wrap items-center gap-2'>
                   {selected.tags.map((t) => (
                     <Badge
