@@ -28,6 +28,7 @@ import type { TradeStrategy } from '@/features/trades/data/schema'
 type TaskImportDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onImported?: () => void
 }
 
 type Mt5Preview = ReturnType<typeof parseMT5Html> | null
@@ -35,6 +36,7 @@ type Mt5Preview = ReturnType<typeof parseMT5Html> | null
 export function TasksImportDialog({
   open,
   onOpenChange,
+  onImported,
 }: TaskImportDialogProps) {
   const activeAccountId = useAccountsStore((s) => s.activeAccountId)
   const setActiveAccount = useAccountsStore((s) => s.setActive)
@@ -123,9 +125,13 @@ export function TasksImportDialog({
       const account = await upsertAccount.mutateAsync({
         broker: preview.broker,
         number: preview.account,
-        nameHint: preview.account
-          ? `${preview.broker ?? 'MT5'} ${preview.account}`
-          : preview.broker,
+        nameHint:
+          preview.accountName ??
+          (preview.account
+            ? `${preview.broker ?? 'MT5'} ${preview.account}`
+            : preview.broker),
+        currency: preview.currency,
+        startingBalance: preview.startingBalance,
       })
       setActiveAccount(account.id)
 
@@ -149,6 +155,7 @@ export function TasksImportDialog({
       }
       reset()
       onOpenChange(false)
+      onImported?.()
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Import failed. Please try again.'))
     } finally {
@@ -239,11 +246,55 @@ export function TasksImportDialog({
                     </span>
                   </>
                 )}
+                {preview.accountName && (
+                  <>
+                    <span>Name</span>
+                    <span className='text-end text-foreground'>
+                      {preview.accountName}
+                    </span>
+                  </>
+                )}
                 {preview.broker && (
                   <>
                     <span>Broker</span>
                     <span className='text-end text-foreground'>
                       {preview.broker}
+                    </span>
+                  </>
+                )}
+                {preview.currency && (
+                  <>
+                    <span>Currency</span>
+                    <span className='text-end text-foreground'>
+                      {preview.currency}
+                    </span>
+                  </>
+                )}
+                {preview.leverage && (
+                  <>
+                    <span>Leverage</span>
+                    <span className='text-end text-foreground'>
+                      {preview.leverage}
+                    </span>
+                  </>
+                )}
+                {preview.balance !== undefined && (
+                  <>
+                    <span>Statement balance</span>
+                    <span className='text-end text-foreground tabular-nums'>
+                      {preview.balance.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </>
+                )}
+                {preview.startingBalance !== undefined && (
+                  <>
+                    <span>Derived starting balance</span>
+                    <span className='text-end text-foreground tabular-nums'>
+                      {preview.startingBalance.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </>
                 )}

@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import apiClient from '@/lib/api'
 import { useAccountsStore } from '@/stores/accounts-store'
 import type { TradingAccount } from '@/stores/accounts-store'
+import apiClient from '@/lib/api'
 
 export const ACCOUNTS_KEY = ['accounts'] as const
 
@@ -50,6 +50,8 @@ export function useUpsertAccountFromImport() {
       broker?: string
       number?: string
       nameHint?: string
+      currency?: TradingAccount['currency']
+      startingBalance?: number
     }) => {
       const { data } = await apiClient.post('/accounts/upsert', payload)
       return data as TradingAccount

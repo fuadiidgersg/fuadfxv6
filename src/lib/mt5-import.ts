@@ -11,6 +11,11 @@ export type MT5ParseResult = {
   skipped: number
   account?: string
   broker?: string
+  accountName?: string
+  currency?: 'USD' | 'EUR' | 'GBP'
+  leverage?: string
+  balance?: number
+  startingBalance?: number
 }
 
 export type MT5ParseOptions = {
@@ -75,6 +80,19 @@ function parseNumber(value: string): number | null {
   if (!cleaned || cleaned === '-' || cleaned === '–') return 0
   const n = Number(cleaned)
   return Number.isFinite(n) ? n : null
+}
+
+function parseCurrency(value: string): 'USD' | 'EUR' | 'GBP' | undefined {
+  const match = value.toUpperCase().match(/\b(USD|EUR|GBP)\b/)
+  return match?.[1] as 'USD' | 'EUR' | 'GBP' | undefined
+}
+
+function cleanHeaderValue(value: string): string | undefined {
+  const cleaned = value
+    .replace(/\s+/g, ' ')
+    .replace(/[|,]+$/g, '')
+    .trim()
+  return cleaned.length > 0 ? cleaned : undefined
 }
 
 function isPositiveNumeric(value: string): boolean {
@@ -144,6 +162,10 @@ export function parseMT5Html(
   let totalRows = 0
   let account: string | undefined
   let broker: string | undefined
+  let accountName: string | undefined
+  let currency: 'USD' | 'EUR' | 'GBP' | undefined
+  let leverage: string | undefined
+  let balance: number | undefined
 
   // Pre-extract every row's *visible* text cells.
   // MT5 reports use <td class="hidden" colspan="N"> spacers between columns
@@ -175,6 +197,24 @@ export function parseMT5Html(
         /(?:Broker|Company)\s*[:]?\s*([^\s,|][^|,]{2,60})/i
       )
       if (m) broker = m[1].trim()
+    }
+    if (!accountName) {
+      const m = joined.match(/(?:Name|Client)\s*[:]?\s*([^|,]{2,60})/i)
+      if (m) accountName = cleanHeaderValue(m[1])
+    }
+    if (!currency) {
+      const m = joined.match(/Currency\s*[:]?\s*([A-Z]{3})/i)
+      if (m) currency = parseCurrency(m[1])
+      if (!currency) currency = parseCurrency(joined)
+    }
+    if (!leverage) {
+      const m = joined.match(/Leverage\s*[:]?\s*(1\s*:\s*\d+)/i)
+      if (m) leverage = m[1].replace(/\s+/g, '')
+    }
+    if (balance === undefined) {
+      const m = joined.match(/Balance\s*[:]?\s*(-?[\d\s,.]+)/i)
+      const parsed = m ? parseNumber(m[1]) : null
+      if (parsed !== null) balance = parsed
     }
   }
 
@@ -287,6 +327,20 @@ export function parseMT5Html(
   }
 
   const skipped = Math.max(0, totalRows - trades.length)
+  const importedPnl = trades.reduce((sum, trade) => sum + trade.pnl, 0)
+  const startingBalance =
+    balance !== undefined ? +(balance - importedPnl).toFixed(2) : undefined
 
-  return { trades, totalRows, skipped, account, broker }
+  return {
+    trades,
+    totalRows,
+    skipped,
+    account,
+    broker,
+    accountName,
+    currency,
+    leverage,
+    balance,
+    startingBalance,
+  }
 }

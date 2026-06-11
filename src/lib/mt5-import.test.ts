@@ -123,4 +123,40 @@ describe('parseMT5Html', () => {
       parseMT5Html(report(rows), { strategy: 'Breakout' }).trades[0].strategy
     ).toBe('Breakout')
   })
+
+  it('extracts account details from the MT5 statement header', () => {
+    const rows = positionRow({
+      ticket: 77,
+      symbol: 'EURUSD',
+      type: 'buy',
+      entry: 1.1,
+      exit: 1.101,
+      profit: 20,
+    })
+
+    const result = parseMT5Html(`
+      <html>
+        <body>
+          <table>
+            <tr><td>Name: Fuad Trader</td></tr>
+            <tr><td>Company: Premium Broker Ltd</td></tr>
+            <tr><td>Account: 12345678</td></tr>
+            <tr><td>Currency: USD</td></tr>
+            <tr><td>Leverage: 1:500</td></tr>
+            <tr><td>Balance: 10020.00</td></tr>
+            <tr><td>Closed Positions</td></tr>
+            ${rows}
+          </table>
+        </body>
+      </html>
+    `)
+
+    expect(result.accountName).toBe('Fuad Trader')
+    expect(result.broker).toBe('Premium Broker Ltd')
+    expect(result.account).toBe('12345678')
+    expect(result.currency).toBe('USD')
+    expect(result.leverage).toBe('1:500')
+    expect(result.balance).toBe(10020)
+    expect(result.startingBalance).toBe(10000)
+  })
 })

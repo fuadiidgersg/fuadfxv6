@@ -94,9 +94,16 @@ router.post('/', async (req: AuthRequest, res) => {
 
 router.post('/upsert', async (req: AuthRequest, res) => {
   try {
-    const { broker, number, nameHint } = req.body
+    const { broker, number, nameHint, currency, startingBalance } = req.body
     const safeBroker = (broker ?? '').trim() || 'MT5 Broker'
     const safeNumber = (number ?? '').trim()
+    const safeCurrency = ['USD', 'EUR', 'GBP'].includes(currency)
+      ? currency
+      : 'USD'
+    const safeStartingBalance =
+      Number.isFinite(Number(startingBalance)) && Number(startingBalance) > 0
+        ? Number(startingBalance)
+        : 0
 
     let query = supabaseAdmin
       .from('accounts')
@@ -136,9 +143,9 @@ router.post('/upsert', async (req: AuthRequest, res) => {
         broker: safeBroker,
         account_number: safeNumber || '—',
         category: inferType(safeBroker),
-        currency: 'USD',
-        balance: 0,
-        starting_balance: 0,
+        currency: safeCurrency,
+        balance: safeStartingBalance,
+        starting_balance: safeStartingBalance,
       })
       .select()
       .single()
@@ -154,8 +161,8 @@ router.post('/upsert', async (req: AuthRequest, res) => {
         name,
         broker: safeBroker,
         category: inferType(safeBroker),
-        currency: 'USD',
-        balance: 0,
+        currency: safeCurrency,
+        balance: safeStartingBalance,
       })
       .select()
       .single()
