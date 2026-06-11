@@ -5,6 +5,17 @@ import { requireAuth, type AuthRequest } from '../middleware/auth'
 const router = Router()
 router.use(requireAuth)
 
+function isMissingColumnError(error: any) {
+  const text = `${error?.code ?? ''} ${error?.message ?? ''}`.toLowerCase()
+  return (
+    text.includes('42703') ||
+    text.includes('pgrst204') ||
+    text.includes('could not find') ||
+    text.includes('does not exist') ||
+    text.includes('schema cache')
+  )
+}
+
 function fromRow(row: any) {
   return {
     id: row.id as string,
@@ -57,8 +68,25 @@ router.post('/', async (req: AuthRequest, res) => {
       })
       .select()
       .single()
-    if (error) return res.status(400).json({ error: error.message })
-    res.status(201).json(fromRow(data))
+    if (!error) return res.status(201).json(fromRow(data))
+    if (!isMissingColumnError(error)) {
+      return res.status(400).json({ error: error.message })
+    }
+
+    const { data: legacyData, error: legacyError } = await supabaseAdmin
+      .from('accounts')
+      .insert({
+        user_id: req.user!.id,
+        name,
+        broker,
+        category: type ?? 'live',
+        currency: currency ?? 'USD',
+        balance: startingBalance ?? 0,
+      })
+      .select()
+      .single()
+    if (legacyError) return res.status(400).json({ error: legacyError.message })
+    res.status(201).json(fromRow(legacyData))
   } catch {
     res.status(500).json({ error: 'Internal server error' })
   }
@@ -78,7 +106,21 @@ router.post('/upsert', async (req: AuthRequest, res) => {
       .ilike('broker', safeBroker)
     if (safeNumber) query = (query as any).eq('account_number', safeNumber)
 
-    const { data: existing } = await query.limit(1)
+    let { data: existing, error: existingError } = await query.limit(1)
+    if (existingError && isMissingColumnError(existingError)) {
+      const fallback = await supabaseAdmin
+        .from('accounts')
+        .select('*')
+        .eq('user_id', req.user!.id)
+        .ilike('broker', safeBroker)
+        .limit(1)
+      existing = fallback.data
+      existingError = fallback.error
+    }
+    if (existingError) {
+      return res.status(400).json({ error: existingError.message })
+    }
+
     if (existing && existing.length > 0) {
       return res.json(fromRow(existing[0]))
     }
@@ -100,8 +142,25 @@ router.post('/upsert', async (req: AuthRequest, res) => {
       })
       .select()
       .single()
-    if (error) return res.status(400).json({ error: error.message })
-    res.status(201).json(fromRow(data))
+    if (!error) return res.status(201).json(fromRow(data))
+    if (!isMissingColumnError(error)) {
+      return res.status(400).json({ error: error.message })
+    }
+
+    const { data: legacyData, error: legacyError } = await supabaseAdmin
+      .from('accounts')
+      .insert({
+        user_id: req.user!.id,
+        name,
+        broker: safeBroker,
+        category: inferType(safeBroker),
+        currency: 'USD',
+        balance: 0,
+      })
+      .select()
+      .single()
+    if (legacyError) return res.status(400).json({ error: legacyError.message })
+    res.status(201).json(fromRow(legacyData))
   } catch {
     res.status(500).json({ error: 'Internal server error' })
   }

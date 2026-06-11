@@ -3,6 +3,7 @@ import { FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAccountsStore } from '@/stores/accounts-store'
 import { useTradingSettings } from '@/stores/trading-settings-store'
+import { getApiErrorMessage } from '@/lib/api'
 import { parseMT5Html } from '@/lib/mt5-import'
 import { useUpsertAccountFromImport } from '@/hooks/use-accounts-query'
 import {
@@ -149,9 +150,7 @@ export function TasksImportDialog({
       reset()
       onOpenChange(false)
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Import failed. Please try again.'
-      )
+      toast.error(getApiErrorMessage(err, 'Import failed. Please try again.'))
     } finally {
       setImporting(false)
     }

@@ -5,6 +5,59 @@ import { requireAuth, type AuthRequest } from '../middleware/auth'
 const router = Router()
 router.use(requireAuth)
 
+const EXTENDED_TRADE_COLUMNS = [
+  'direction',
+  'pips',
+  'r_multiple',
+  'risk_amount',
+  'session',
+  'timeframe',
+  'trade_outcome',
+  'account_name',
+  'mistakes',
+  'lessons',
+]
+
+function isMissingColumnError(error: any) {
+  const text = `${error?.code ?? ''} ${error?.message ?? ''}`.toLowerCase()
+  return (
+    text.includes('42703') ||
+    text.includes('pgrst204') ||
+    text.includes('could not find') ||
+    text.includes('does not exist') ||
+    text.includes('schema cache')
+  )
+}
+
+function finiteNumber(value: unknown, fallback: number | null) {
+  if (value === null || value === undefined || value === '') return fallback
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function isoDate(value: unknown, fallback = new Date()) {
+  const date = value ? new Date(value as any) : fallback
+  return Number.isFinite(date.getTime())
+    ? date.toISOString()
+    : fallback.toISOString()
+}
+
+function stripExtendedTradeColumns(row: Record<string, any>) {
+  const next = { ...row }
+  for (const column of EXTENDED_TRADE_COLUMNS) delete next[column]
+  return next
+}
+
+async function insertTradeRows(rows: Record<string, any>[]) {
+  const { error } = await supabaseAdmin.from('trades').insert(rows)
+  if (!error) return { error: null }
+  if (!isMissingColumnError(error)) return { error }
+
+  return supabaseAdmin
+    .from('trades')
+    .insert(rows.map(stripExtendedTradeColumns))
+}
+
 function fromRow(row: any) {
   const pnl = parseFloat(row.profit) || 0
   const outcome =
@@ -50,33 +103,42 @@ function fromRow(row: any) {
 }
 
 function toRow(trade: any, userId: string) {
+  const direction = trade.direction === 'short' ? 'short' : 'long'
+  const openedAt = isoDate(trade.openedAt)
+  const closedAt = isoDate(trade.closedAt, new Date(openedAt))
+  const pnl = finiteNumber(trade.pnl, 0) ?? 0
+  const status =
+    trade.status === 'open'
+      ? 'open'
+      : pnl > 0
+        ? 'win'
+        : pnl < 0
+          ? 'loss'
+          : 'breakeven'
+
   return {
     user_id: userId,
-    symbol: trade.pair,
-    direction: trade.direction,
-    type: trade.direction === 'long' ? 'buy' : 'sell',
-    lots: trade.lotSize ?? 0,
-    open_price: trade.entry ?? null,
-    close_price: trade.exit ?? null,
-    open_time: trade.openedAt
-      ? new Date(trade.openedAt).toISOString()
-      : new Date().toISOString(),
-    close_time: trade.closedAt
-      ? new Date(trade.closedAt).toISOString()
-      : new Date().toISOString(),
-    profit: trade.pnl ?? 0,
-    stop_loss: trade.stopLoss ?? null,
-    take_profit: trade.takeProfit ?? null,
-    status: trade.status === 'open' ? 'open' : 'closed',
-    trade_outcome: trade.status ?? null,
+    symbol: String(trade.pair ?? '').trim(),
+    direction,
+    type: direction === 'long' ? 'buy' : 'sell',
+    lots: finiteNumber(trade.lotSize, 0),
+    open_price: finiteNumber(trade.entry, null),
+    close_price: finiteNumber(trade.exit, null),
+    open_time: openedAt,
+    close_time: closedAt,
+    profit: pnl,
+    stop_loss: finiteNumber(trade.stopLoss, null),
+    take_profit: finiteNumber(trade.takeProfit, null),
+    status: status === 'open' ? 'open' : 'closed',
+    trade_outcome: status,
     notes: trade.notes ?? null,
     emotion: trade.emotion ?? null,
     strategy: trade.strategy ?? null,
-    tags: trade.tags ?? [],
+    tags: Array.isArray(trade.tags) ? trade.tags : [],
     screenshot_url: trade.screenshotUrl ?? null,
-    pips: trade.pips ?? null,
-    r_multiple: trade.rMultiple ?? null,
-    risk_amount: trade.riskAmount ?? null,
+    pips: finiteNumber(trade.pips, null),
+    r_multiple: finiteNumber(trade.rMultiple, null),
+    risk_amount: finiteNumber(trade.riskAmount, null),
     session: trade.session ?? null,
     timeframe: trade.timeframe ?? null,
     mistakes: trade.mistakes ?? null,
@@ -128,6 +190,7 @@ router.post('/bulk', async (req: AuthRequest, res) => {
 
     const toInsert = trades
       .map((t) => ({ ...toRow(t, req.user!.id), account_id: accountId }))
+      .filter((t) => t.symbol && (t.type === 'buy' || t.type === 'sell'))
       .filter((t) => {
         const key = `${t.symbol}|${t.type}|${new Date(t.open_time).getTime()}|${new Date(t.close_time).getTime()}|${t.profit}`
         return !existingKeys.has(key)
@@ -143,7 +206,7 @@ router.post('/bulk', async (req: AuthRequest, res) => {
     const CHUNK_SIZE = 500
     for (let i = 0; i < toInsert.length; i += CHUNK_SIZE) {
       const chunk = toInsert.slice(i, i + CHUNK_SIZE)
-      const { error } = await supabaseAdmin.from('trades').insert(chunk)
+      const { error } = await insertTradeRows(chunk)
       if (error) return res.status(400).json({ error: error.message })
     }
 
@@ -161,6 +224,17 @@ router.post('/', async (req: AuthRequest, res) => {
       .insert(row)
       .select()
       .single()
+    if (error && isMissingColumnError(error)) {
+      const fallback = await supabaseAdmin
+        .from('trades')
+        .insert(stripExtendedTradeColumns(row))
+        .select()
+        .single()
+      if (fallback.error) {
+        return res.status(400).json({ error: fallback.error.message })
+      }
+      return res.status(201).json(fromRow(fallback.data))
+    }
     if (error) return res.status(400).json({ error: error.message })
     res.status(201).json(fromRow(data))
   } catch {
