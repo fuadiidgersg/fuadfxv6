@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
-import { Download, Plus } from 'lucide-react'
 import {
   type SortingState,
   type VisibilityState,
@@ -13,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { Download, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import { Button } from '@/components/ui/button'
@@ -43,7 +43,9 @@ export function TasksTable({ data }: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'closedAt', desc: true },
   ])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    id: false,
+  })
 
   const {
     globalFilter,
@@ -113,7 +115,7 @@ export function TasksTable({ data }: DataTableProps) {
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter by symbol or trade ID...'
+        searchPlaceholder='Search trades...'
         filters={[
           { columnId: 'status', title: 'Status', options: statuses },
           { columnId: 'pair', title: 'Pair', options: pairs },
