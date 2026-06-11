@@ -1,8 +1,19 @@
 import axios from 'axios'
 import { supabase } from './supabase/client'
 
+function getApiBaseUrl() {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname.endsWith('vercel.app')
+  ) {
+    return '/api'
+  }
+
+  return import.meta.env.VITE_API_URL || '/api'
+}
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
