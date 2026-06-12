@@ -1,18 +1,26 @@
-import type { CSSProperties, HTMLAttributes } from 'react'
+import type { HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 type BrandLogoProps = HTMLAttributes<HTMLSpanElement>
 
 const brandAsset = {
-  icon: '/brand/fuadfx-icon-currentColor.svg',
-  horizontal: '/brand/fuadfx-logo-horizontal-currentColor.svg',
-  stacked: '/brand/fuadfx-logo-stacked-currentColor.svg',
+  icon: {
+    light: '/brand/fuadfx-icon-exact-black.png',
+    dark: '/brand/fuadfx-icon-exact-white.png',
+  },
+  horizontal: {
+    light: '/brand/fuadfx-logo-horizontal-exact-black.png',
+    dark: '/brand/fuadfx-logo-horizontal-exact-white.png',
+  },
+  stacked: {
+    light: '/brand/fuadfx-logo-stacked-exact-black.png',
+    dark: '/brand/fuadfx-logo-stacked-exact-white.png',
+  },
 } as const
 
-function MaskedLogo({
+function BrandImage({
   asset,
   className,
-  style,
   label,
   ...props
 }: BrandLogoProps & {
@@ -24,24 +32,32 @@ function MaskedLogo({
       role='img'
       aria-label={label}
       className={cn(
-        'inline-block shrink-0 bg-current text-black dark:text-white',
+        'relative inline-block shrink-0 overflow-hidden',
         className
       )}
-      style={
-        {
-          WebkitMask: `url(${asset}) center / contain no-repeat`,
-          mask: `url(${asset}) center / contain no-repeat`,
-          ...style,
-        } as CSSProperties
-      }
       {...props}
-    />
+    >
+      <img
+        src={asset.light}
+        alt=''
+        aria-hidden='true'
+        className='block size-full object-contain dark:hidden'
+        draggable={false}
+      />
+      <img
+        src={asset.dark}
+        alt=''
+        aria-hidden='true'
+        className='hidden size-full object-contain dark:block'
+        draggable={false}
+      />
+    </span>
   )
 }
 
 export function BrandIcon({ className, ...props }: BrandLogoProps) {
   return (
-    <MaskedLogo
+    <BrandImage
       asset={brandAsset.icon}
       label='FUADFX icon'
       className={cn('size-7', className)}
@@ -52,10 +68,10 @@ export function BrandIcon({ className, ...props }: BrandLogoProps) {
 
 export function BrandLogoHorizontal({ className, ...props }: BrandLogoProps) {
   return (
-    <MaskedLogo
+    <BrandImage
       asset={brandAsset.horizontal}
       label='FUADFX'
-      className={cn('h-7 w-[126px]', className)}
+      className={cn('h-8 w-[142px]', className)}
       {...props}
     />
   )
@@ -63,10 +79,10 @@ export function BrandLogoHorizontal({ className, ...props }: BrandLogoProps) {
 
 export function BrandLogoStacked({ className, ...props }: BrandLogoProps) {
   return (
-    <MaskedLogo
-      asset={brandAsset.stacked}
+    <BrandImage
+      asset={brandAsset.horizontal}
       label='FUADFX'
-      className={cn('h-28 w-[170px]', className)}
+      className={cn('h-12 w-[212px]', className)}
       {...props}
     />
   )

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { BrandLogoStacked } from '@/assets/logo'
+import { BrandLogoHorizontal } from '@/assets/logo'
 import { cn } from '@/lib/utils'
 import dashboardDark from './assets/dashboard-dark.png'
 import dashboardLight from './assets/dashboard-light.png'
@@ -11,7 +11,7 @@ export function SignIn2() {
       <div className='lg:p-8'>
         <div className='mx-auto flex w-full flex-col justify-center space-y-2 py-8 sm:w-120 sm:p-8'>
           <div className='mb-4 flex items-center justify-center text-black dark:text-white'>
-            <BrandLogoStacked className='h-24 w-[146px]' />
+            <BrandLogoHorizontal className='h-12 w-[220px]' />
           </div>
         </div>
         <div className='mx-auto flex w-full max-w-sm flex-col justify-center space-y-2'>

@@ -17,8 +17,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader className='gap-3 p-2'>
-        <div className='flex h-12 items-center text-sidebar-foreground'>
-          <BrandLogoHorizontal className='h-7 w-[154px]' />
+        <div className='flex h-11 items-center text-sidebar-foreground'>
+          <BrandLogoHorizontal className='h-8 w-[156px]' />
         </div>
         <AccountSwitcher />
       </SidebarHeader>
