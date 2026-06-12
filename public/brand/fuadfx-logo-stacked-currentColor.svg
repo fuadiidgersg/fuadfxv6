@@ -3,7 +3,7 @@
     <polygon points="52,66 190,0 172,55 34,121"/>
     <polygon points="52,151 157,99 139,154 34,206"/>
   </g>
-  <g fill="currentColor" transform="translate(152 305)">
-    <text x="0" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">FUADFX</text>
+  <g fill="currentColor" transform="translate(137 300)">
+    <text x="0" y="98" font-family="Manrope, Inter, Avenir Next, Arial, sans-serif" font-size="108" font-weight="800" letter-spacing="1">FUADFX</text>
   </g>
 </svg>

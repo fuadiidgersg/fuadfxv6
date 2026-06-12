@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="FUADFX icon">
+  <style>
+    :root { color: #000000; }
+    @media (prefers-color-scheme: dark) { :root { color: #ffffff; } }
+  </style>
   <g fill="currentColor">
     <polygon points="82,73 193,18 178,64 67,119"/>
     <polygon points="82,146 166,105 151,151 67,192"/>

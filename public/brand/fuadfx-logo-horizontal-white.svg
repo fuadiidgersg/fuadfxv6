@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 170" role="img" aria-label="FUADFX logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 170" role="img" aria-label="FUADFX logo">
   <g fill="#ffffff" transform="translate(32 23)">
     <polygon points="38,37 122,0 111,27 26,66"/>
     <polygon points="38,91 101,62 90,89 26,120"/>
   </g>
-  <g fill="#ffffff" transform="translate(194 39)">
-    <text x="0" y="82" font-family="Inter, Manrope, Avenir Next, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="7">FUADFX</text>
+  <g fill="#ffffff" transform="translate(164 25)">
+    <text x="0" y="98" font-family="Manrope, Inter, Avenir Next, Arial, sans-serif" font-size="108" font-weight="800" letter-spacing="1">FUADFX</text>
   </g>
 </svg>
