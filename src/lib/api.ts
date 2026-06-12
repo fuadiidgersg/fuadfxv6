@@ -2,6 +2,10 @@ import axios from 'axios'
 import { supabase } from './supabase/client'
 
 function getApiBaseUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+
   if (
     typeof window !== 'undefined' &&
     window.location.hostname.endsWith('vercel.app')

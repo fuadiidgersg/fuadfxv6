@@ -9,12 +9,12 @@ const brandAsset = {
     dark: '/brand/fuadfx-icon-exact-white.png',
   },
   horizontal: {
-    light: '/brand/fuadfx-logo-horizontal-exact-black.png',
-    dark: '/brand/fuadfx-logo-horizontal-exact-white.png',
+    light: '/brand/fuadfx-wordmark-exact-black.png',
+    dark: '/brand/fuadfx-wordmark-exact-white.png',
   },
   stacked: {
-    light: '/brand/fuadfx-logo-stacked-exact-black.png',
-    dark: '/brand/fuadfx-logo-stacked-exact-white.png',
+    light: '/brand/fuadfx-wordmark-exact-black.png',
+    dark: '/brand/fuadfx-wordmark-exact-white.png',
   },
 } as const
 
@@ -71,7 +71,7 @@ export function BrandLogoHorizontal({ className, ...props }: BrandLogoProps) {
     <BrandImage
       asset={brandAsset.horizontal}
       label='FUADFX'
-      className={cn('h-8 w-[142px]', className)}
+      className={cn('h-8 w-[128px]', className)}
       {...props}
     />
   )
@@ -82,7 +82,7 @@ export function BrandLogoStacked({ className, ...props }: BrandLogoProps) {
     <BrandImage
       asset={brandAsset.horizontal}
       label='FUADFX'
-      className={cn('h-12 w-[212px]', className)}
+      className={cn('h-10 w-[160px]', className)}
       {...props}
     />
   )

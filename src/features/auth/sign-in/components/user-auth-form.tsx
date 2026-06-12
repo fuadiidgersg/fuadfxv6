@@ -30,6 +30,17 @@ const formSchema = z.object({
     .min(7, 'Password must be at least 7 characters long.'),
 })
 
+function getSignInErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : ''
+  if (/invalid login credentials/i.test(message)) {
+    return 'Invalid email or password. If you created your account with Google, use Continue with Google. Otherwise create an account first or reset your password.'
+  }
+  if (/email not confirmed/i.test(message)) {
+    return 'Please confirm your email before signing in, or use Continue with Google if that is how you created the account.'
+  }
+  return message || 'Sign in failed. Please check your credentials.'
+}
+
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string
 }
@@ -58,7 +69,7 @@ export function UserAuthForm({
       const targetPath = redirectTo || '/dashboard'
       navigate({ to: targetPath, replace: true })
     } catch (err: any) {
-      toast.error(err?.message ?? 'Sign in failed. Please check your credentials.')
+      toast.error(getSignInErrorMessage(err))
     } finally {
       setIsLoading(false)
     }

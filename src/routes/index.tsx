@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
 import type { ElementType } from 'react'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   ArrowRight,
   BarChart3,
@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import { BrandIcon, BrandLogoHorizontal } from '@/assets/logo'
+import { BrandLogoHorizontal } from '@/assets/logo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -87,22 +87,13 @@ function LandingPage() {
               <BrandLogoHorizontal className='h-7 w-[126px]' />
             </Link>
             <nav className='hidden items-center gap-7 text-sm text-muted-foreground md:flex'>
-              <a
-                href='#platform'
-                className='transition hover:text-foreground'
-              >
+              <a href='#platform' className='transition hover:text-foreground'>
                 Platform
               </a>
-              <a
-                href='#workflow'
-                className='transition hover:text-foreground'
-              >
+              <a href='#workflow' className='transition hover:text-foreground'>
                 Workflow
               </a>
-              <a
-                href='#security'
-                className='transition hover:text-foreground'
-              >
+              <a href='#security' className='transition hover:text-foreground'>
                 Security
               </a>
             </nav>
@@ -128,10 +119,10 @@ function LandingPage() {
             <Badge variant='outline' className='mb-6 rounded-full px-4 py-1'>
               Modern MT5 companion for serious traders
             </Badge>
-            <h1 className='text-balance text-5xl font-semibold leading-tight tracking-tight sm:text-6xl lg:text-7xl'>
+            <h1 className='text-5xl leading-tight font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl'>
               MT5 shows the trades. FUADFX shows the edge.
             </h1>
-            <p className='mx-auto mt-6 max-w-2xl text-balance text-base leading-7 text-muted-foreground sm:text-lg'>
+            <p className='mx-auto mt-6 max-w-2xl text-base leading-7 text-balance text-muted-foreground sm:text-lg'>
               A premium analysis, review and backtesting workspace for MT5
               traders who want their trading data to feel clear, modern and
               actionable.
@@ -162,7 +153,9 @@ function LandingPage() {
                 <div className='text-2xl font-semibold tracking-tight'>
                   {value}
                 </div>
-                <div className='mt-1 text-sm text-muted-foreground'>{label}</div>
+                <div className='mt-1 text-sm text-muted-foreground'>
+                  {label}
+                </div>
               </div>
             ))}
           </div>
@@ -174,7 +167,7 @@ function LandingPage() {
           <div className='grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:items-start'>
             <div className='lg:sticky lg:top-24'>
               <Badge variant='secondary'>Platform</Badge>
-              <h2 className='mt-5 text-balance text-3xl font-semibold tracking-tight sm:text-5xl'>
+              <h2 className='mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-5xl'>
                 The analysis layer MT5 should have had.
               </h2>
               <p className='mt-5 leading-7 text-muted-foreground'>
@@ -186,7 +179,11 @@ function LandingPage() {
 
             <div className='grid gap-4'>
               {featureGroups.map((feature, index) => (
-                <FeatureRow key={feature.title} index={index + 1} {...feature} />
+                <FeatureRow
+                  key={feature.title}
+                  index={index + 1}
+                  {...feature}
+                />
               ))}
             </div>
           </div>
@@ -227,7 +224,7 @@ function LandingPage() {
           <div className='grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-center'>
             <div>
               <Badge variant='secondary'>Launch-ready foundation</Badge>
-              <h2 className='mt-5 text-balance text-3xl font-semibold tracking-tight sm:text-5xl'>
+              <h2 className='mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-5xl'>
                 Serious trading review, protected by a clean auth flow.
               </h2>
               <p className='mt-5 leading-7 text-muted-foreground'>
@@ -260,14 +257,15 @@ function LandingPage() {
           <div className='overflow-hidden rounded-xl border bg-card'>
             <div className='grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center lg:p-10'>
               <div>
-                <Badge variant='outline'>Built for the next generation of MT5 review</Badge>
-                <h2 className='mt-5 text-balance text-3xl font-semibold tracking-tight'>
+                <Badge variant='outline'>
+                  Built for the next generation of MT5 review
+                </Badge>
+                <h2 className='mt-5 text-3xl font-semibold tracking-tight text-balance'>
                   See your trading data clearly before the next session.
                 </h2>
                 <p className='mt-3 max-w-2xl text-sm leading-6 text-muted-foreground'>
-                  Review performance, behavior and strategy evidence in a
-                  modern workspace designed around the way traders actually
-                  improve.
+                  Review performance, behavior and strategy evidence in a modern
+                  workspace designed around the way traders actually improve.
                 </p>
               </div>
               <Button size='lg' asChild>
@@ -301,10 +299,10 @@ function SectionIntro({
   return (
     <div className='mx-auto max-w-3xl text-center'>
       <Badge variant='outline'>{eyebrow}</Badge>
-      <h2 className='mt-5 text-balance text-3xl font-semibold tracking-tight sm:text-5xl'>
+      <h2 className='mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-5xl'>
         {title}
       </h2>
-      <p className='mt-4 text-balance leading-7 text-muted-foreground'>
+      <p className='mt-4 leading-7 text-balance text-muted-foreground'>
         {body}
       </p>
     </div>
@@ -315,10 +313,7 @@ function ProductPreview() {
   return (
     <div className='mx-auto max-w-6xl overflow-hidden rounded-2xl border bg-card shadow-sm'>
       <div className='flex items-center justify-between border-b px-4 py-3 sm:px-5'>
-        <div className='flex items-center gap-2 font-semibold'>
-          <BrandIcon className='size-6' />
-          FUADFX Companion
-        </div>
+        <div className='font-semibold'>FUADFX Companion</div>
         <Badge variant='secondary'>Analysis view</Badge>
       </div>
 
@@ -344,7 +339,9 @@ function ProductPreview() {
           <div className='grid gap-4 lg:grid-cols-[0.82fr_1.18fr]'>
             <div>
               <div className='rounded-xl border bg-background p-5'>
-                <div className='text-sm text-muted-foreground'>Edge snapshot</div>
+                <div className='text-sm text-muted-foreground'>
+                  Edge snapshot
+                </div>
                 <div className='mt-2 text-4xl font-semibold tracking-tight'>
                   +$3,428
                 </div>
