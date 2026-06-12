@@ -1,8 +1,16 @@
-import { useEffect, useState } from 'react'
+import {
+  Children,
+  isValidElement,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { MarketClock } from '@/components/layout/market-clock'
+import { Search } from '@/components/search'
 
 type HeaderProps = React.HTMLAttributes<HTMLElement> & {
   fixed?: boolean
@@ -11,6 +19,33 @@ type HeaderProps = React.HTMLAttributes<HTMLElement> & {
 
 export function Header({ className, fixed, children, ...props }: HeaderProps) {
   const [offset, setOffset] = useState(0)
+  const orderedChildren = useMemo(() => {
+    const items = Children.toArray(children)
+    let inserted = false
+    const withClock: ReactNode[] = []
+
+    for (const child of items) {
+      withClock.push(child)
+      if (isValidElement(child) && child.type === Search) {
+        inserted = true
+        withClock.push(
+          <div key='market-clock' className='ms-2 me-3 shrink-0'>
+            <MarketClock />
+          </div>
+        )
+      }
+    }
+
+    if (!inserted) {
+      withClock.push(
+        <div key='market-clock' className='ms-auto shrink-0'>
+          <MarketClock />
+        </div>
+      )
+    }
+
+    return withClock
+  }, [children])
 
   useEffect(() => {
     const onScroll = () => {
@@ -44,8 +79,7 @@ export function Header({ className, fixed, children, ...props }: HeaderProps) {
       >
         <SidebarTrigger variant='outline' className='max-md:scale-125' />
         <Separator orientation='vertical' className='h-6' />
-        <MarketClock />
-        {children}
+        {orderedChildren}
       </div>
     </header>
   )

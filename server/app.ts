@@ -5,6 +5,7 @@ import analyticsRouter from './routes/analytics'
 import journalsRouter from './routes/journals'
 import profileRouter from './routes/profile'
 import tradesRouter from './routes/trades'
+import { isSupabaseConfigured } from './lib/supabase-admin'
 
 const app = express()
 
@@ -69,16 +70,25 @@ app.use(express.json({ limit: '10mb' }))
 
 // Health check — respond on both paths (Render uses /api/health, plain clients use /health)
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+  res.json({
+    status: 'ok',
+    supabaseConfigured: isSupabaseConfigured(),
+    timestamp: new Date().toISOString(),
+  })
 })
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+  res.json({
+    status: 'ok',
+    supabaseConfigured: isSupabaseConfigured(),
+    timestamp: new Date().toISOString(),
+  })
 })
 app.get('/api/version', (_req, res) => {
   res.json({
     status: 'ok',
     commit: process.env.RENDER_GIT_COMMIT ?? 'local',
     nodeEnv: process.env.NODE_ENV ?? 'development',
+    supabaseConfigured: isSupabaseConfigured(),
     timestamp: new Date().toISOString(),
   })
 })
