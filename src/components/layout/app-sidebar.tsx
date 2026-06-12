@@ -1,3 +1,4 @@
+import { BrandLogoHorizontal } from '@/assets/logo'
 import { useLayout } from '@/context/layout-provider'
 import {
   Sidebar,
@@ -15,7 +16,10 @@ export function AppSidebar() {
   const { collapsible, variant } = useLayout()
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
-      <SidebarHeader>
+      <SidebarHeader className='gap-3 p-3'>
+        <div className='flex h-10 items-center rounded-lg px-2 text-sidebar-foreground'>
+          <BrandLogoHorizontal className='h-5 w-[116px]' />
+        </div>
         <AccountSwitcher />
       </SidebarHeader>
       <SidebarContent>

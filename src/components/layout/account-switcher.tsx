@@ -9,7 +9,6 @@ import {
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { BrandLogoHorizontal } from '@/assets/logo'
 import {
   useAccountsStore,
   type AccountCurrency,
@@ -82,7 +81,6 @@ export function AccountSwitcher() {
                 className='h-auto rounded-lg border bg-sidebar-accent/40 p-2.5 shadow-sm data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
                 <div className='grid min-w-0 flex-1 gap-1 text-start text-sm leading-tight'>
-                  <BrandLogoHorizontal className='h-4 w-[90px]' />
                   <span className='truncate font-semibold'>
                     {active?.name ?? 'No account yet'}
                   </span>

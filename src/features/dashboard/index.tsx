@@ -9,7 +9,6 @@ import {
   Download,
   ShieldCheck,
 } from 'lucide-react'
-import { BrandLogoHorizontal } from '@/assets/logo'
 import { useTrades } from '@/stores/trades-store'
 import { useTradingSettings } from '@/stores/trading-settings-store'
 import { cn } from '@/lib/utils'
@@ -57,9 +56,6 @@ export function Dashboard() {
       <Main>
         <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
           <div className='flex items-center gap-3'>
-            <div className='hidden h-11 items-center rounded-md border bg-card px-3 text-foreground shadow-sm sm:flex'>
-              <BrandLogoHorizontal className='h-5 w-[102px]' />
-            </div>
             <div>
               <h1 className='text-2xl font-bold tracking-tight'>
                 Trading Dashboard
