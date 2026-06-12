@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware'
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'pro'
 
 export type Profile = {
+  userId?: string
   email: string
   displayName: string
   experience: ExperienceLevel
@@ -15,6 +16,7 @@ export type Profile = {
 type ProfileState = {
   profile: Profile | null
   onboardingComplete: boolean
+  isOnboardedForUser: (userId: string | undefined | null) => boolean
   setProfile: (profile: Profile) => void
   completeOnboarding: () => void
   reset: () => void
@@ -22,9 +24,13 @@ type ProfileState = {
 
 export const useProfileStore = create<ProfileState>()(
   persist(
-    (set) => ({
+    (set, get): ProfileState => ({
       profile: null,
       onboardingComplete: false,
+      isOnboardedForUser: (userId) =>
+        Boolean(
+          userId && get().onboardingComplete && get().profile?.userId === userId
+        ),
       setProfile: (profile) => set({ profile }),
       completeOnboarding: () =>
         set((state) => ({

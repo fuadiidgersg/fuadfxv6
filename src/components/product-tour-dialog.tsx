@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import {
   AreaChart,
-  BookOpenText,
+  BarChart3,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
   Gauge,
-  Settings2,
   Wallet,
 } from 'lucide-react'
 import { useProductTourStore } from '@/stores/product-tour-store'
@@ -25,45 +24,45 @@ import {
 const tourSteps = [
   {
     icon: Gauge,
-    title: 'Start with your command center',
-    body: 'The dashboard gives you a clean read on account performance, recent trades, equity movement, and the next review action before you trade again.',
-    action: 'Open dashboard',
+    title: 'Read the dashboard first',
+    body: 'Start here after onboarding. The top cards summarize net P&L, win rate, profit factor, best and worst trade, and the current review state of the active account.',
+    action: 'Stay on dashboard',
     href: '/dashboard',
   },
   {
-    icon: ClipboardList,
-    title: 'Log and review every trade',
-    body: 'Use Trades to add MT5 history, review entries and exits, track pips, notes, mistakes, strategy, session, and the execution details that explain the result.',
-    action: 'Open trades',
-    href: '/tasks',
+    icon: Wallet,
+    title: 'Confirm the active account',
+    body: 'Use the account selector in the sidebar to switch between live, demo, and prop accounts. Every dashboard number follows the selected account.',
+    action: 'View portfolio',
+    href: '/portfolio',
   },
   {
     icon: AreaChart,
-    title: 'Find the edge in the data',
-    body: 'Analytics turns closed trades into trader-friendly evidence: win rate, drawdown, pips won and lost, pair behavior, session quality, expectancy, and strategy performance.',
+    title: 'Use the equity curve',
+    body: 'The curve shows whether the account is building smoothly or becoming unstable. Look for drawdown clusters, sharp recoveries, and flat periods before changing a strategy.',
     action: 'Open analytics',
     href: '/analytics',
   },
   {
-    icon: BookOpenText,
-    title: 'Build the trading journal habit',
-    body: 'Journal your prep, post-session review, recurring mistakes, weekly lessons, and rule breaks so the numbers connect back to behavior.',
+    icon: ClipboardList,
+    title: 'Review recent trades',
+    body: 'Recent trades are the fastest way to spot what changed today: pair, session, direction, pips, P&L, and whether the result came from execution or market conditions.',
+    action: 'Open trades',
+    href: '/tasks',
+  },
+  {
+    icon: BarChart3,
+    title: 'Move from overview to diagnosis',
+    body: 'Use the dashboard tabs to go deeper only after the overview makes sense. Analytics explains what is driving the numbers: pairs, sessions, strategy, risk and consistency.',
+    action: 'Open analytics',
+    href: '/analytics',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Turn data into one next action',
+    body: 'Before the next session, decide one thing to keep, stop, or improve. FUADFX is most useful when the dashboard leads to a specific trading rule.',
     action: 'Open journal',
     href: '/chats',
-  },
-  {
-    icon: Wallet,
-    title: 'Separate accounts and objectives',
-    body: 'Portfolio helps you compare live, demo, and prop accounts without mixing results, so each account has its own performance story.',
-    action: 'Open portfolio',
-    href: '/portfolio',
-  },
-  {
-    icon: Settings2,
-    title: 'Tune FUADFX to your workflow',
-    body: 'Set your timezone, currency, risk preferences, display mode, and import behavior before you rely on the journal for serious review.',
-    action: 'Open settings',
-    href: '/settings',
   },
 ] as const
 
@@ -83,7 +82,7 @@ export function ProductTourDialog() {
   )
 
   useEffect(() => {
-    if (!completed && location.pathname !== '/tasks') {
+    if (!completed && location.pathname === '/dashboard') {
       const timer = window.setTimeout(() => setOpen(true), 700)
       return () => window.clearTimeout(timer)
     }
@@ -113,9 +112,9 @@ export function ProductTourDialog() {
                 {progressLabel}
               </span>
             </div>
-            <DialogTitle className='text-xl'>Welcome to FUADFX</DialogTitle>
+            <DialogTitle className='text-xl'>Dashboard guide</DialogTitle>
             <DialogDescription>
-              A quick tour for using FUADFX as your MT5 companion.
+              Learn how to read your account after onboarding is complete.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -149,8 +148,8 @@ export function ProductTourDialog() {
             <div className='flex items-start gap-3'>
               <CheckCircle2 className='mt-0.5 size-4 shrink-0 text-emerald-500' />
               <p className='leading-6 text-muted-foreground'>
-                Best workflow: pick an account, review trades, check analytics,
-                then write one lesson before the next session.
+                Best workflow: read the dashboard first, identify what changed,
+                then write one clear action before the next trading session.
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { getSession } from '@/lib/supabase/auth'
 import { useProfileStore } from '@/stores/profile-store'
+import { getSession } from '@/lib/supabase/auth'
 import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 
 export const Route = createFileRoute('/_authenticated')({
@@ -12,8 +12,8 @@ export const Route = createFileRoute('/_authenticated')({
         search: { redirect: location.href },
       })
     }
-    const { onboardingComplete } = useProfileStore.getState()
-    if (!onboardingComplete) {
+    const { isOnboardedForUser } = useProfileStore.getState()
+    if (!isOnboardedForUser(session.user.id)) {
       throw redirect({ to: '/onboarding' })
     }
   },

@@ -75,13 +75,14 @@ export default function Onboarding() {
   const finishSetup = () => {
     completeOnboarding()
     toast.success('Welcome to FUADFX. Your account is ready.')
-    navigate({ to: '/tasks' })
+    navigate({ to: '/dashboard' })
   }
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true)
     try {
       setProfile({
+        userId: user?.id,
         email: user?.email ?? '',
         displayName: data.displayName,
         experience: data.experience,
