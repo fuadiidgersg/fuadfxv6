@@ -71,7 +71,7 @@ export function BrandLogoHorizontal({ className, ...props }: BrandLogoProps) {
     <BrandImage
       asset={brandAsset.horizontal}
       label='FUADFX'
-      className={cn('h-8 w-[128px]', className)}
+      className={cn('h-6 w-[190px]', className)}
       {...props}
     />
   )
@@ -82,7 +82,7 @@ export function BrandLogoStacked({ className, ...props }: BrandLogoProps) {
     <BrandImage
       asset={brandAsset.horizontal}
       label='FUADFX'
-      className={cn('h-10 w-[160px]', className)}
+      className={cn('h-7 w-[222px]', className)}
       {...props}
     />
   )
