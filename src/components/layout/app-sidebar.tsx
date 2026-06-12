@@ -16,9 +16,9 @@ export function AppSidebar() {
   const { collapsible, variant } = useLayout()
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
-      <SidebarHeader className='gap-3 p-3'>
-        <div className='flex h-10 items-center rounded-lg px-2 text-sidebar-foreground'>
-          <BrandLogoHorizontal className='h-5 w-[116px]' />
+      <SidebarHeader className='gap-3 p-2'>
+        <div className='flex h-12 items-center text-sidebar-foreground'>
+          <BrandLogoHorizontal className='h-7 w-[154px]' />
         </div>
         <AccountSwitcher />
       </SidebarHeader>
