@@ -9,8 +9,12 @@ import {
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { BrandIcon } from '@/assets/logo'
-import { useAccountsStore, type AccountCurrency, type AccountType } from '@/stores/accounts-store'
+import { BrandLogoHorizontal } from '@/assets/logo'
+import {
+  useAccountsStore,
+  type AccountCurrency,
+  type AccountType,
+} from '@/stores/accounts-store'
 import { useAccountsQuery, useCreateAccount } from '@/hooks/use-accounts-query'
 import { Button } from '@/components/ui/button'
 import {
@@ -75,12 +79,10 @@ export function AccountSwitcher() {
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
                 size='lg'
-                className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+                className='h-auto rounded-lg border bg-sidebar-accent/40 p-2.5 shadow-sm data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
-                <div className='flex aspect-square size-8 items-center justify-center text-black dark:text-white'>
-                  <BrandIcon className='size-6' />
-                </div>
-                <div className='grid flex-1 text-start text-sm leading-tight'>
+                <div className='grid min-w-0 flex-1 gap-1 text-start text-sm leading-tight'>
+                  <BrandLogoHorizontal className='h-4 w-[90px]' />
                   <span className='truncate font-semibold'>
                     {active?.name ?? 'No account yet'}
                   </span>

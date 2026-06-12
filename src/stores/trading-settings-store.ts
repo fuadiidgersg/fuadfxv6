@@ -11,6 +11,12 @@ export type CurrencySymbol =
   | 'CHF'
 
 export type NewsImpactFilter = 'high' | 'medium' | 'low'
+export type PropFirmTemplate =
+  | 'custom'
+  | 'ftmo'
+  | 'fundednext'
+  | 'the5ers'
+  | 'e8'
 
 export type TradingSettingsState = {
   timezone: string
@@ -18,6 +24,7 @@ export type TradingSettingsState = {
   currencySymbol: CurrencySymbol
   defaultRiskPct: number
   ftmoMode: boolean
+  propFirmTemplate: PropFirmTemplate
   ftmoAccountSize: number
   ftmoDailyLossLimitPct: number
   ftmoMaxDrawdownPct: number
@@ -37,6 +44,7 @@ export type TradingSettingsState = {
   setCurrencySymbol: (c: CurrencySymbol) => void
   setDefaultRiskPct: (v: number) => void
   setFtmoMode: (v: boolean) => void
+  setPropFirmTemplate: (v: PropFirmTemplate) => void
   setFtmoAccountSize: (v: number) => void
   setFtmoDailyLossLimitPct: (v: number) => void
   setFtmoMaxDrawdownPct: (v: number) => void
@@ -61,6 +69,7 @@ export const useTradingSettings = create<TradingSettingsState>()(
       currencySymbol: 'USD',
       defaultRiskPct: 1,
       ftmoMode: false,
+      propFirmTemplate: 'ftmo',
       ftmoAccountSize: 10000,
       ftmoDailyLossLimitPct: 5,
       ftmoMaxDrawdownPct: 10,
@@ -81,6 +90,7 @@ export const useTradingSettings = create<TradingSettingsState>()(
       setCurrencySymbol: (c) => set({ currencySymbol: c }),
       setDefaultRiskPct: (v) => set({ defaultRiskPct: v }),
       setFtmoMode: (v) => set({ ftmoMode: v }),
+      setPropFirmTemplate: (v) => set({ propFirmTemplate: v }),
       setFtmoAccountSize: (v) => set({ ftmoAccountSize: v }),
       setFtmoDailyLossLimitPct: (v) => set({ ftmoDailyLossLimitPct: v }),
       setFtmoMaxDrawdownPct: (v) => set({ ftmoMaxDrawdownPct: v }),
@@ -108,6 +118,7 @@ export const useTradingSettings = create<TradingSettingsState>()(
         newsNotificationLeadMinutes: state?.newsNotificationLeadMinutes ?? 15,
         newsFilterCountries: state?.newsFilterCountries ?? [],
         newsFilterImpacts: state?.newsFilterImpacts ?? ['high'],
+        propFirmTemplate: state?.propFirmTemplate ?? 'ftmo',
       }),
     }
   )

@@ -7,8 +7,11 @@ import {
   Trophy,
   CandlestickChart,
   Download,
+  ShieldCheck,
 } from 'lucide-react'
+import { BrandLogoHorizontal } from '@/assets/logo'
 import { useTrades } from '@/stores/trades-store'
+import { useTradingSettings } from '@/stores/trading-settings-store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,6 +38,7 @@ import { RecentTrades } from './components/recent-trades'
 
 export function Dashboard() {
   const trades = useTrades()
+  const tradingSettings = useTradingSettings()
   const stats = useMemo(() => computeStats(trades), [trades])
   const hasTrades = trades.length > 0
   const { state: sidebarState, isMobile, openMobile } = useSidebar()
@@ -51,14 +55,19 @@ export function Dashboard() {
       </Header>
 
       <Main>
-        <div className='mb-2 flex items-center justify-between space-y-2'>
-          <div>
-            <h1 className='text-2xl font-bold tracking-tight'>
-              Trading Dashboard
-            </h1>
-            <p className='text-sm text-muted-foreground'>
-              Track your performance, review trades, and grow your edge.
-            </p>
+        <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+          <div className='flex items-center gap-3'>
+            <div className='hidden h-11 items-center rounded-md border bg-card px-3 text-foreground shadow-sm sm:flex'>
+              <BrandLogoHorizontal className='h-5 w-[102px]' />
+            </div>
+            <div>
+              <h1 className='text-2xl font-bold tracking-tight'>
+                Trading Dashboard
+              </h1>
+              <p className='text-sm text-muted-foreground'>
+                Track your performance, review trades, and grow your edge.
+              </p>
+            </div>
           </div>
           <div className='flex items-center space-x-2'>
             <Button variant='outline' disabled={!hasTrades}>
@@ -85,6 +94,24 @@ export function Dashboard() {
           </div>
 
           <TabsContent value='overview' className='space-y-4'>
+            {tradingSettings.ftmoMode && (
+              <div className='flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm'>
+                <div className='flex items-center gap-2'>
+                  <ShieldCheck className='size-4 text-amber-500' />
+                  <span className='font-medium'>Prop firm mode active</span>
+                  <span className='text-muted-foreground'>
+                    Dashboard is tracking profit target, daily loss and max
+                    drawdown rules.
+                  </span>
+                </div>
+                <Link
+                  to='/settings/trading'
+                  className='font-medium text-amber-600 hover:underline'
+                >
+                  Edit rules
+                </Link>
+              </div>
+            )}
             {!hasTrades && <EmptyTradingState />}
 
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>

@@ -10,6 +10,7 @@ export type Profile = {
   experience: ExperienceLevel
   preferredPair: string
   startingCapital: number
+  avatarUrl?: string
   onboardedAt?: string
 }
 

@@ -8,6 +8,7 @@ import {
   TIMEZONES,
   type CurrencySymbol,
   type NewsImpactFilter,
+  type PropFirmTemplate,
 } from '@/stores/trading-settings-store'
 import { formatDateInputValue } from '@/lib/platform-time'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,7 @@ const schema = z.object({
   currencySymbol: z.enum(['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']),
   defaultRiskPct: z.coerce.number().min(0.1).max(100),
   ftmoMode: z.boolean(),
+  propFirmTemplate: z.enum(['custom', 'ftmo', 'fundednext', 'the5ers', 'e8']),
   ftmoAccountSize: z.coerce.number().min(1000),
   ftmoDailyLossLimitPct: z.coerce.number().min(0.1).max(100),
   ftmoMaxDrawdownPct: z.coerce.number().min(0.1).max(100),
@@ -80,6 +82,41 @@ const NEWS_IMPACTS: {
   },
 ]
 
+const PROP_FIRMS: Record<
+  Exclude<PropFirmTemplate, 'custom'>,
+  {
+    label: string
+    profitTargetPct: number
+    dailyLossLimitPct: number
+    maxDrawdownPct: number
+  }
+> = {
+  ftmo: {
+    label: 'FTMO',
+    profitTargetPct: 10,
+    dailyLossLimitPct: 5,
+    maxDrawdownPct: 10,
+  },
+  fundednext: {
+    label: 'FundedNext',
+    profitTargetPct: 10,
+    dailyLossLimitPct: 5,
+    maxDrawdownPct: 10,
+  },
+  the5ers: {
+    label: 'The5ers',
+    profitTargetPct: 8,
+    dailyLossLimitPct: 3,
+    maxDrawdownPct: 6,
+  },
+  e8: {
+    label: 'E8 Funding',
+    profitTargetPct: 8,
+    dailyLossLimitPct: 5,
+    maxDrawdownPct: 8,
+  },
+}
+
 export function SettingsTrading() {
   const settings = useTradingSettings()
   const [notificationPermission, setNotificationPermission] = useState(
@@ -101,6 +138,7 @@ export function SettingsTrading() {
       currencySymbol: settings.currencySymbol,
       defaultRiskPct: settings.defaultRiskPct,
       ftmoMode: settings.ftmoMode,
+      propFirmTemplate: settings.propFirmTemplate,
       ftmoAccountSize: settings.ftmoAccountSize,
       ftmoDailyLossLimitPct: settings.ftmoDailyLossLimitPct,
       ftmoMaxDrawdownPct: settings.ftmoMaxDrawdownPct,
@@ -142,6 +180,7 @@ export function SettingsTrading() {
     settings.setCurrencySymbol(values.currencySymbol as CurrencySymbol)
     settings.setDefaultRiskPct(values.defaultRiskPct)
     settings.setFtmoMode(values.ftmoMode)
+    settings.setPropFirmTemplate(values.propFirmTemplate)
     settings.setFtmoAccountSize(values.ftmoAccountSize)
     settings.setFtmoDailyLossLimitPct(values.ftmoDailyLossLimitPct)
     settings.setFtmoMaxDrawdownPct(values.ftmoMaxDrawdownPct)
@@ -587,7 +626,7 @@ export function SettingsTrading() {
 
           <Separator />
 
-          {/* FTMO Mode */}
+          {/* Prop firm mode */}
           <div className='space-y-4'>
             <FormField
               control={form.control}
@@ -595,12 +634,10 @@ export function SettingsTrading() {
               render={({ field }) => (
                 <FormItem className='flex items-center justify-between rounded-lg border p-4'>
                   <div>
-                    <FormLabel className='text-base'>
-                      Prop Firm / FTMO Mode
-                    </FormLabel>
+                    <FormLabel className='text-base'>Prop Firm Mode</FormLabel>
                     <FormDescription>
-                      Track your account against funded account challenge rules.
-                      Shows a compliance tracker on the Risk analytics tab.
+                      Track your dashboard and analytics against funded account
+                      challenge rules.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -618,6 +655,57 @@ export function SettingsTrading() {
                 <p className='text-sm font-medium text-muted-foreground'>
                   Prop Firm Rules
                 </p>
+                <FormField
+                  control={form.control}
+                  name='propFirmTemplate'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prop firm template</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          if (value !== 'custom') {
+                            const preset =
+                              PROP_FIRMS[
+                                value as Exclude<PropFirmTemplate, 'custom'>
+                              ]
+                            form.setValue(
+                              'ftmoProfitTargetPct',
+                              preset.profitTargetPct
+                            )
+                            form.setValue(
+                              'ftmoDailyLossLimitPct',
+                              preset.dailyLossLimitPct
+                            )
+                            form.setValue(
+                              'ftmoMaxDrawdownPct',
+                              preset.maxDrawdownPct
+                            )
+                          }
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger className='w-full max-w-sm'>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value='ftmo'>FTMO</SelectItem>
+                          <SelectItem value='fundednext'>FundedNext</SelectItem>
+                          <SelectItem value='the5ers'>The5ers</SelectItem>
+                          <SelectItem value='e8'>E8 Funding</SelectItem>
+                          <SelectItem value='custom'>Custom rules</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Pick a preset, then adjust any rule that differs from
+                        your exact challenge.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className='grid gap-4 sm:grid-cols-2'>
                   <FormField
                     control={form.control}
@@ -647,7 +735,7 @@ export function SettingsTrading() {
                           />
                         </FormControl>
                         <FormDescription className='text-[11px]'>
-                          FTMO: 10%
+                          Preset value updates when you choose a prop firm.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -668,7 +756,7 @@ export function SettingsTrading() {
                           />
                         </FormControl>
                         <FormDescription className='text-[11px]'>
-                          FTMO: 5%
+                          Daily rule for the selected challenge.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -689,7 +777,7 @@ export function SettingsTrading() {
                           />
                         </FormControl>
                         <FormDescription className='text-[11px]'>
-                          FTMO: 10%
+                          Overall drawdown rule for the selected challenge.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

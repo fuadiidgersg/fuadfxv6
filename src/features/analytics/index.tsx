@@ -2454,7 +2454,7 @@ export function Analytics() {
                   </CardContent>
                 </Card>
 
-                {/* FTMO / Prop Firm Tracker */}
+                {/* Prop Firm Tracker */}
                 {tradingSettings.ftmoMode && (
                   <Card className='border-amber-500/30 bg-amber-500/5'>
                     <CardHeader>

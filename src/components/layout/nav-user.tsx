@@ -7,6 +7,8 @@ import {
   LogOut,
   Sparkles,
 } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
+import { useProfileStore } from '@/stores/profile-store'
 import useDialogState from '@/hooks/use-dialog-state'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -25,8 +27,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { SignOutDialog } from '@/components/sign-out-dialog'
-import { useAuthStore } from '@/stores/auth-store'
-import { useProfileStore } from '@/stores/profile-store'
 
 type NavUserProps = {
   user: {
@@ -50,7 +50,8 @@ export function NavUser({ user: fallback }: NavUserProps) {
     fallback.name
 
   const email = authUser?.email || profile?.email || fallback.email
-  const avatar = authUser?.user_metadata?.avatar_url || fallback.avatar
+  const avatar =
+    profile?.avatarUrl || authUser?.user_metadata?.avatar_url || fallback.avatar
 
   const initials = displayName
     .split(' ')
@@ -71,7 +72,9 @@ export function NavUser({ user: fallback }: NavUserProps) {
               >
                 <Avatar className='h-8 w-8 rounded-lg'>
                   <AvatarImage src={avatar} alt={displayName} />
-                  <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
+                  <AvatarFallback className='rounded-lg'>
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-start text-sm leading-tight'>
                   <span className='truncate font-semibold'>{displayName}</span>
@@ -90,10 +93,14 @@ export function NavUser({ user: fallback }: NavUserProps) {
                 <div className='flex items-center gap-2 px-1 py-1.5 text-start text-sm'>
                   <Avatar className='h-8 w-8 rounded-lg'>
                     <AvatarImage src={avatar} alt={displayName} />
-                    <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
+                    <AvatarFallback className='rounded-lg'>
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
                   <div className='grid flex-1 text-start text-sm leading-tight'>
-                    <span className='truncate font-semibold'>{displayName}</span>
+                    <span className='truncate font-semibold'>
+                      {displayName}
+                    </span>
                     <span className='truncate text-xs'>{email}</span>
                   </div>
                 </div>

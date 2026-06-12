@@ -1,220 +1,173 @@
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from '@tanstack/react-router'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import {
+  useTradingSettings,
+  type NewsImpactFilter,
+} from '@/stores/trading-settings-store'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { news } from '@/features/news/data/news'
 
-const notificationsFormSchema = z.object({
-  type: z.enum(['all', 'mentions', 'none'], {
-    error: (iss) =>
-      iss.input === undefined
-        ? 'Please select a notification type.'
-        : undefined,
-  }),
-  mobile: z.boolean().default(false).optional(),
-  communication_emails: z.boolean().default(false).optional(),
-  social_emails: z.boolean().default(false).optional(),
-  marketing_emails: z.boolean().default(false).optional(),
-  security_emails: z.boolean(),
-})
-
-type NotificationsFormValues = z.infer<typeof notificationsFormSchema>
-
-// This can come from your database or API.
-const defaultValues: Partial<NotificationsFormValues> = {
-  communication_emails: false,
-  marketing_emails: false,
-  social_emails: true,
-  security_emails: true,
-}
+const impactOptions: { value: NewsImpactFilter; label: string }[] = [
+  { value: 'high', label: 'High impact news' },
+  { value: 'medium', label: 'Medium impact news' },
+  { value: 'low', label: 'Low impact news' },
+]
 
 export function NotificationsForm() {
-  const form = useForm<NotificationsFormValues>({
-    resolver: zodResolver(notificationsFormSchema),
-    defaultValues,
-  })
+  const settings = useTradingSettings()
+  const [enabled, setEnabled] = useState(settings.newsNotificationsEnabled)
+  const [leadMinutes, setLeadMinutes] = useState(
+    String(settings.newsNotificationLeadMinutes)
+  )
+  const [impacts, setImpacts] = useState<NewsImpactFilter[]>(
+    settings.newsFilterImpacts
+  )
+  const [countries, setCountries] = useState<string[]>(
+    settings.newsFilterCountries
+  )
+  const [permission, setPermission] = useState(
+    typeof Notification === 'undefined'
+      ? 'unsupported'
+      : Notification.permission
+  )
+
+  const countryOptions = useMemo(
+    () => Array.from(new Set(news.map((event) => event.country))).sort(),
+    []
+  )
+
+  async function save() {
+    let nextEnabled = enabled
+    if (
+      nextEnabled &&
+      typeof Notification !== 'undefined' &&
+      Notification.permission === 'default'
+    ) {
+      const result = await Notification.requestPermission()
+      setPermission(result)
+      if (result !== 'granted') {
+        nextEnabled = false
+        setEnabled(false)
+        toast.error('Browser notification permission was not granted.')
+      }
+    }
+
+    const minutes = Math.min(240, Math.max(1, Number(leadMinutes) || 15))
+    settings.setNewsNotificationsEnabled(nextEnabled)
+    settings.setNewsNotificationLeadMinutes(minutes)
+    settings.setNewsFilterImpacts(impacts.length ? impacts : ['high'])
+    settings.setNewsFilterCountries(countries)
+    toast.success('Notification settings saved.')
+  }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((data) => showSubmittedData(data))}
-        className='space-y-8'
-      >
-        <FormField
-          control={form.control}
-          name='type'
-          render={({ field }) => (
-            <FormItem className='relative space-y-3'>
-              <FormLabel>Notify me about...</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className='flex flex-col gap-2'
-                >
-                  <FormItem className='flex items-center'>
-                    <FormControl>
-                      <RadioGroupItem value='all' />
-                    </FormControl>
-                    <FormLabel className='font-normal'>
-                      All new messages
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className='flex items-center'>
-                    <FormControl>
-                      <RadioGroupItem value='mentions' />
-                    </FormControl>
-                    <FormLabel className='font-normal'>
-                      Direct messages and mentions
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className='flex items-center'>
-                    <FormControl>
-                      <RadioGroupItem value='none' />
-                    </FormControl>
-                    <FormLabel className='font-normal'>Nothing</FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className='relative'>
-          <h3 className='mb-4 text-lg font-medium'>Email Notifications</h3>
-          <div className='space-y-4'>
-            <FormField
-              control={form.control}
-              name='communication_emails'
-              render={({ field }) => (
-                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                  <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>
-                      Communication emails
-                    </FormLabel>
-                    <FormDescription>
-                      Receive emails about your account activity.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='marketing_emails'
-              render={({ field }) => (
-                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                  <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>
-                      Marketing emails
-                    </FormLabel>
-                    <FormDescription>
-                      Receive emails about new products, features, and more.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='social_emails'
-              render={({ field }) => (
-                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                  <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>Social emails</FormLabel>
-                    <FormDescription>
-                      Receive emails for friend requests, follows, and more.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='security_emails'
-              render={({ field }) => (
-                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                  <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>Security emails</FormLabel>
-                    <FormDescription>
-                      Receive emails about your account activity and security.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled
-                      aria-readonly
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
+    <div className='space-y-8'>
+      <div className='flex items-center justify-between rounded-lg border p-4'>
+        <div className='space-y-1'>
+          <Label className='text-base'>Economic calendar alerts</Label>
+          <p className='text-sm text-muted-foreground'>
+            Get a browser notification before selected news events drop.
+            Permission: {permission}.
+          </p>
         </div>
-        <FormField
-          control={form.control}
-          name='mobile'
-          render={({ field }) => (
-            <FormItem className='relative flex flex-row items-start'>
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className='space-y-1 leading-none'>
-                <FormLabel>
-                  Use different settings for my mobile devices
-                </FormLabel>
-                <FormDescription>
-                  You can manage your mobile notifications in the{' '}
-                  <Link
-                    to='/settings'
-                    className='underline decoration-dashed underline-offset-4 hover:decoration-solid'
-                  >
-                    mobile settings
-                  </Link>{' '}
-                  page.
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
+        <Switch
+          checked={enabled}
+          onCheckedChange={setEnabled}
+          disabled={permission === 'unsupported'}
         />
-        <Button type='submit'>Update notifications</Button>
-      </form>
-    </Form>
+      </div>
+
+      <div className='grid gap-3 sm:grid-cols-[180px_1fr] sm:items-center'>
+        <Label htmlFor='lead-minutes'>Notify before</Label>
+        <div className='flex items-center gap-2'>
+          <Input
+            id='lead-minutes'
+            type='number'
+            min='1'
+            max='240'
+            className='w-28'
+            value={leadMinutes}
+            onChange={(e) => setLeadMinutes(e.target.value)}
+          />
+          <span className='text-sm text-muted-foreground'>minutes</span>
+        </div>
+      </div>
+
+      <div className='space-y-3'>
+        <div>
+          <Label>Notification types</Label>
+          <p className='text-sm text-muted-foreground'>
+            Choose the market events that matter to your trading plan.
+          </p>
+        </div>
+        <div className='grid gap-2 sm:grid-cols-3'>
+          {impactOptions.map((option) => {
+            const checked = impacts.includes(option.value)
+            return (
+              <label
+                key={option.value}
+                className='flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm'
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(value) => {
+                    const next = value
+                      ? [...impacts, option.value]
+                      : impacts.filter((impact) => impact !== option.value)
+                    setImpacts(next.length ? next : ['high'])
+                  }}
+                />
+                {option.label}
+              </label>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className='space-y-3'>
+        <div className='flex flex-wrap items-end justify-between gap-2'>
+          <div>
+            <Label>Countries</Label>
+            <p className='text-sm text-muted-foreground'>
+              Leave empty to receive alerts for all countries in the calendar.
+            </p>
+          </div>
+          <Button variant='outline' size='sm' onClick={() => setCountries([])}>
+            All countries
+          </Button>
+        </div>
+        <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+          {countryOptions.map((country) => {
+            const checked = countries.includes(country)
+            return (
+              <label
+                key={country}
+                className='flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm'
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(value) => {
+                    setCountries(
+                      value
+                        ? [...countries, country]
+                        : countries.filter((item) => item !== country)
+                    )
+                  }}
+                />
+                {country}
+              </label>
+            )
+          })}
+        </div>
+      </div>
+
+      <Button type='button' onClick={save}>
+        Update notifications
+      </Button>
+    </div>
   )
 }
