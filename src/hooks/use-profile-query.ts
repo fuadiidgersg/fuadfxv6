@@ -82,12 +82,24 @@ export async function fetchServerProfile() {
   return data as ServerProfile
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(
+        () => reject(new Error('Profile check timed out.')),
+        timeoutMs
+      )
+    }),
+  ])
+}
+
 export async function isServerOnboarded(userId: string) {
   try {
-    const profile = await fetchServerProfile()
+    const profile = await withTimeout(fetchServerProfile(), 3500)
     return profile.id === userId && profile.onboardingComplete
   } catch {
-    return false
+    return useProfileStore.getState().isOnboardedForUser(userId)
   }
 }
 

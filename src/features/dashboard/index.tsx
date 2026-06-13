@@ -58,6 +58,8 @@ export function Dashboard() {
   const stats = useMemo(() => computeStats(trades), [trades])
   const hasTrades = trades.length > 0
   const hasAccounts = accounts.some((account) => !account.isArchived)
+  const propFirmModeActive =
+    tradingSettings.ftmoMode && activeAccount?.type === 'prop'
   const isLoading = accountsLoading || tradesLoading
   const queryError = accountsError
     ? getApiErrorMessage(accountsQueryError, 'Could not load accounts.')
@@ -137,7 +139,7 @@ export function Dashboard() {
                 netPnl={stats.totalPnl}
               />
             )}
-            {tradingSettings.ftmoMode && (
+            {propFirmModeActive && (
               <div className='flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm'>
                 <div className='flex items-center gap-2'>
                   <ShieldCheck className='size-4 text-amber-500' />

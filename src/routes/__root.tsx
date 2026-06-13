@@ -25,6 +25,14 @@ export const Route = createRootRouteWithContext<{
       </>
     )
   },
+  pendingComponent: () => (
+    <div className='flex min-h-svh items-center justify-center bg-background text-foreground'>
+      <div className='space-y-2 text-center'>
+        <div className='mx-auto size-8 animate-spin rounded-full border-2 border-muted border-t-foreground' />
+        <p className='text-sm text-muted-foreground'>Loading FUADFX...</p>
+      </div>
+    </div>
+  ),
   notFoundComponent: NotFoundError,
   errorComponent: GeneralError,
 })

@@ -412,6 +412,8 @@ export function Analytics() {
   const activeAccount = useActiveAccount()
   const dateRange = useDateRangeStore()
   const tradingSettings = useTradingSettings()
+  const propFirmModeActive =
+    tradingSettings.ftmoMode && activeAccount?.type === 'prop'
   const range = dateRange.getRange()
   const trades = filterTradesByDateRange(allTrades, range)
   const startingBalance = activeAccount?.startingBalance ?? 10000
@@ -2455,7 +2457,7 @@ export function Analytics() {
                 </Card>
 
                 {/* Prop Firm Tracker */}
-                {tradingSettings.ftmoMode && (
+                {propFirmModeActive && (
                   <Card className='border-amber-500/30 bg-amber-500/5'>
                     <CardHeader>
                       <CardTitle className='flex items-center gap-2'>
