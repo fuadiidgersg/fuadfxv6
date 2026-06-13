@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   starting_capital NUMERIC DEFAULT 0,
   onboarding_complete BOOLEAN DEFAULT FALSE,
   onboarded_at TIMESTAMPTZ,
-  trading_settings JSONB DEFAULT '{}'::jsonb,
+  trading_settings JSONB DEFAULT '{"ftmoMode":false,"propFirmTemplate":"ftmo"}'::jsonb,
   timezone TEXT DEFAULT 'UTC',
   currency TEXT DEFAULT 'USD',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -129,7 +129,7 @@ BEGIN
     'EUR/USD',
     0,
     FALSE,
-    '{}'::jsonb
+    '{"ftmoMode":false,"propFirmTemplate":"ftmo"}'::jsonb
   )
   ON CONFLICT (id) DO UPDATE
   SET

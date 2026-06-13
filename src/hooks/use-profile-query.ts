@@ -22,6 +22,15 @@ export type ServerProfile = {
   tradingSettings: Partial<TradingSettingsState>
 }
 
+const defaultPersistentTradingSettings: Partial<TradingSettingsState> = {
+  ftmoMode: false,
+  propFirmTemplate: 'ftmo',
+  ftmoAccountSize: 10000,
+  ftmoDailyLossLimitPct: 5,
+  ftmoMaxDrawdownPct: 10,
+  ftmoProfitTargetPct: 10,
+}
+
 export function toLocalProfile(profile: ServerProfile) {
   return {
     userId: profile.id,
@@ -100,7 +109,10 @@ export function useHydratePersistentProfile() {
     if (!data) return
     setProfile(toLocalProfile(data))
     if (data.onboardingComplete) completeOnboarding(data.onboardedAt ?? null)
-    if (data.tradingSettings) applySettings(data.tradingSettings)
+    applySettings({
+      ...defaultPersistentTradingSettings,
+      ...(data.tradingSettings ?? {}),
+    })
   }, [applySettings, completeOnboarding, data, setProfile])
 }
 

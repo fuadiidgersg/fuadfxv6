@@ -11,7 +11,7 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS starting_capital NUMERIC DEFAULT 0,
   ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS onboarded_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS trading_settings JSONB DEFAULT '{}'::jsonb;
+  ADD COLUMN IF NOT EXISTS trading_settings JSONB DEFAULT '{"ftmoMode":false,"propFirmTemplate":"ftmo"}'::jsonb;
 
 CREATE INDEX IF NOT EXISTS idx_profiles_onboarding_complete
   ON public.profiles(onboarding_complete);
@@ -25,7 +25,7 @@ SET
   preferred_pair = COALESCE(preferred_pair, 'EUR/USD'),
   starting_capital = COALESCE(starting_capital, 0),
   onboarding_complete = COALESCE(onboarding_complete, FALSE),
-  trading_settings = COALESCE(trading_settings, '{}'::jsonb)
+  trading_settings = COALESCE(trading_settings, '{"ftmoMode":false,"propFirmTemplate":"ftmo"}'::jsonb)
 WHERE
   experience IS NULL
   OR preferred_pair IS NULL
@@ -56,7 +56,7 @@ BEGIN
     'EUR/USD',
     0,
     FALSE,
-    '{}'::jsonb
+    '{"ftmoMode":false,"propFirmTemplate":"ftmo"}'::jsonb
   )
   ON CONFLICT (id) DO UPDATE
   SET
