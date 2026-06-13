@@ -84,7 +84,7 @@ function LandingPage() {
               aria-label='FUADFX home'
               className='flex h-10 items-center rounded-lg px-2 text-black transition hover:bg-muted/60 dark:text-white'
             >
-              <BrandLogoHorizontal className='h-5 w-[160px]' />
+              <BrandLogoHorizontal className='text-lg' />
             </Link>
             <nav className='hidden items-center gap-7 text-sm text-muted-foreground md:flex'>
               <a href='#platform' className='transition hover:text-foreground'>
@@ -278,7 +278,7 @@ function LandingPage() {
           </div>
 
           <footer className='mt-12 flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between'>
-            <BrandLogoHorizontal className='h-5 w-[160px]' />
+            <BrandLogoHorizontal className='text-lg' />
             <span>Built for analysis, review, backtesting and discipline.</span>
           </footer>
         </div>

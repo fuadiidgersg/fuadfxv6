@@ -68,23 +68,33 @@ export function BrandIcon({ className, ...props }: BrandLogoProps) {
 
 export function BrandLogoHorizontal({ className, ...props }: BrandLogoProps) {
   return (
-    <BrandImage
-      asset={brandAsset.horizontal}
-      label='FUADFX'
-      className={cn('h-5 w-[160px]', className)}
+    <span
+      role='img'
+      aria-label='FUADFX'
+      className={cn(
+        'inline-flex shrink-0 items-center font-sans text-lg leading-none font-semibold tracking-normal text-current',
+        className
+      )}
       {...props}
-    />
+    >
+      FUADFX
+    </span>
   )
 }
 
 export function BrandLogoStacked({ className, ...props }: BrandLogoProps) {
   return (
-    <BrandImage
-      asset={brandAsset.horizontal}
-      label='FUADFX'
-      className={cn('h-6 w-[190px]', className)}
+    <span
+      role='img'
+      aria-label='FUADFX'
+      className={cn(
+        'inline-flex shrink-0 items-center font-sans text-xl leading-none font-semibold tracking-normal text-current',
+        className
+      )}
       {...props}
-    />
+    >
+      FUADFX
+    </span>
   )
 }
 

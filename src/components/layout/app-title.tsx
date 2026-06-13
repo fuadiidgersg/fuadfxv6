@@ -26,7 +26,7 @@ export function AppTitle() {
               onClick={() => setOpenMobile(false)}
               className='flex flex-1 items-center text-black dark:text-white'
             >
-              <BrandLogoHorizontal className='h-6 w-[108px]' />
+              <BrandLogoHorizontal className='text-xl' />
             </Link>
             <ToggleSidebar />
           </div>
