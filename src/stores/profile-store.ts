@@ -19,7 +19,7 @@ type ProfileState = {
   onboardingComplete: boolean
   isOnboardedForUser: (userId: string | undefined | null) => boolean
   setProfile: (profile: Profile) => void
-  completeOnboarding: () => void
+  completeOnboarding: (onboardedAt?: string | null) => void
   reset: () => void
 }
 
@@ -33,11 +33,14 @@ export const useProfileStore = create<ProfileState>()(
           userId && get().onboardingComplete && get().profile?.userId === userId
         ),
       setProfile: (profile) => set({ profile }),
-      completeOnboarding: () =>
+      completeOnboarding: (onboardedAt) =>
         set((state) => ({
           onboardingComplete: true,
           profile: state.profile
-            ? { ...state.profile, onboardedAt: new Date().toISOString() }
+            ? {
+                ...state.profile,
+                onboardedAt: onboardedAt ?? new Date().toISOString(),
+              }
             : state.profile,
         })),
       reset: () => set({ profile: null, onboardingComplete: false }),

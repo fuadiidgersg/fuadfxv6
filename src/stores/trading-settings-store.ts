@@ -59,6 +59,7 @@ export type TradingSettingsState = {
   setNewsNotificationLeadMinutes: (v: number) => void
   setNewsFilterCountries: (v: string[]) => void
   setNewsFilterImpacts: (v: NewsImpactFilter[]) => void
+  applySettings: (settings: Partial<TradingSettingsState>) => void
 }
 
 export const useTradingSettings = create<TradingSettingsState>()(
@@ -107,6 +108,12 @@ export const useTradingSettings = create<TradingSettingsState>()(
         set({ newsNotificationLeadMinutes: v }),
       setNewsFilterCountries: (v) => set({ newsFilterCountries: v }),
       setNewsFilterImpacts: (v) => set({ newsFilterImpacts: v }),
+      applySettings: (settings) => {
+        const next = Object.fromEntries(
+          Object.entries(settings).filter(([, value]) => value !== undefined)
+        )
+        set(next as Partial<TradingSettingsState>)
+      },
     }),
     {
       name: 'fuadfx-trading-settings',

@@ -12,7 +12,9 @@ import {
 } from '@/stores/accounts-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useProfileStore } from '@/stores/profile-store'
+import { getApiErrorMessage } from '@/lib/api'
 import { useCreateAccount } from '@/hooks/use-accounts-query'
+import { useUpdateProfile } from '@/hooks/use-profile-query'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -48,8 +50,10 @@ export default function Onboarding() {
   const setProfile = useProfileStore((s) => s.setProfile)
   const completeOnboarding = useProfileStore((s) => s.completeOnboarding)
   const user = useAuthStore((s) => s.auth.user)
+  const profile = useProfileStore((s) => s.profile)
   const setActiveAccount = useAccountsStore((s) => s.setActive)
   const createAccount = useCreateAccount()
+  const updateProfile = useUpdateProfile()
 
   const [step, setStep] = useState<'profile' | 'account'>('profile')
   const [isLoading, setIsLoading] = useState(false)
@@ -72,10 +76,33 @@ export default function Onboarding() {
     },
   })
 
-  const finishSetup = () => {
-    completeOnboarding()
-    toast.success('Welcome to FUADFX. Your account is ready.')
-    navigate({ to: '/dashboard' })
+  const finishSetup = async () => {
+    const onboardedAt = new Date().toISOString()
+    const nextProfile = {
+      ...profile,
+      userId: user?.id,
+      email: profile?.email ?? user?.email ?? '',
+      displayName:
+        profile?.displayName ??
+        user?.user_metadata?.full_name ??
+        user?.email?.split('@')[0] ??
+        '',
+      experience: profile?.experience ?? 'beginner',
+      preferredPair: profile?.preferredPair ?? 'EUR/USD',
+      startingCapital: profile?.startingCapital ?? Number(startingBalance) ?? 0,
+      onboardingComplete: true,
+      onboardedAt,
+    }
+
+    try {
+      await updateProfile.mutateAsync({ profile: nextProfile })
+      setProfile(nextProfile)
+      completeOnboarding(onboardedAt)
+      toast.success('Welcome to FUADFX. Your account is ready.')
+      navigate({ to: '/dashboard' })
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Could not save onboarding.'))
+    }
   }
 
   const onSubmit = async (data: FormData) => {
@@ -115,7 +142,7 @@ export default function Onboarding() {
         startingBalance: Number(startingBalance) || 0,
       })
       setActiveAccount(account.id)
-      finishSetup()
+      await finishSetup()
     } catch {
       toast.error('Failed to create account. Please try again.')
     }

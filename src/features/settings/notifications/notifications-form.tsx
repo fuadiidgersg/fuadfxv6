@@ -4,6 +4,8 @@ import {
   useTradingSettings,
   type NewsImpactFilter,
 } from '@/stores/trading-settings-store'
+import { getApiErrorMessage } from '@/lib/api'
+import { useUpdateProfile } from '@/hooks/use-profile-query'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -19,6 +21,7 @@ const impactOptions: { value: NewsImpactFilter; label: string }[] = [
 
 export function NotificationsForm() {
   const settings = useTradingSettings()
+  const updateProfile = useUpdateProfile()
   const [enabled, setEnabled] = useState(settings.newsNotificationsEnabled)
   const [leadMinutes, setLeadMinutes] = useState(
     String(settings.newsNotificationLeadMinutes)
@@ -61,7 +64,21 @@ export function NotificationsForm() {
     settings.setNewsNotificationLeadMinutes(minutes)
     settings.setNewsFilterImpacts(impacts.length ? impacts : ['high'])
     settings.setNewsFilterCountries(countries)
-    toast.success('Notification settings saved.')
+    try {
+      await updateProfile.mutateAsync({
+        tradingSettings: {
+          newsNotificationsEnabled: nextEnabled,
+          newsNotificationLeadMinutes: minutes,
+          newsFilterImpacts: impacts.length ? impacts : ['high'],
+          newsFilterCountries: countries,
+        },
+      })
+      toast.success('Notification settings saved.')
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, 'Notification settings could not be saved.')
+      )
+    }
   }
 
   return (
@@ -165,8 +182,8 @@ export function NotificationsForm() {
         </div>
       </div>
 
-      <Button type='button' onClick={save}>
-        Update notifications
+      <Button type='button' onClick={save} disabled={updateProfile.isPending}>
+        {updateProfile.isPending ? 'Updating...' : 'Update notifications'}
       </Button>
     </div>
   )

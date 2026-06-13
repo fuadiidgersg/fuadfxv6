@@ -2,6 +2,7 @@ import { Outlet } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
+import { useHydratePersistentProfile } from '@/hooks/use-profile-query'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { EconomicNewsNotifier } from '@/components/economic-news-notifier'
 import { AppSidebar } from '@/components/layout/app-sidebar'
@@ -13,6 +14,8 @@ type AuthenticatedLayoutProps = {
 }
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+  useHydratePersistentProfile()
+
   return (
     <SearchProvider>
       <LayoutProvider>

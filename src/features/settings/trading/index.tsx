@@ -10,7 +10,9 @@ import {
   type NewsImpactFilter,
   type PropFirmTemplate,
 } from '@/stores/trading-settings-store'
+import { getApiErrorMessage } from '@/lib/api'
 import { formatDateInputValue } from '@/lib/platform-time'
+import { useUpdateProfile } from '@/hooks/use-profile-query'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -119,6 +121,7 @@ const PROP_FIRMS: Record<
 
 export function SettingsTrading() {
   const settings = useTradingSettings()
+  const updateProfile = useUpdateProfile()
   const [notificationPermission, setNotificationPermission] = useState(
     typeof Notification === 'undefined'
       ? 'unsupported'
@@ -194,7 +197,15 @@ export function SettingsTrading() {
     settings.setNewsNotificationLeadMinutes(values.newsNotificationLeadMinutes)
     settings.setNewsFilterCountries(values.newsFilterCountries)
     settings.setNewsFilterImpacts(values.newsFilterImpacts)
-    toast.success('Trading settings saved.')
+
+    try {
+      await updateProfile.mutateAsync({ tradingSettings: values })
+      toast.success('Trading settings saved.')
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, 'Trading settings could not be saved.')
+      )
+    }
   }
 
   return (
@@ -788,7 +799,9 @@ export function SettingsTrading() {
             )}
           </div>
 
-          <Button type='submit'>Save settings</Button>
+          <Button type='submit' disabled={updateProfile.isPending}>
+            {updateProfile.isPending ? 'Saving...' : 'Save settings'}
+          </Button>
         </form>
       </Form>
     </ContentSection>

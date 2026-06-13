@@ -28,7 +28,7 @@ import type { TradeStrategy } from '@/features/trades/data/schema'
 type TaskImportDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onImported?: () => void
+  onImported?: () => void | Promise<void>
 }
 
 type Mt5Preview = ReturnType<typeof parseMT5Html> | null
@@ -155,7 +155,7 @@ export function TasksImportDialog({
       }
       reset()
       onOpenChange(false)
-      onImported?.()
+      await onImported?.()
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Import failed. Please try again.'))
     } finally {

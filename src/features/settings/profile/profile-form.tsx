@@ -6,6 +6,8 @@ import { Camera, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { useProfileStore, type ExperienceLevel } from '@/stores/profile-store'
+import { getApiErrorMessage } from '@/lib/api'
+import { useUpdateProfile } from '@/hooks/use-profile-query'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -40,6 +42,7 @@ export function ProfileForm() {
   const user = useAuthStore((s) => s.auth.user)
   const profile = useProfileStore((s) => s.profile)
   const setProfile = useProfileStore((s) => s.setProfile)
+  const updateProfile = useUpdateProfile()
 
   const defaultValues = useMemo<ProfileFormValues>(
     () => ({
@@ -79,8 +82,8 @@ export function ProfileForm() {
     reader.readAsDataURL(file)
   }
 
-  function onSubmit(values: ProfileFormValues) {
-    setProfile({
+  async function onSubmit(values: ProfileFormValues) {
+    const nextProfile = {
       ...profile,
       userId: user?.id,
       email: values.email,
@@ -90,8 +93,16 @@ export function ProfileForm() {
       startingCapital: values.startingCapital,
       avatarUrl: values.avatarUrl,
       onboardedAt: profile?.onboardedAt,
-    })
-    toast.success('Profile updated.')
+      onboardingComplete: true,
+    }
+
+    try {
+      await updateProfile.mutateAsync({ profile: nextProfile })
+      setProfile(nextProfile)
+      toast.success('Profile updated.')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Profile could not be saved.'))
+    }
   }
 
   const avatarUrl = form.watch('avatarUrl')
@@ -212,9 +223,9 @@ export function ProfileForm() {
           />
         </div>
 
-        <Button type='submit'>
+        <Button type='submit' disabled={updateProfile.isPending}>
           <Camera className='size-4' />
-          Update profile
+          {updateProfile.isPending ? 'Updating...' : 'Update profile'}
         </Button>
       </form>
     </Form>

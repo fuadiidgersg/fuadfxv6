@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { useProfileStore } from '@/stores/profile-store'
 import { supabase } from '@/lib/supabase/client'
+import { isServerOnboarded } from '@/hooks/use-profile-query'
 
 export function AuthCallback() {
   const navigate = useNavigate()
@@ -31,11 +31,10 @@ export function AuthCallback() {
           return
         }
 
-        const { isOnboardedForUser } = useProfileStore.getState()
-        if (!isOnboardedForUser(data.session.user.id)) {
-          navigate({ to: '/onboarding', replace: true })
-        } else {
+        if (await isServerOnboarded(data.session.user.id)) {
           navigate({ to: '/dashboard', replace: true })
+        } else {
+          navigate({ to: '/onboarding', replace: true })
         }
       } catch {
         navigate({ to: '/sign-in', replace: true })

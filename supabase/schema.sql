@@ -10,6 +10,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT,
   avatar_url TEXT,
   bio TEXT,
+  experience TEXT CHECK (experience IS NULL OR experience IN ('beginner', 'intermediate', 'advanced', 'pro')),
+  preferred_pair TEXT DEFAULT 'EUR/USD',
+  starting_capital NUMERIC DEFAULT 0,
+  onboarding_complete BOOLEAN DEFAULT FALSE,
+  onboarded_at TIMESTAMPTZ,
+  trading_settings JSONB DEFAULT '{}'::jsonb,
   timezone TEXT DEFAULT 'UTC',
   currency TEXT DEFAULT 'USD',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -96,14 +102,41 @@ CREATE INDEX IF NOT EXISTS idx_trades_trade_outcome ON public.trades(trade_outco
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON public.accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_is_archived ON public.accounts(is_archived);
 CREATE INDEX IF NOT EXISTS idx_journals_user_id ON public.journals(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_onboarding_complete ON public.profiles(onboarding_complete);
+CREATE INDEX IF NOT EXISTS idx_profiles_trading_settings ON public.profiles USING GIN (trading_settings);
 
 -- Auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email)
-  VALUES (NEW.id, NEW.email)
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.profiles (
+    id,
+    email,
+    full_name,
+    avatar_url,
+    experience,
+    preferred_pair,
+    starting_capital,
+    onboarding_complete,
+    trading_settings
+  )
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+    NEW.raw_user_meta_data->>'avatar_url',
+    'beginner',
+    'EUR/USD',
+    0,
+    FALSE,
+    '{}'::jsonb
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET
+    email = EXCLUDED.email,
+    full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name),
+    avatar_url = COALESCE(public.profiles.avatar_url, EXCLUDED.avatar_url),
+    updated_at = NOW();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
