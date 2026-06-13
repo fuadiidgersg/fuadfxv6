@@ -68,7 +68,7 @@ export function AccountSwitcher() {
   const [createOpen, setCreateOpen] = useState(false)
 
   const visible = accounts.filter((a) => !a.isArchived)
-  const active = accounts.find((a) => a.id === activeId) ?? null
+  const active = accounts.find((a) => a.id === activeId) ?? visible[0] ?? null
 
   return (
     <>

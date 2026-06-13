@@ -109,7 +109,7 @@ export const sidebarData: SidebarData = {
               icon: Wrench,
             },
             {
-              title: 'Appearance',
+              title: 'Personalisation',
               url: '/settings/appearance',
               icon: Palette,
             },

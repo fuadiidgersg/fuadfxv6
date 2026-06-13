@@ -21,7 +21,7 @@ const sidebarNavItems = [
     icon: <Wrench size={18} />,
   },
   {
-    title: 'Appearance',
+    title: 'Personalisation',
     href: '/settings/appearance',
     icon: <Palette size={18} />,
   },

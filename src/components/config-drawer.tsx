@@ -1,6 +1,16 @@
 import { type SVGProps } from 'react'
 import { Root as Radio, Item } from '@radix-ui/react-radio-group'
-import { CircleCheck, RotateCcw, Settings } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import {
+  BarChart2,
+  Bell,
+  CircleCheck,
+  Palette,
+  RotateCcw,
+  Settings,
+  UserCog,
+  Wrench,
+} from 'lucide-react'
 import { IconDir } from '@/assets/custom/icon-dir'
 import { IconLayoutCompact } from '@/assets/custom/icon-layout-compact'
 import { IconLayoutDefault } from '@/assets/custom/icon-layout-default'
@@ -46,7 +56,7 @@ export function ConfigDrawer() {
         <Button
           size='icon'
           variant='ghost'
-          aria-label='Open theme settings'
+          aria-label='Open settings'
           className='rounded-full'
         >
           <Settings aria-hidden='true' />
@@ -54,16 +64,20 @@ export function ConfigDrawer() {
       </SheetTrigger>
       <SheetContent className='flex flex-col'>
         <SheetHeader className='pb-0 text-start'>
-          <SheetTitle>Theme Settings</SheetTitle>
+          <SheetTitle>Settings</SheetTitle>
           <SheetDescription>
-            Adjust the appearance and layout to suit your preferences.
+            Manage your profile, account, trading rules and personalisation.
           </SheetDescription>
         </SheetHeader>
         <div className='space-y-6 overflow-y-auto px-4'>
-          <ThemeConfig />
-          <SidebarConfig />
-          <LayoutConfig />
-          <DirConfig />
+          <SettingsShortcuts />
+          <div className='space-y-5 rounded-lg border bg-card p-4'>
+            <SectionTitle title='Personalisation' className='mb-3' />
+            <ThemeConfig />
+            <SidebarConfig />
+            <LayoutConfig />
+            <DirConfig />
+          </div>
         </div>
         <SheetFooter className='gap-2'>
           <Button
@@ -76,6 +90,67 @@ export function ConfigDrawer() {
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  )
+}
+
+const settingsLinks = [
+  {
+    title: 'Profile',
+    description: 'Name, photo and trader profile',
+    href: '/settings',
+    icon: UserCog,
+  },
+  {
+    title: 'Account',
+    description: 'Login and account preferences',
+    href: '/settings/account',
+    icon: Wrench,
+  },
+  {
+    title: 'Personalisation',
+    description: 'Theme, sidebar and layout',
+    href: '/settings/appearance',
+    icon: Palette,
+  },
+  {
+    title: 'Notifications',
+    description: 'News and market alerts',
+    href: '/settings/notifications',
+    icon: Bell,
+  },
+  {
+    title: 'Trading',
+    description: 'Timezone, sessions and prop rules',
+    href: '/settings/trading',
+    icon: BarChart2,
+  },
+] as const
+
+function SettingsShortcuts() {
+  return (
+    <div>
+      <SectionTitle title='All settings' />
+      <div className='grid gap-2'>
+        {settingsLinks.map((item) => (
+          <Button
+            key={item.href}
+            variant='outline'
+            className='h-auto justify-start gap-3 rounded-lg p-3 text-start'
+            asChild
+          >
+            <Link to={item.href}>
+              <item.icon className='size-4 shrink-0 text-muted-foreground' />
+              <span className='grid min-w-0 gap-0.5'>
+                <span className='text-sm font-medium'>{item.title}</span>
+                <span className='truncate text-xs text-muted-foreground'>
+                  {item.description}
+                </span>
+              </span>
+            </Link>
+          </Button>
+        ))}
+      </div>
+    </div>
   )
 }
 

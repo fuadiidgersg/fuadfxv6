@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Trade } from '@/features/trades/data/schema'
-import apiClient from '@/lib/api'
 import { useAccountsStore } from '@/stores/accounts-store'
+import apiClient from '@/lib/api'
+import type { Trade } from '@/features/trades/data/schema'
+import { useAccountsQuery } from './use-accounts-query'
 
 export const TRADES_KEY = ['trades'] as const
 
@@ -27,12 +28,14 @@ export function useAllTradesQuery() {
 
 export function useTrades(): Trade[] {
   const { data: allTrades = [] } = useAllTradesQuery()
+  const { data: accounts = [] } = useAccountsQuery()
   const activeId = useAccountsStore((s) => s.activeAccountId)
 
   return useMemo(() => {
-    if (!activeId) return []
-    return allTrades.filter((t) => t.accountId === activeId)
-  }, [allTrades, activeId])
+    const accountId = activeId ?? accounts.find((a) => !a.isArchived)?.id
+    if (!accountId) return []
+    return allTrades.filter((t) => t.accountId === accountId)
+  }, [allTrades, activeId, accounts])
 }
 
 export function useCreateTrade() {
@@ -56,7 +59,10 @@ export function useBulkCreateTrades() {
       trades: Trade[]
       accountId: string
     }) => {
-      const { data } = await apiClient.post('/trades/bulk', { trades, accountId })
+      const { data } = await apiClient.post('/trades/bulk', {
+        trades,
+        accountId,
+      })
       return data as { added: number; duplicates: number }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: TRADES_KEY }),
