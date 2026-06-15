@@ -86,23 +86,16 @@ export function TasksImportDialog({
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [syncMethod, setSyncMethod] = useState<'ea' | 'manual'>('ea')
-  const [newApiToken, setNewApiToken] = useState('')
 
   const apiEndpoint =
     import.meta.env.VITE_API_URL?.replace(/\/$/, '') ??
     'https://fuadfx-api.onrender.com'
-  const eaPostUrl = `${apiEndpoint}/trades/bulk`
   const eaDownloadUrl = '/downloads/FuadFXTradeSyncEA.ex5'
 
   const reset = () => {
     setHtmlFile(null)
     setPreview(null)
     setParsing(false)
-  }
-
-  const downloadText = (filename: string, content: string) => {
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-    downloadBlob(filename, blob)
   }
 
   const downloadBlob = (filename: string, blob: Blob) => {
@@ -116,110 +109,8 @@ export function TasksImportDialog({
     URL.revokeObjectURL(url)
   }
 
-  const crcTable = (() => {
-    const table = new Uint32Array(256)
-    for (let i = 0; i < 256; i++) {
-      let c = i
-      for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
-      table[i] = c >>> 0
-    }
-    return table
-  })()
-
-  const crc32 = (bytes: Uint8Array) => {
-    let crc = 0xffffffff
-    for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8)
-    return (crc ^ 0xffffffff) >>> 0
-  }
-
-  const zipBytes = (files: { name: string; data: Uint8Array }[]) => {
-    const encoder = new TextEncoder()
-    const chunks: Uint8Array[] = []
-    const central: Uint8Array[] = []
-    let offset = 0
-    const now = new Date()
-    const dosTime =
-      (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2)
-    const dosDate =
-      ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()
-
-    const header = (size: number, signature: number) => {
-      const bytes = new Uint8Array(size)
-      new DataView(bytes.buffer).setUint32(0, signature, true)
-      return { bytes, view: new DataView(bytes.buffer) }
-    }
-
-    for (const file of files) {
-      const name = encoder.encode(file.name)
-      const crc = crc32(file.data)
-      const local = header(30 + name.length, 0x04034b50)
-      local.view.setUint16(4, 20, true)
-      local.view.setUint16(10, dosTime, true)
-      local.view.setUint16(12, dosDate, true)
-      local.view.setUint32(14, crc, true)
-      local.view.setUint32(18, file.data.length, true)
-      local.view.setUint32(22, file.data.length, true)
-      local.view.setUint16(26, name.length, true)
-      local.bytes.set(name, 30)
-      chunks.push(local.bytes, file.data)
-
-      const dir = header(46 + name.length, 0x02014b50)
-      dir.view.setUint16(4, 20, true)
-      dir.view.setUint16(6, 20, true)
-      dir.view.setUint16(12, dosTime, true)
-      dir.view.setUint16(14, dosDate, true)
-      dir.view.setUint32(16, crc, true)
-      dir.view.setUint32(20, file.data.length, true)
-      dir.view.setUint32(24, file.data.length, true)
-      dir.view.setUint16(28, name.length, true)
-      dir.view.setUint32(42, offset, true)
-      dir.bytes.set(name, 46)
-      central.push(dir.bytes)
-      offset += local.bytes.length + file.data.length
-    }
-
-    const centralOffset = offset
-    const centralSize = central.reduce((sum, chunk) => sum + chunk.length, 0)
-    const end = header(22, 0x06054b50)
-    end.view.setUint16(8, files.length, true)
-    end.view.setUint16(10, files.length, true)
-    end.view.setUint32(12, centralSize, true)
-    end.view.setUint32(16, centralOffset, true)
-    chunks.push(...central, end.bytes)
-    return new Blob(
-      chunks.map((chunk) => {
-        const copy = new Uint8Array(chunk.byteLength)
-        copy.set(chunk)
-        return copy.buffer
-      }),
-      { type: 'application/zip' }
-    )
-  }
-
-  const buildEaPreset = (token: string) =>
-    [
-      `InpApiUrl=${eaPostUrl}`,
-      `InpBearerToken=${token}`,
-      `InpAccountId=${activeAccount?.id ?? ''}`,
-      'InpLookbackDays=30',
-      'InpSyncEverySeconds=60',
-      'InpBatchSize=50',
-      'InpSyncOnInit=true',
-      'InpDebugLogs=true',
-      'InpSyncOpenPositionsLater=false',
-      '',
-    ].join('\r\n')
-
-  const accountFileSlug = () =>
-    (activeAccount?.name ?? 'FUADFX')
-      .replace(/[^a-z0-9]+/gi, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 40) || 'FUADFX'
-
-  const downloadEaPreset = (token: string) => {
-    downloadText(`FuadFXTradeSyncEA-${accountFileSlug()}.set`, buildEaPreset(token))
-    toast.success('MT5 setup file downloaded.')
-  }
+  const accountEaFileName = (token: string) =>
+    `FuadFXTradeSyncEA__${activeAccount?.id ?? 'account'}__${token}.ex5`
 
   const handleDownloadConfiguredPackage = async () => {
     if (!activeAccount?.id) {
@@ -232,18 +123,10 @@ export function TasksImportDialog({
         accountId: activeAccount.id,
         name: `${activeAccount.name} MT5 EA`,
       })
-      setNewApiToken(key.token)
       const eaResponse = await fetch(eaDownloadUrl)
       if (!eaResponse.ok) throw new Error('Could not download the EA file.')
-      const eaBytes = new Uint8Array(await eaResponse.arrayBuffer())
-      const setBytes = new TextEncoder().encode(buildEaPreset(key.token))
-      const slug = accountFileSlug()
-      const zip = zipBytes([
-        { name: 'FuadFXTradeSyncEA.ex5', data: eaBytes },
-        { name: `FuadFXTradeSyncEA-${slug}.set`, data: setBytes },
-      ])
-      downloadBlob(`FuadFX-${slug}-MT5-EA.zip`, zip)
-      toast.success('Account-specific EA package downloaded.')
+      downloadBlob(accountEaFileName(key.token), await eaResponse.blob())
+      toast.success('Account-specific EA downloaded.')
     } catch (err) {
       toast.error(keyErrorMessage(err))
     }
@@ -263,7 +146,6 @@ export function TasksImportDialog({
   const handleRevokeEaKey = async (key: (typeof apiKeys)[number]) => {
     try {
       await revokeApiKey.mutateAsync(key)
-      if (newApiToken.endsWith(key.last4)) setNewApiToken('')
       toast.success('EA API key revoked.')
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not revoke EA API key.'))
@@ -458,32 +340,10 @@ export function TasksImportDialog({
                       Active EA keys
                     </div>
                     <div className='text-xs text-muted-foreground'>
-                      Generate a new setup file if you need to reconnect MT5.
+                      Each downloaded EA is bound to this account.
                     </div>
                   </div>
                 </div>
-
-                {newApiToken && (
-                  <div className='rounded-md border bg-muted/30 p-2'>
-                    <div className='mb-1 text-xs font-medium text-foreground'>
-                      Account EA package generated. The key is shown once.
-                    </div>
-                    <div className='flex items-center gap-2'>
-                      <code className='min-w-0 flex-1 truncate rounded bg-background px-2 py-1 text-xs'>
-                        {newApiToken}
-                      </code>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
-                        onClick={() => downloadEaPreset(newApiToken)}
-                      >
-                        <Download className='size-4' />
-                        Setup
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
                 <div className='grid gap-2'>
                   {apiKeysFailed && (
@@ -534,8 +394,8 @@ export function TasksImportDialog({
 
             <div className='grid gap-1.5 rounded-md border bg-card p-3 text-xs text-muted-foreground'>
               <div>1. Copy the EA to MQL5/Experts/FUADFX.</div>
-              <div>2. Load FuadFXTradeSyncEA.set in the EA inputs.</div>
-              <div>3. Allow WebRequest for {apiEndpoint}.</div>
+              <div>2. Allow WebRequest for {apiEndpoint}.</div>
+              <div>3. Attach it to any MT5 chart.</div>
             </div>
           </TabsContent>
 

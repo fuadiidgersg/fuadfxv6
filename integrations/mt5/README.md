@@ -1,6 +1,6 @@
 # FUADFX MT5 Trade Sync EA
 
-`FuadFXTradeSyncEA.ex5` is a compiled MetaTrader 5 Expert Advisor that syncs closed trade history to the FUADFX journal API. The source file, `FuadFXTradeSyncEA.mq5`, is kept in this folder for development.
+`FuadFXTradeSyncEA.ex5` is a compiled MetaTrader 5 Expert Advisor that syncs closed trade history to the FUADFX journal API. FUADFX downloads it with the selected account ID and EA key embedded in the filename, so users do not need to paste inputs manually. The source file, `FuadFXTradeSyncEA.mq5`, is kept in this folder for development.
 
 ## What It Syncs
 
@@ -28,53 +28,49 @@ The current journal API stores the normal journal fields and keeps MT5 metadata 
 
 ## Setup
 
-1. Download `FuadFXTradeSyncEA.ex5` from FUADFX.
+1. In FUADFX, open Trades > Connect MT5 > EA sync.
 
-2. In MT5, open:
+2. Select the trading account and download the account-specific EA.
+
+3. In MT5, open:
 
    ```text
    File > Open Data Folder
    ```
 
-3. Copy `FuadFXTradeSyncEA.ex5` to:
+4. Copy the downloaded `.ex5` file to:
 
    ```text
-   MQL5/Experts/FUADFX/FuadFXTradeSyncEA.ex5
+   MQL5/Experts/FUADFX/
    ```
 
-4. In MT5, open:
+5. In MT5, open:
 
    ```text
    Tools > Options > Expert Advisors
    ```
 
-5. Enable:
+6. Enable:
 
    ```text
    Allow WebRequest for listed URL
    ```
 
-6. Add your API host, for example:
+7. Add your API host:
 
    ```text
    https://fuadfx-api.onrender.com
    ```
 
-7. In FUADFX, open Trades > Connect MT5 > EA sync.
-
-8. Generate an EA API key for the selected account.
-
-9. Paste the API endpoint, account ID and EA API key into the EA inputs.
-
-10. Attach the EA to any chart.
+8. Attach the EA to any chart.
 
 If you edit the source `.mq5` file, compile it in MetaEditor to produce a new `.ex5`.
 
 ## Inputs
 
-- `InpApiUrl`: API endpoint. Use `https://fuadfx-api.onrender.com/trades/bulk` for the current API.
-- `InpBearerToken`: FUADFX EA API key generated from the Connect MT5 dialog.
-- `InpAccountId`: FUADFX account UUID to receive the trades.
+- `InpApiUrl`: Optional override. The default API endpoint is used automatically.
+- `InpBearerToken`: Optional override. Account-specific downloads read this from the filename.
+- `InpAccountId`: Optional override. Account-specific downloads read this from the filename.
 - `InpLookbackDays`: How far back to scan on first run.
 - `InpSyncEverySeconds`: Timer interval.
 - `InpBatchSize`: Max trades per upload.

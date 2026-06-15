@@ -16,6 +16,9 @@ input bool   InpSyncOnInit = true;
 input bool   InpDebugLogs = true;
 input bool   InpSyncOpenPositionsLater = false; // Reserved for phase 2
 
+string g_api_url = "";
+string g_bearer_token = "";
+string g_account_id = "";
 string STATE_FILE = "";
 datetime g_last_sync = 0;
 datetime g_last_scan = 0;
@@ -77,6 +80,36 @@ string IsoTime(datetime value)
                        parts.hour,
                        parts.min,
                        parts.sec);
+}
+
+void ResolveRuntimeConfig()
+{
+   g_api_url = InpApiUrl;
+   g_bearer_token = InpBearerToken;
+   g_account_id = InpAccountId;
+
+   if(g_bearer_token != "" && g_account_id != "")
+      return;
+
+   // Account-specific downloads are named:
+   // FuadFXTradeSyncEA__<account_id>__<ea_api_key>.ex5
+   string program_name = MQLInfoString(MQL_PROGRAM_NAME);
+   StringReplace(program_name, ".ex5", "");
+   StringReplace(program_name, ".EX5", "");
+
+   const int first_sep = StringFind(program_name, "__");
+   if(first_sep < 0)
+      return;
+
+   const int second_sep = StringFind(program_name, "__", first_sep + 2);
+   if(second_sep < 0)
+      return;
+
+   if(g_account_id == "")
+      g_account_id = StringSubstr(program_name, first_sep + 2, second_sep - first_sep - 2);
+
+   if(g_bearer_token == "")
+      g_bearer_token = StringSubstr(program_name, second_sep + 2);
 }
 
 void ResetTrade(ClosedTradePayload &trade)
@@ -425,7 +458,7 @@ string TradeToJson(const ClosedTradePayload &trade)
 string BuildRequestJson(ClosedTradePayload &trades[], const int start, const int count)
 {
    string json = "{";
-   json += "\"accountId\":\"" + JsonEscape(InpAccountId) + "\",";
+   json += "\"accountId\":\"" + JsonEscape(g_account_id) + "\",";
    json += "\"source\":\"mt5-ea\",";
    json += "\"accountNumber\":" + (string)AccountInfoInteger(ACCOUNT_LOGIN) + ",";
    json += "\"brokerServer\":\"" + JsonEscape(AccountInfoString(ACCOUNT_SERVER)) + "\",";
@@ -443,9 +476,9 @@ string BuildRequestJson(ClosedTradePayload &trades[], const int start, const int
 
 bool PostJson(const string json, string &response)
 {
-   if(InpApiUrl == "" || InpBearerToken == "" || InpAccountId == "")
+   if(g_api_url == "" || g_bearer_token == "" || g_account_id == "")
    {
-      Print("[FUADFX Sync] Missing InpApiUrl, InpBearerToken, or InpAccountId.");
+      Print("[FUADFX Sync] Missing API URL, EA API key, or FUADFX account ID.");
       return false;
    }
 
@@ -458,12 +491,12 @@ bool PostJson(const string json, string &response)
 
    const string headers =
       "Content-Type: application/json\r\n" +
-      "Authorization: Bearer " + InpBearerToken + "\r\n";
+      "Authorization: Bearer " + g_bearer_token + "\r\n";
 
    ResetLastError();
    const int status = WebRequest(
       "POST",
-      InpApiUrl,
+      g_api_url,
       headers,
       30000,
       data,
@@ -522,6 +555,7 @@ void SyncClosedTrades()
 //+------------------------------------------------------------------+
 int OnInit()
 {
+   ResolveRuntimeConfig();
    LoadState();
    EventSetTimer(MathMax(10, InpSyncEverySeconds));
 
