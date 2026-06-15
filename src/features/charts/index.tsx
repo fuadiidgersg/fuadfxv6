@@ -11,7 +11,10 @@ import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -22,17 +25,133 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 
-const SYMBOLS = [
-  { label: 'EUR/USD', value: 'FX:EURUSD' },
-  { label: 'GBP/USD', value: 'FX:GBPUSD' },
-  { label: 'USD/JPY', value: 'FX:USDJPY' },
-  { label: 'USD/CHF', value: 'FX:USDCHF' },
-  { label: 'AUD/USD', value: 'FX:AUDUSD' },
-  { label: 'USD/CAD', value: 'FX:USDCAD' },
-  { label: 'XAU/USD', value: 'OANDA:XAUUSD' },
-  { label: 'US30', value: 'CAPITALCOM:US30' },
-  { label: 'NAS100', value: 'CAPITALCOM:US100' },
+type Instrument = {
+  label: string
+  value: string
+}
+
+const INSTRUMENT_GROUPS: { label: string; instruments: Instrument[] }[] = [
+  {
+    label: 'Forex Majors',
+    instruments: [
+      { label: 'EUR/USD', value: 'FX:EURUSD' },
+      { label: 'GBP/USD', value: 'FX:GBPUSD' },
+      { label: 'USD/JPY', value: 'FX:USDJPY' },
+      { label: 'USD/CHF', value: 'FX:USDCHF' },
+      { label: 'AUD/USD', value: 'FX:AUDUSD' },
+      { label: 'USD/CAD', value: 'FX:USDCAD' },
+      { label: 'NZD/USD', value: 'FX:NZDUSD' },
+    ],
+  },
+  {
+    label: 'Forex Crosses',
+    instruments: [
+      { label: 'EUR/GBP', value: 'FX:EURGBP' },
+      { label: 'EUR/JPY', value: 'FX:EURJPY' },
+      { label: 'EUR/CHF', value: 'FX:EURCHF' },
+      { label: 'EUR/AUD', value: 'FX:EURAUD' },
+      { label: 'EUR/CAD', value: 'FX:EURCAD' },
+      { label: 'EUR/NZD', value: 'FX:EURNZD' },
+      { label: 'GBP/JPY', value: 'FX:GBPJPY' },
+      { label: 'GBP/CHF', value: 'FX:GBPCHF' },
+      { label: 'GBP/AUD', value: 'FX:GBPAUD' },
+      { label: 'GBP/CAD', value: 'FX:GBPCAD' },
+      { label: 'GBP/NZD', value: 'FX:GBPNZD' },
+      { label: 'AUD/JPY', value: 'FX:AUDJPY' },
+      { label: 'AUD/CHF', value: 'FX:AUDCHF' },
+      { label: 'AUD/CAD', value: 'FX:AUDCAD' },
+      { label: 'AUD/NZD', value: 'FX:AUDNZD' },
+      { label: 'CAD/JPY', value: 'FX:CADJPY' },
+      { label: 'CAD/CHF', value: 'FX:CADCHF' },
+      { label: 'CHF/JPY', value: 'FX:CHFJPY' },
+      { label: 'NZD/JPY', value: 'FX:NZDJPY' },
+      { label: 'NZD/CHF', value: 'FX:NZDCHF' },
+      { label: 'NZD/CAD', value: 'FX:NZDCAD' },
+    ],
+  },
+  {
+    label: 'Forex Exotics',
+    instruments: [
+      { label: 'USD/MXN', value: 'FX:USDMXN' },
+      { label: 'USD/ZAR', value: 'FX:USDZAR' },
+      { label: 'USD/TRY', value: 'FX:USDTRY' },
+      { label: 'USD/SEK', value: 'FX:USDSEK' },
+      { label: 'USD/NOK', value: 'FX:USDNOK' },
+      { label: 'USD/DKK', value: 'FX:USDDKK' },
+      { label: 'USD/SGD', value: 'FX:USDSGD' },
+      { label: 'USD/HKD', value: 'FX:USDHKD' },
+      { label: 'EUR/TRY', value: 'FX:EURTRY' },
+      { label: 'EUR/ZAR', value: 'FX:EURZAR' },
+      { label: 'GBP/ZAR', value: 'FX:GBPZAR' },
+    ],
+  },
+  {
+    label: 'Metals',
+    instruments: [
+      { label: 'Gold / USD', value: 'OANDA:XAUUSD' },
+      { label: 'Silver / USD', value: 'OANDA:XAGUSD' },
+      { label: 'Platinum / USD', value: 'OANDA:XPTUSD' },
+      { label: 'Palladium / USD', value: 'OANDA:XPDUSD' },
+      { label: 'Copper', value: 'COMEX:HG1!' },
+    ],
+  },
+  {
+    label: 'Commodities',
+    instruments: [
+      { label: 'US Oil / WTI', value: 'TVC:USOIL' },
+      { label: 'Brent Oil', value: 'TVC:UKOIL' },
+      { label: 'Natural Gas', value: 'NYMEX:NG1!' },
+      { label: 'Wheat', value: 'CBOT:ZW1!' },
+      { label: 'Corn', value: 'CBOT:ZC1!' },
+      { label: 'Soybeans', value: 'CBOT:ZS1!' },
+    ],
+  },
+  {
+    label: 'Indices',
+    instruments: [
+      { label: 'US30 / Dow', value: 'CAPITALCOM:US30' },
+      { label: 'NAS100', value: 'CAPITALCOM:US100' },
+      { label: 'S&P 500', value: 'CAPITALCOM:US500' },
+      { label: 'Russell 2000', value: 'CAPITALCOM:RTY' },
+      { label: 'DAX 40', value: 'CAPITALCOM:DE40' },
+      { label: 'FTSE 100', value: 'CAPITALCOM:UK100' },
+      { label: 'CAC 40', value: 'CAPITALCOM:FR40' },
+      { label: 'Nikkei 225', value: 'CAPITALCOM:J225' },
+      { label: 'Hang Seng', value: 'CAPITALCOM:HK50' },
+      { label: 'ASX 200', value: 'CAPITALCOM:AU200' },
+    ],
+  },
+  {
+    label: 'Crypto',
+    instruments: [
+      { label: 'BTC/USD', value: 'BINANCE:BTCUSDT' },
+      { label: 'ETH/USD', value: 'BINANCE:ETHUSDT' },
+      { label: 'SOL/USD', value: 'BINANCE:SOLUSDT' },
+      { label: 'XRP/USD', value: 'BINANCE:XRPUSDT' },
+      { label: 'BNB/USD', value: 'BINANCE:BNBUSDT' },
+      { label: 'DOGE/USD', value: 'BINANCE:DOGEUSDT' },
+      { label: 'ADA/USD', value: 'BINANCE:ADAUSDT' },
+      { label: 'AVAX/USD', value: 'BINANCE:AVAXUSDT' },
+      { label: 'LINK/USD', value: 'BINANCE:LINKUSDT' },
+    ],
+  },
+  {
+    label: 'Stocks & ETFs',
+    instruments: [
+      { label: 'Apple', value: 'NASDAQ:AAPL' },
+      { label: 'Microsoft', value: 'NASDAQ:MSFT' },
+      { label: 'NVIDIA', value: 'NASDAQ:NVDA' },
+      { label: 'Tesla', value: 'NASDAQ:TSLA' },
+      { label: 'Amazon', value: 'NASDAQ:AMZN' },
+      { label: 'Meta', value: 'NASDAQ:META' },
+      { label: 'Alphabet', value: 'NASDAQ:GOOGL' },
+      { label: 'SPY ETF', value: 'AMEX:SPY' },
+      { label: 'QQQ ETF', value: 'NASDAQ:QQQ' },
+    ],
+  },
 ]
+
+const SYMBOLS = INSTRUMENT_GROUPS.flatMap((group) => group.instruments)
 
 const INTERVALS = [
   { label: '5m', value: '5' },
@@ -163,16 +282,27 @@ export function Charts() {
 
           <div className='flex flex-wrap items-center gap-2'>
             <Select value={symbol} onValueChange={setSymbol}>
-              <SelectTrigger className='h-10 w-36'>
+              <SelectTrigger className='h-10 w-44'>
                 <SelectValue aria-label={symbolLabel}>
                   {symbolLabel}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
-                {SYMBOLS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
+              <SelectContent className='max-h-96 w-64'>
+                {INSTRUMENT_GROUPS.map((group, index) => (
+                  <SelectGroup key={group.label}>
+                    {index > 0 && <SelectSeparator />}
+                    <SelectLabel>{group.label}</SelectLabel>
+                    {group.instruments.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        <span className='flex w-full items-center justify-between gap-4'>
+                          <span>{item.label}</span>
+                          <span className='text-xs text-muted-foreground'>
+                            {item.value}
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
