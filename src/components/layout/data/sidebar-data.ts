@@ -66,9 +66,9 @@ export const sidebarData: SidebarData = {
           icon: BarChart2,
         },
         {
-          title: 'Portfolio',
-          url: '/portfolio',
-          icon: Briefcase,
+          title: 'Economic News',
+          url: '/news',
+          icon: Newspaper,
         },
         {
           title: 'Calendar',
@@ -91,9 +91,9 @@ export const sidebarData: SidebarData = {
           icon: Notebook,
         },
         {
-          title: 'Economic News',
-          url: '/news',
-          icon: Newspaper,
+          title: 'Portfolio',
+          url: '/portfolio',
+          icon: Briefcase,
         },
       ],
     },
