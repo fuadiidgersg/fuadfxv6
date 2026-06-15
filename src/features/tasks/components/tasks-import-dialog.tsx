@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   Bot,
-  CheckCircle2,
   Clipboard,
   Download,
   FileText,
@@ -290,26 +289,19 @@ export function TasksImportDialog({
           </TabsList>
 
           <TabsContent value='ea' className='space-y-3'>
-            <div className='rounded-md border bg-muted/30 p-3 text-sm'>
-              <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-                <div>
-                  <div className='mb-2 flex items-center gap-2 font-medium'>
-                    <CheckCircle2 className='size-4 text-emerald-600' />
-                    Best for ongoing MT5 syncing
-                  </div>
-                  <p className='text-muted-foreground'>
-                    Install the FUADFX Expert Advisor in MT5. It uploads closed
-                    trades to your selected account and stores ticket history
-                    locally so restarts do not duplicate trades.
-                  </p>
+            <div className='flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between'>
+              <div>
+                <div className='font-medium'>FUADFX MT5 Expert Advisor</div>
+                <div className='text-xs text-muted-foreground'>
+                  Download, copy into MT5, then paste the values below.
                 </div>
-                <Button asChild size='sm'>
-                  <a href={eaDownloadUrl} download>
-                    <Download className='size-4' />
-                    Download EA
-                  </a>
-                </Button>
               </div>
+              <Button asChild size='sm'>
+                <a href={eaDownloadUrl} download>
+                  <Download className='size-4' />
+                  Download EA
+                </a>
+              </Button>
             </div>
 
             <div className='grid gap-2 rounded-md border p-3 text-sm'>
@@ -365,8 +357,7 @@ export function TasksImportDialog({
                       EA API key
                     </div>
                     <div className='text-xs text-muted-foreground'>
-                      Generate a long-lived key for this MT5 account. FUADFX
-                      stores only a secure hash.
+                      Generate one key per MT5 account.
                     </div>
                   </div>
                   <Button
@@ -449,26 +440,10 @@ export function TasksImportDialog({
               </div>
             </div>
 
-            <div className='grid gap-2 rounded-md border bg-card p-3 text-xs leading-relaxed text-muted-foreground'>
-              <div>
-                1. Download <strong>FuadFXTradeSyncEA.ex5</strong> and copy it
-                into MT5.
-              </div>
-              <div>
-                2. In MT5, allow WebRequest for{' '}
-                <span className='font-medium text-foreground'>
-                  {apiEndpoint}
-                </span>
-                .
-              </div>
-              <div>
-                3. Paste the endpoint, EA API key and account ID into the EA
-                inputs, then attach it to any chart.
-              </div>
-              <div>
-                4. Keep MT5 running on your PC or a Forex VPS. Render keeps the
-                API online, but MT5 keeps the EA active.
-              </div>
+            <div className='grid gap-1.5 rounded-md border bg-card p-3 text-xs text-muted-foreground'>
+              <div>1. Copy the EA to MQL5/Experts/FUADFX.</div>
+              <div>2. Allow WebRequest for {apiEndpoint}.</div>
+              <div>3. Paste endpoint, account ID and EA key into MT5.</div>
             </div>
           </TabsContent>
 
