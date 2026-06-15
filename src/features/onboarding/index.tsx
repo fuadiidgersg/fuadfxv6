@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Upload, Wallet } from 'lucide-react'
+import { ArrowLeft, Bot, Loader2, Upload, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   useAccountsStore,
@@ -163,7 +163,7 @@ export default function Onboarding() {
           <p className='mx-auto max-w-xl text-sm text-muted-foreground'>
             {step === 'profile'
               ? 'Tell FUADFX how you trade so the journal can organize your reviews around your account and preferred market.'
-              : 'Upload an MT5 statement for the fastest setup, or create the account manually if you want to log trades first.'}
+              : 'Create your account, then choose EA sync for ongoing closed trades or manual upload for bulk history.'}
           </p>
         </div>
 
@@ -252,17 +252,17 @@ export default function Onboarding() {
             <div className='grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-[1fr_auto] sm:items-center'>
               <div className='space-y-1'>
                 <div className='flex items-center gap-2 font-medium'>
-                  <Upload className='size-4' />
-                  Upload MT5 statement
+                  <Bot className='size-4' />
+                  Choose your MT5 sync method
                 </div>
                 <p className='text-sm text-muted-foreground'>
-                  FUADFX will read the account number, broker, currency,
-                  leverage, balance and trade history from your MT5 report.
+                  Use the Expert Advisor for ongoing closed-trade sync, or bulk
+                  upload an MT5 detailed report to import trading history now.
                 </p>
               </div>
               <Button onClick={() => setImportOpen(true)}>
                 <Upload className='size-4' />
-                Upload trades
+                Connect or upload
               </Button>
             </div>
 

@@ -1,4 +1,4 @@
-import { Download, Plus } from 'lucide-react'
+import { Bot, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTasks } from './tasks-provider'
 
@@ -11,7 +11,7 @@ export function TasksPrimaryButtons() {
         className='space-x-1'
         onClick={() => setOpen('import')}
       >
-        <span>Import</span> <Download size={18} />
+        <span>Connect MT5</span> <Bot size={18} />
       </Button>
       <Button className='space-x-1' onClick={() => setOpen('create')}>
         <span>Log Trade</span> <Plus size={18} />

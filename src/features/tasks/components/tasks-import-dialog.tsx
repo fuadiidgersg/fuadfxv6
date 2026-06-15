@@ -1,11 +1,27 @@
 import { useState } from 'react'
-import { FileText, Loader2, Trash2, Upload } from 'lucide-react'
+import {
+  Bot,
+  CheckCircle2,
+  Clipboard,
+  Download,
+  FileText,
+  KeyRound,
+  Loader2,
+  Server,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { useAccountsStore } from '@/stores/accounts-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { useTradingSettings } from '@/stores/trading-settings-store'
 import { getApiErrorMessage } from '@/lib/api'
 import { parseMT5Html } from '@/lib/mt5-import'
-import { useUpsertAccountFromImport } from '@/hooks/use-accounts-query'
+import {
+  useAccountsQuery,
+  useActiveAccount,
+  useUpsertAccountFromImport,
+} from '@/hooks/use-accounts-query'
 import {
   useAllTradesQuery,
   useBulkCreateTrades,
@@ -23,6 +39,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { TradeStrategy } from '@/features/trades/data/schema'
 
 type TaskImportDialogProps = {
@@ -40,6 +57,9 @@ export function TasksImportDialog({
 }: TaskImportDialogProps) {
   const activeAccountId = useAccountsStore((s) => s.activeAccountId)
   const setActiveAccount = useAccountsStore((s) => s.setActive)
+  const accessToken = useAuthStore((s) => s.auth.accessToken)
+  const activeAccount = useActiveAccount()
+  const { data: accounts = [] } = useAccountsQuery()
   const autoAssignImportedStrategy = useTradingSettings(
     (s) => s.autoAssignImportedStrategy
   )
@@ -59,11 +79,32 @@ export function TasksImportDialog({
   const [preview, setPreview] = useState<Mt5Preview>(null)
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [syncMethod, setSyncMethod] = useState<'ea' | 'manual'>('ea')
+
+  const apiEndpoint =
+    import.meta.env.VITE_API_URL?.replace(/\/$/, '') ??
+    'https://fuadfx-api.onrender.com'
+  const eaPostUrl = `${apiEndpoint}/trades/bulk`
+  const eaDownloadUrl = '/downloads/FuadFXTradeSyncEA.mq5'
 
   const reset = () => {
     setHtmlFile(null)
     setPreview(null)
     setParsing(false)
+  }
+
+  const copyText = async (label: string, value?: string | null) => {
+    if (!value) {
+      toast.error(`${label} is not available yet.`)
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(value)
+      toast.success(`${label} copied.`)
+    } catch {
+      toast.error(`Could not copy ${label.toLowerCase()}.`)
+    }
   }
 
   const decodeMT5File = async (file: File): Promise<string> => {
@@ -189,12 +230,143 @@ export function TasksImportDialog({
         <DialogHeader className='text-start'>
           <DialogTitle>Connect MT5 Account</DialogTitle>
           <DialogDescription>
-            Upload your MetaTrader 5 HTML history. FUADFX will create or select
-            the detected trading account and import the trades into it.
+            Choose automatic EA sync for ongoing closed trades, or upload an
+            MT5 HTML report for a one-time bulk import.
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-3'>
+        <Tabs
+          value={syncMethod}
+          onValueChange={(value) => setSyncMethod(value as 'ea' | 'manual')}
+          className='gap-3'
+        >
+          <TabsList className='grid w-full grid-cols-2'>
+            <TabsTrigger value='ea'>
+              <Bot className='size-4' />
+              EA sync
+            </TabsTrigger>
+            <TabsTrigger value='manual'>
+              <Upload className='size-4' />
+              Manual upload
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value='ea' className='space-y-3'>
+            <div className='rounded-md border bg-muted/30 p-3 text-sm'>
+              <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+                <div>
+                  <div className='mb-2 flex items-center gap-2 font-medium'>
+                    <CheckCircle2 className='size-4 text-emerald-600' />
+                    Best for ongoing MT5 syncing
+                  </div>
+                  <p className='text-muted-foreground'>
+                    Install the FUADFX Expert Advisor in MT5. It uploads closed
+                    trades to your selected account and stores ticket history
+                    locally so restarts do not duplicate trades.
+                  </p>
+                </div>
+                <Button asChild size='sm'>
+                  <a href={eaDownloadUrl} download>
+                    <Download className='size-4' />
+                    Download EA
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <div className='grid gap-2 rounded-md border p-3 text-sm'>
+              <div className='flex items-center justify-between gap-3'>
+                <div>
+                  <div className='font-medium'>Selected account</div>
+                  <div className='text-xs text-muted-foreground'>
+                    {activeAccount
+                      ? `${activeAccount.name} - ${activeAccount.broker || 'Broker not set'}`
+                      : accounts.length
+                        ? 'Select an account from the sidebar first.'
+                        : 'Create an account before using EA sync.'}
+                  </div>
+                </div>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={!activeAccount?.id}
+                  onClick={() => copyText('Account ID', activeAccount?.id)}
+                >
+                  <Clipboard className='size-4' />
+                  Copy ID
+                </Button>
+              </div>
+
+              <div className='flex items-center justify-between gap-3 border-t pt-3'>
+                <div className='min-w-0'>
+                  <div className='flex items-center gap-2 font-medium'>
+                    <Server className='size-4' />
+                    API endpoint
+                  </div>
+                  <div className='truncate text-xs text-muted-foreground'>
+                    {eaPostUrl}
+                  </div>
+                </div>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => copyText('API endpoint', eaPostUrl)}
+                >
+                  <Clipboard className='size-4' />
+                  Copy
+                </Button>
+              </div>
+
+              <div className='flex items-center justify-between gap-3 border-t pt-3'>
+                <div>
+                  <div className='flex items-center gap-2 font-medium'>
+                    <KeyRound className='size-4' />
+                    Auth token
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    Temporary session token until permanent EA API keys are
+                    added.
+                  </div>
+                </div>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={!accessToken}
+                  onClick={() => copyText('Auth token', accessToken)}
+                >
+                  <Clipboard className='size-4' />
+                  Copy token
+                </Button>
+              </div>
+            </div>
+
+            <div className='grid gap-2 rounded-md border bg-card p-3 text-xs leading-relaxed text-muted-foreground'>
+              <div>
+                1. Download <strong>FuadFXTradeSyncEA.mq5</strong> and compile
+                it in MetaEditor.
+              </div>
+              <div>
+                2. In MT5, allow WebRequest for{' '}
+                <span className='font-medium text-foreground'>
+                  {apiEndpoint}
+                </span>
+                .
+              </div>
+              <div>
+                3. Paste the endpoint, auth token and account ID into the EA
+                inputs, then attach it to any chart.
+              </div>
+              <div>
+                4. Keep MT5 running on your PC or a Forex VPS. Render keeps the
+                API online, but MT5 keeps the EA active.
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value='manual' className='space-y-3'>
           <div className='rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground'>
             In MT5, open <strong>Toolbox - History</strong>, right-click and
             choose <strong>Report - HTML (Detailed)</strong>. Upload the saved
@@ -355,23 +527,30 @@ export function TasksImportDialog({
               )}
             </div>
           )}
-        </div>
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter className='flex-row items-center justify-between gap-2 sm:justify-between'>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            disabled={!activeAccountId || tradesCountForActive === 0 || isBusy}
-            onClick={handleClearActive}
-            className='text-muted-foreground hover:text-destructive'
-          >
-            <Trash2 className='size-4' />
-            Clear {tradesCountForActive > 0
-              ? `(${tradesCountForActive})`
-              : ''}{' '}
-            in current
-          </Button>
+          {syncMethod === 'manual' ? (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              disabled={
+                !activeAccountId || tradesCountForActive === 0 || isBusy
+              }
+              onClick={handleClearActive}
+              className='text-muted-foreground hover:text-destructive'
+            >
+              <Trash2 className='size-4' />
+              Clear {tradesCountForActive > 0
+                ? `(${tradesCountForActive})`
+                : ''}{' '}
+              in current
+            </Button>
+          ) : (
+            <div />
+          )}
 
           <div className='flex items-center gap-2'>
             <DialogClose asChild>
@@ -379,19 +558,21 @@ export function TasksImportDialog({
                 Close
               </Button>
             </DialogClose>
-            <Button
-              onClick={handleImportMt5}
-              disabled={!preview || preview.trades.length === 0 || isBusy}
-            >
-              {importing ? (
-                <Loader2 className='size-4 animate-spin' />
-              ) : (
-                <Upload className='size-4' />
-              )}
-              {importing
-                ? 'Importing...'
-                : `Import ${preview?.trades.length ?? 0} trades`}
-            </Button>
+            {syncMethod === 'manual' && (
+              <Button
+                onClick={handleImportMt5}
+                disabled={!preview || preview.trades.length === 0 || isBusy}
+              >
+                {importing ? (
+                  <Loader2 className='size-4 animate-spin' />
+                ) : (
+                  <Upload className='size-4' />
+                )}
+                {importing
+                  ? 'Importing...'
+                  : `Import ${preview?.trades.length ?? 0} trades`}
+              </Button>
+            )}
           </div>
         </DialogFooter>
       </DialogContent>
