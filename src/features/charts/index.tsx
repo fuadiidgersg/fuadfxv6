@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CandlestickChart,
   ExternalLink,
@@ -42,40 +42,6 @@ const INTERVALS = [
   { label: '1D', value: 'D' },
 ]
 
-function buildTradingViewEmbedUrl({
-  interval,
-  resolvedTheme,
-  symbol,
-  timezone,
-}: {
-  interval: string
-  resolvedTheme: 'dark' | 'light'
-  symbol: string
-  timezone: string
-}) {
-  const params = new URLSearchParams({
-    frameElementId: 'fuadfx-tradingview-chart',
-    symbol,
-    interval,
-    hidesidetoolbar: '0',
-    symboledit: '1',
-    saveimage: '1',
-    toolbarbg: resolvedTheme === 'dark' ? '0f172a' : 'f8fafc',
-    theme: resolvedTheme,
-    style: '1',
-    timezone,
-    withdateranges: '1',
-    hideideas: '1',
-    locale: 'en',
-    utm_source: 'fuadfx.app',
-    utm_medium: 'widget',
-    utm_campaign: 'chart',
-    utm_term: symbol,
-  })
-
-  return `https://s.tradingview.com/widgetembed/?${params.toString()}`
-}
-
 function TradingViewWidget({
   interval,
   symbol,
@@ -83,61 +49,71 @@ function TradingViewWidget({
   interval: string
   symbol: string
 }) {
-  const [showLoader, setShowLoader] = useState(true)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const [isSlow, setIsSlow] = useState(false)
   const { resolvedTheme } = useTheme()
   const timezone = useTradingSettings((s) => s.timezone)
 
-  const src = useMemo(
+  const chartUrl = useMemo(
     () =>
-      buildTradingViewEmbedUrl({
-        interval,
-        resolvedTheme,
-        symbol,
-        timezone,
-      }),
-    [interval, resolvedTheme, symbol, timezone]
+      `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
+    [symbol]
   )
 
   useEffect(() => {
-    setShowLoader(true)
+    if (!containerRef.current) return
+
     setIsSlow(false)
-    const loaderTimeout = window.setTimeout(() => setShowLoader(false), 3500)
-    const slowTimeout = window.setTimeout(() => setIsSlow(true), 8000)
+    containerRef.current.innerHTML = ''
+
+    const widget = document.createElement('div')
+    widget.className = 'tradingview-widget-container__widget'
+    widget.style.height = 'calc(100% - 32px)'
+    widget.style.width = '100%'
+
+    const copyright = document.createElement('div')
+    copyright.className = 'tradingview-widget-copyright sr-only'
+    copyright.innerHTML =
+      '<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span>Track all markets on TradingView</span></a>'
+
+    const script = document.createElement('script')
+    script.type = 'text/javascript'
+    script.src =
+      'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
+    script.async = true
+    script.text = JSON.stringify({
+      autosize: true,
+      symbol,
+      interval,
+      timezone,
+      theme: resolvedTheme,
+      style: '1',
+      locale: 'en',
+      allow_symbol_change: true,
+      calendar: false,
+      support_host: 'https://www.tradingview.com',
+    })
+
+    containerRef.current.appendChild(widget)
+    containerRef.current.appendChild(copyright)
+    containerRef.current.appendChild(script)
+
+    const slowTimeout = window.setTimeout(() => setIsSlow(true), 10_000)
     return () => {
-      window.clearTimeout(loaderTimeout)
       window.clearTimeout(slowTimeout)
     }
-  }, [src])
+  }, [interval, resolvedTheme, symbol, timezone])
 
   return (
     <div className='relative h-full w-full'>
-      {showLoader && (
-        <div className='pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card px-6 text-center'>
-          <RefreshCw className='size-5 animate-spin text-muted-foreground' />
-          <div>
-            <p className='text-sm font-medium'>Loading TradingView chart</p>
-            <p className='mt-1 max-w-md text-xs text-muted-foreground'>
-              {isSlow
-                ? 'TradingView is taking longer than usual. If it stays blank, your network, VPN, browser extension, or DNS may be blocking TradingView embeds.'
-                : 'Connecting to TradingView live chart data.'}
-            </p>
-          </div>
-        </div>
-      )}
-      <iframe
-        key={src}
-        id='fuadfx-tradingview-chart'
-        title={`${symbol} TradingView chart`}
-        src={src}
-        className='h-full w-full border-0'
-        allowFullScreen
-        onLoad={() => setShowLoader(false)}
+      <div
+        ref={containerRef}
+        className='tradingview-widget-container h-full w-full'
       />
       {isSlow && (
         <div className='absolute right-3 bottom-3 z-10 rounded-md border bg-background/95 p-2 text-xs shadow-sm backdrop-blur'>
           <Button type='button' variant='outline' size='sm' asChild>
-            <a href={src} target='_blank' rel='noreferrer'>
+            <a href={chartUrl} target='_blank' rel='noreferrer'>
               <ExternalLink className='size-4' />
               Open directly
             </a>
