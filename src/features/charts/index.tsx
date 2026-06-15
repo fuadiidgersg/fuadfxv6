@@ -83,7 +83,7 @@ function TradingViewWidget({
   interval: string
   symbol: string
 }) {
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [showLoader, setShowLoader] = useState(true)
   const [isSlow, setIsSlow] = useState(false)
   const { resolvedTheme } = useTheme()
   const timezone = useTradingSettings((s) => s.timezone)
@@ -100,16 +100,20 @@ function TradingViewWidget({
   )
 
   useEffect(() => {
-    setIsLoaded(false)
+    setShowLoader(true)
     setIsSlow(false)
-    const timeout = window.setTimeout(() => setIsSlow(true), 8000)
-    return () => window.clearTimeout(timeout)
+    const loaderTimeout = window.setTimeout(() => setShowLoader(false), 3500)
+    const slowTimeout = window.setTimeout(() => setIsSlow(true), 8000)
+    return () => {
+      window.clearTimeout(loaderTimeout)
+      window.clearTimeout(slowTimeout)
+    }
   }, [src])
 
   return (
     <div className='relative h-full w-full'>
-      {!isLoaded && (
-        <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card px-6 text-center'>
+      {showLoader && (
+        <div className='pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card px-6 text-center'>
           <RefreshCw className='size-5 animate-spin text-muted-foreground' />
           <div>
             <p className='text-sm font-medium'>Loading TradingView chart</p>
@@ -119,14 +123,6 @@ function TradingViewWidget({
                 : 'Connecting to TradingView live chart data.'}
             </p>
           </div>
-          {isSlow && (
-            <Button type='button' variant='outline' size='sm' asChild>
-              <a href={src} target='_blank' rel='noreferrer'>
-                <ExternalLink className='size-4' />
-                Open chart directly
-              </a>
-            </Button>
-          )}
         </div>
       )}
       <iframe
@@ -136,8 +132,18 @@ function TradingViewWidget({
         src={src}
         className='h-full w-full border-0'
         allowFullScreen
-        onLoad={() => setIsLoaded(true)}
+        onLoad={() => setShowLoader(false)}
       />
+      {isSlow && (
+        <div className='absolute right-3 bottom-3 z-10 rounded-md border bg-background/95 p-2 text-xs shadow-sm backdrop-blur'>
+          <Button type='button' variant='outline' size='sm' asChild>
+            <a href={src} target='_blank' rel='noreferrer'>
+              <ExternalLink className='size-4' />
+              Open directly
+            </a>
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
