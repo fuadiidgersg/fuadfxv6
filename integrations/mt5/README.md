@@ -1,6 +1,6 @@
 # FUADFX MT5 Trade Sync EA
 
-`FuadFXTradeSyncEA.mq5` is a MetaTrader 5 Expert Advisor that syncs closed trade history to the FUADFX journal API.
+`FuadFXTradeSyncEA.ex5` is a compiled MetaTrader 5 Expert Advisor that syncs closed trade history to the FUADFX journal API. The source file, `FuadFXTradeSyncEA.mq5`, is kept in this folder for development.
 
 ## What It Syncs
 
@@ -28,39 +28,47 @@ The current journal API stores the normal journal fields and keeps MT5 metadata 
 
 ## Setup
 
-1. Copy `FuadFXTradeSyncEA.mq5` to:
+1. Download `FuadFXTradeSyncEA.ex5` from FUADFX.
+
+2. In MT5, open:
 
    ```text
-   MQL5/Experts/FUADFX/FuadFXTradeSyncEA.mq5
+   File > Open Data Folder
    ```
 
-2. Compile it in MetaEditor.
+3. Copy `FuadFXTradeSyncEA.ex5` to:
 
-3. In MT5, open:
+   ```text
+   MQL5/Experts/FUADFX/FuadFXTradeSyncEA.ex5
+   ```
+
+4. In MT5, open:
 
    ```text
    Tools > Options > Expert Advisors
    ```
 
-4. Enable:
+5. Enable:
 
    ```text
    Allow WebRequest for listed URL
    ```
 
-5. Add your API host, for example:
+6. Add your API host, for example:
 
    ```text
    https://fuadfx-api.onrender.com
    ```
 
-6. In FUADFX, open Trades > Connect MT5 > EA sync.
+7. In FUADFX, open Trades > Connect MT5 > EA sync.
 
-7. Generate an EA API key for the selected account.
+8. Generate an EA API key for the selected account.
 
-8. Paste the API endpoint, account ID and EA API key into the EA inputs.
+9. Paste the API endpoint, account ID and EA API key into the EA inputs.
 
-9. Attach the EA to any chart.
+10. Attach the EA to any chart.
+
+If you edit the source `.mq5` file, compile it in MetaEditor to produce a new `.ex5`.
 
 ## Inputs
 

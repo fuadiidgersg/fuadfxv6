@@ -94,7 +94,7 @@ export function TasksImportDialog({
     import.meta.env.VITE_API_URL?.replace(/\/$/, '') ??
     'https://fuadfx-api.onrender.com'
   const eaPostUrl = `${apiEndpoint}/trades/bulk`
-  const eaDownloadUrl = '/downloads/FuadFXTradeSyncEA.mq5'
+  const eaDownloadUrl = '/downloads/FuadFXTradeSyncEA.ex5'
 
   const reset = () => {
     setHtmlFile(null)
@@ -451,8 +451,8 @@ export function TasksImportDialog({
 
             <div className='grid gap-2 rounded-md border bg-card p-3 text-xs leading-relaxed text-muted-foreground'>
               <div>
-                1. Download <strong>FuadFXTradeSyncEA.mq5</strong> and compile
-                it in MetaEditor.
+                1. Download <strong>FuadFXTradeSyncEA.ex5</strong> and copy it
+                into MT5.
               </div>
               <div>
                 2. In MT5, allow WebRequest for{' '}
