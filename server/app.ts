@@ -3,6 +3,7 @@ import express from 'express'
 import accountsRouter from './routes/accounts'
 import analyticsRouter from './routes/analytics'
 import journalsRouter from './routes/journals'
+import newsRouter from './routes/news'
 import profileRouter from './routes/profile'
 import tradesRouter from './routes/trades'
 import { isSupabaseConfigured } from './lib/supabase-admin'
@@ -100,6 +101,7 @@ app.use('/accounts', accountsRouter)
 app.use('/journals', journalsRouter)
 app.use('/analytics', analyticsRouter)
 app.use('/profile', profileRouter)
+app.use('/news', newsRouter)
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' })
