@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CandlestickChart,
   ExternalLink,
@@ -42,6 +42,40 @@ const INTERVALS = [
   { label: '1D', value: 'D' },
 ]
 
+function buildTradingViewEmbedUrl({
+  interval,
+  resolvedTheme,
+  symbol,
+  timezone,
+}: {
+  interval: string
+  resolvedTheme: 'dark' | 'light'
+  symbol: string
+  timezone: string
+}) {
+  const params = new URLSearchParams({
+    frameElementId: 'fuadfx-tradingview-chart',
+    symbol,
+    interval,
+    hidesidetoolbar: '0',
+    symboledit: '1',
+    saveimage: '1',
+    toolbarbg: resolvedTheme === 'dark' ? '0f172a' : 'f8fafc',
+    theme: resolvedTheme,
+    style: '1',
+    timezone,
+    withdateranges: '1',
+    hideideas: '1',
+    locale: 'en',
+    utm_source: 'fuadfx.app',
+    utm_medium: 'widget',
+    utm_campaign: 'chart',
+    utm_term: symbol,
+  })
+
+  return `https://s.tradingview.com/widgetembed/?${params.toString()}`
+}
+
 function TradingViewWidget({
   interval,
   symbol,
@@ -49,48 +83,62 @@ function TradingViewWidget({
   interval: string
   symbol: string
 }) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [isSlow, setIsSlow] = useState(false)
   const { resolvedTheme } = useTheme()
   const timezone = useTradingSettings((s) => s.timezone)
 
+  const src = useMemo(
+    () =>
+      buildTradingViewEmbedUrl({
+        interval,
+        resolvedTheme,
+        symbol,
+        timezone,
+      }),
+    [interval, resolvedTheme, symbol, timezone]
+  )
+
   useEffect(() => {
-    if (!containerRef.current) return
-
-    containerRef.current.innerHTML = ''
-
-    const widget = document.createElement('div')
-    widget.className = 'tradingview-widget-container__widget'
-    widget.style.height = '100%'
-    widget.style.width = '100%'
-
-    const script = document.createElement('script')
-    script.src =
-      'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
-    script.type = 'text/javascript'
-    script.async = true
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol,
-      interval,
-      timezone,
-      theme: resolvedTheme,
-      style: '1',
-      locale: 'en',
-      allow_symbol_change: true,
-      calendar: false,
-      hide_side_toolbar: false,
-      support_host: 'https://www.tradingview.com',
-    })
-
-    containerRef.current.appendChild(widget)
-    containerRef.current.appendChild(script)
-  }, [interval, resolvedTheme, symbol, timezone])
+    setIsLoaded(false)
+    setIsSlow(false)
+    const timeout = window.setTimeout(() => setIsSlow(true), 8000)
+    return () => window.clearTimeout(timeout)
+  }, [src])
 
   return (
-    <div
-      ref={containerRef}
-      className='tradingview-widget-container h-full w-full'
-    />
+    <div className='relative h-full w-full'>
+      {!isLoaded && (
+        <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card px-6 text-center'>
+          <RefreshCw className='size-5 animate-spin text-muted-foreground' />
+          <div>
+            <p className='text-sm font-medium'>Loading TradingView chart</p>
+            <p className='mt-1 max-w-md text-xs text-muted-foreground'>
+              {isSlow
+                ? 'TradingView is taking longer than usual. If it stays blank, your network, VPN, browser extension, or DNS may be blocking TradingView embeds.'
+                : 'Connecting to TradingView live chart data.'}
+            </p>
+          </div>
+          {isSlow && (
+            <Button type='button' variant='outline' size='sm' asChild>
+              <a href={src} target='_blank' rel='noreferrer'>
+                <ExternalLink className='size-4' />
+                Open chart directly
+              </a>
+            </Button>
+          )}
+        </div>
+      )}
+      <iframe
+        key={src}
+        id='fuadfx-tradingview-chart'
+        title={`${symbol} TradingView chart`}
+        src={src}
+        className='h-full w-full border-0'
+        allowFullScreen
+        onLoad={() => setIsLoaded(true)}
+      />
+    </div>
   )
 }
 
