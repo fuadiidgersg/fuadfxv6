@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import {
   Bot,
-  Clipboard,
   Download,
   FileText,
   KeyRound,
   Loader2,
-  Server,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -21,7 +19,6 @@ import {
   useRevokeApiKey,
 } from '@/hooks/use-api-keys-query'
 import {
-  useAccountsQuery,
   useActiveAccount,
   useUpsertAccountFromImport,
 } from '@/hooks/use-accounts-query'
@@ -61,10 +58,12 @@ export function TasksImportDialog({
   const activeAccountId = useAccountsStore((s) => s.activeAccountId)
   const setActiveAccount = useAccountsStore((s) => s.setActive)
   const activeAccount = useActiveAccount()
-  const { data: accounts = [] } = useAccountsQuery()
-  const { data: apiKeys = [], isLoading: apiKeysLoading } = useApiKeysQuery(
-    activeAccount?.id
-  )
+  const {
+    data: apiKeys = [],
+    isLoading: apiKeysLoading,
+    isError: apiKeysFailed,
+    error: apiKeysError,
+  } = useApiKeysQuery(activeAccount?.id)
   const createApiKey = useCreateApiKey()
   const revokeApiKey = useRevokeApiKey()
   const autoAssignImportedStrategy = useTradingSettings(
@@ -101,23 +100,124 @@ export function TasksImportDialog({
     setParsing(false)
   }
 
-  const copyText = async (label: string, value?: string | null) => {
-    if (!value) {
-      toast.error(`${label} is not available yet.`)
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(value)
-      toast.success(`${label} copied.`)
-    } catch {
-      toast.error(`Could not copy ${label.toLowerCase()}.`)
-    }
+  const downloadText = (filename: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    downloadBlob(filename, blob)
   }
 
-  const handleCreateEaKey = async () => {
+  const downloadBlob = (filename: string, blob: Blob) => {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const crcTable = (() => {
+    const table = new Uint32Array(256)
+    for (let i = 0; i < 256; i++) {
+      let c = i
+      for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+      table[i] = c >>> 0
+    }
+    return table
+  })()
+
+  const crc32 = (bytes: Uint8Array) => {
+    let crc = 0xffffffff
+    for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8)
+    return (crc ^ 0xffffffff) >>> 0
+  }
+
+  const zipBytes = (files: { name: string; data: Uint8Array }[]) => {
+    const encoder = new TextEncoder()
+    const chunks: Uint8Array[] = []
+    const central: Uint8Array[] = []
+    let offset = 0
+    const now = new Date()
+    const dosTime =
+      (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2)
+    const dosDate =
+      ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()
+
+    const header = (size: number, signature: number) => {
+      const bytes = new Uint8Array(size)
+      new DataView(bytes.buffer).setUint32(0, signature, true)
+      return { bytes, view: new DataView(bytes.buffer) }
+    }
+
+    for (const file of files) {
+      const name = encoder.encode(file.name)
+      const crc = crc32(file.data)
+      const local = header(30 + name.length, 0x04034b50)
+      local.view.setUint16(4, 20, true)
+      local.view.setUint16(10, dosTime, true)
+      local.view.setUint16(12, dosDate, true)
+      local.view.setUint32(14, crc, true)
+      local.view.setUint32(18, file.data.length, true)
+      local.view.setUint32(22, file.data.length, true)
+      local.view.setUint16(26, name.length, true)
+      local.bytes.set(name, 30)
+      chunks.push(local.bytes, file.data)
+
+      const dir = header(46 + name.length, 0x02014b50)
+      dir.view.setUint16(4, 20, true)
+      dir.view.setUint16(6, 20, true)
+      dir.view.setUint16(12, dosTime, true)
+      dir.view.setUint16(14, dosDate, true)
+      dir.view.setUint32(16, crc, true)
+      dir.view.setUint32(20, file.data.length, true)
+      dir.view.setUint32(24, file.data.length, true)
+      dir.view.setUint16(28, name.length, true)
+      dir.view.setUint32(42, offset, true)
+      dir.bytes.set(name, 46)
+      central.push(dir.bytes)
+      offset += local.bytes.length + file.data.length
+    }
+
+    const centralOffset = offset
+    const centralSize = central.reduce((sum, chunk) => sum + chunk.length, 0)
+    const end = header(22, 0x06054b50)
+    end.view.setUint16(8, files.length, true)
+    end.view.setUint16(10, files.length, true)
+    end.view.setUint32(12, centralSize, true)
+    end.view.setUint32(16, centralOffset, true)
+    chunks.push(...central, end.bytes)
+    return new Blob(
+      chunks.map((chunk) => {
+        const copy = new Uint8Array(chunk.byteLength)
+        copy.set(chunk)
+        return copy.buffer
+      }),
+      { type: 'application/zip' }
+    )
+  }
+
+  const buildEaPreset = (token: string) =>
+    [
+      `InpApiUrl=${eaPostUrl}`,
+      `InpBearerToken=${token}`,
+      `InpAccountId=${activeAccount?.id ?? ''}`,
+      'InpLookbackDays=30',
+      'InpSyncEverySeconds=60',
+      'InpBatchSize=50',
+      'InpSyncOnInit=true',
+      'InpDebugLogs=true',
+      'InpSyncOpenPositionsLater=false',
+      '',
+    ].join('\r\n')
+
+  const downloadEaPreset = (token: string) => {
+    downloadText('FuadFXTradeSyncEA.set', buildEaPreset(token))
+    toast.success('MT5 setup file downloaded.')
+  }
+
+  const handleDownloadConfiguredPackage = async () => {
     if (!activeAccount?.id) {
-      toast.error('Create or select an account before generating an EA key.')
+      toast.error('Create or select an account before downloading the package.')
       return
     }
 
@@ -127,11 +227,30 @@ export function TasksImportDialog({
         name: `${activeAccount.name} MT5 EA`,
       })
       setNewApiToken(key.token)
-      await copyText('EA API key', key.token)
-      toast.success('EA API key generated. Paste it into MT5.')
+      const eaResponse = await fetch(eaDownloadUrl)
+      if (!eaResponse.ok) throw new Error('Could not download the EA file.')
+      const eaBytes = new Uint8Array(await eaResponse.arrayBuffer())
+      const setBytes = new TextEncoder().encode(buildEaPreset(key.token))
+      const zip = zipBytes([
+        { name: 'FuadFXTradeSyncEA.ex5', data: eaBytes },
+        { name: 'FuadFXTradeSyncEA.set', data: setBytes },
+      ])
+      downloadBlob('FuadFX-MT5-EA-configured.zip', zip)
+      toast.success('Configured EA package downloaded.')
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Could not generate EA API key.'))
+      toast.error(keyErrorMessage(err))
     }
+  }
+
+  const keyErrorMessage = (err: unknown) => {
+    const message = getApiErrorMessage(err, 'Could not generate EA API key.')
+    if (
+      message.toLowerCase().includes('api_keys') ||
+      message.toLowerCase().includes('schema cache')
+    ) {
+      return 'EA keys are not installed in Supabase yet. Run migration v4 first.'
+    }
+    return message
   }
 
   const handleRevokeEaKey = async (key: (typeof apiKeys)[number]) => {
@@ -289,97 +408,58 @@ export function TasksImportDialog({
           </TabsList>
 
           <TabsContent value='ea' className='space-y-3'>
-            <div className='flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between'>
-              <div>
-                <div className='font-medium'>FUADFX MT5 Expert Advisor</div>
-                <div className='text-xs text-muted-foreground'>
-                  Download, copy into MT5, then paste the values below.
-                </div>
-              </div>
-              <Button asChild size='sm'>
-                <a href={eaDownloadUrl} download>
-                  <Download className='size-4' />
-                  Download EA
-                </a>
-              </Button>
-            </div>
-
             <div className='grid gap-2 rounded-md border p-3 text-sm'>
-              <div className='flex items-center justify-between gap-3'>
+              <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                 <div>
-                  <div className='font-medium'>Selected account</div>
+                  <div className='font-medium'>FUADFX MT5 Expert Advisor</div>
                   <div className='text-xs text-muted-foreground'>
                     {activeAccount
-                      ? `${activeAccount.name} - ${activeAccount.broker || 'Broker not set'}`
-                      : accounts.length
-                        ? 'Select an account from the sidebar first.'
-                        : 'Create an account before using EA sync.'}
+                      ? `Account: ${activeAccount.name}`
+                      : 'Select or create an account first.'}
                   </div>
                 </div>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  disabled={!activeAccount?.id}
-                  onClick={() => copyText('Account ID', activeAccount?.id)}
-                >
-                  <Clipboard className='size-4' />
-                  Copy ID
-                </Button>
-              </div>
-
-              <div className='flex items-center justify-between gap-3 border-t pt-3'>
-                <div className='min-w-0'>
-                  <div className='flex items-center gap-2 font-medium'>
-                    <Server className='size-4' />
-                    API endpoint
-                  </div>
-                  <div className='truncate text-xs text-muted-foreground'>
-                    {eaPostUrl}
-                  </div>
-                </div>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => copyText('API endpoint', eaPostUrl)}
-                >
-                  <Clipboard className='size-4' />
-                  Copy
-                </Button>
-              </div>
-
-              <div className='grid gap-3 border-t pt-3'>
-                <div className='flex items-center justify-between gap-3'>
-                  <div>
-                    <div className='flex items-center gap-2 font-medium'>
-                      <KeyRound className='size-4' />
-                      EA API key
-                    </div>
-                    <div className='text-xs text-muted-foreground'>
-                      Generate one key per MT5 account.
-                    </div>
-                  </div>
+                <div className='flex flex-wrap gap-2'>
+                  <Button asChild size='sm' variant='outline'>
+                    <a href={eaDownloadUrl} download>
+                      <Download className='size-4' />
+                      Download EA
+                    </a>
+                  </Button>
                   <Button
                     type='button'
-                    variant='outline'
                     size='sm'
                     disabled={!activeAccount?.id || createApiKey.isPending}
-                    onClick={handleCreateEaKey}
+                    onClick={handleDownloadConfiguredPackage}
                   >
                     {createApiKey.isPending ? (
                       <Loader2 className='size-4 animate-spin' />
                     ) : (
-                      <KeyRound className='size-4' />
+                      <Download className='size-4' />
                     )}
-                    Generate key
+                    Configured package
                   </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className='grid gap-2 rounded-md border p-3 text-sm'>
+              <div className='grid gap-3'>
+                <div className='flex items-center justify-between gap-3'>
+                  <div>
+                    <div className='flex items-center gap-2 font-medium'>
+                      <KeyRound className='size-4' />
+                      Active EA keys
+                    </div>
+                    <div className='text-xs text-muted-foreground'>
+                      Generate a new setup file if you need to reconnect MT5.
+                    </div>
+                  </div>
                 </div>
 
                 {newApiToken && (
                   <div className='rounded-md border bg-muted/30 p-2'>
                     <div className='mb-1 text-xs font-medium text-foreground'>
-                      Copy this key now. It will only be shown once.
+                      Configured package generated. The key is shown once.
                     </div>
                     <div className='flex items-center gap-2'>
                       <code className='min-w-0 flex-1 truncate rounded bg-background px-2 py-1 text-xs'>
@@ -389,23 +469,28 @@ export function TasksImportDialog({
                         type='button'
                         variant='outline'
                         size='sm'
-                        onClick={() => copyText('EA API key', newApiToken)}
+                        onClick={() => downloadEaPreset(newApiToken)}
                       >
-                        <Clipboard className='size-4' />
-                        Copy
+                        <Download className='size-4' />
+                        Setup
                       </Button>
                     </div>
                   </div>
                 )}
 
                 <div className='grid gap-2'>
-                  {apiKeysLoading && (
+                  {apiKeysFailed && (
+                    <div className='text-xs text-destructive'>
+                      {keyErrorMessage(apiKeysError)}
+                    </div>
+                  )}
+                  {!apiKeysFailed && apiKeysLoading && (
                     <div className='flex items-center gap-2 text-xs text-muted-foreground'>
                       <Loader2 className='size-3 animate-spin' />
                       Loading active EA keys...
                     </div>
                   )}
-                  {!apiKeysLoading && apiKeys.length === 0 && (
+                  {!apiKeysFailed && !apiKeysLoading && apiKeys.length === 0 && (
                     <div className='text-xs text-muted-foreground'>
                       No active EA key for this account yet.
                     </div>
@@ -442,8 +527,8 @@ export function TasksImportDialog({
 
             <div className='grid gap-1.5 rounded-md border bg-card p-3 text-xs text-muted-foreground'>
               <div>1. Copy the EA to MQL5/Experts/FUADFX.</div>
-              <div>2. Allow WebRequest for {apiEndpoint}.</div>
-              <div>3. Paste endpoint, account ID and EA key into MT5.</div>
+              <div>2. Load FuadFXTradeSyncEA.set in the EA inputs.</div>
+              <div>3. Allow WebRequest for {apiEndpoint}.</div>
             </div>
           </TabsContent>
 
