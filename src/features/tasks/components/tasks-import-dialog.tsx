@@ -210,8 +210,14 @@ export function TasksImportDialog({
       '',
     ].join('\r\n')
 
+  const accountFileSlug = () =>
+    (activeAccount?.name ?? 'FUADFX')
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'FUADFX'
+
   const downloadEaPreset = (token: string) => {
-    downloadText('FuadFXTradeSyncEA.set', buildEaPreset(token))
+    downloadText(`FuadFXTradeSyncEA-${accountFileSlug()}.set`, buildEaPreset(token))
     toast.success('MT5 setup file downloaded.')
   }
 
@@ -231,12 +237,13 @@ export function TasksImportDialog({
       if (!eaResponse.ok) throw new Error('Could not download the EA file.')
       const eaBytes = new Uint8Array(await eaResponse.arrayBuffer())
       const setBytes = new TextEncoder().encode(buildEaPreset(key.token))
+      const slug = accountFileSlug()
       const zip = zipBytes([
         { name: 'FuadFXTradeSyncEA.ex5', data: eaBytes },
-        { name: 'FuadFXTradeSyncEA.set', data: setBytes },
+        { name: `FuadFXTradeSyncEA-${slug}.set`, data: setBytes },
       ])
-      downloadBlob('FuadFX-MT5-EA-configured.zip', zip)
-      toast.success('Configured EA package downloaded.')
+      downloadBlob(`FuadFX-${slug}-MT5-EA.zip`, zip)
+      toast.success('Account-specific EA package downloaded.')
     } catch (err) {
       toast.error(keyErrorMessage(err))
     }
@@ -411,10 +418,10 @@ export function TasksImportDialog({
             <div className='grid gap-2 rounded-md border p-3 text-sm'>
               <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                 <div>
-                  <div className='font-medium'>FUADFX MT5 Expert Advisor</div>
+                  <div className='font-medium'>Account-specific MT5 EA</div>
                   <div className='text-xs text-muted-foreground'>
                     {activeAccount
-                      ? `Account: ${activeAccount.name}`
+                      ? `Bound to: ${activeAccount.name}`
                       : 'Select or create an account first.'}
                   </div>
                 </div>
@@ -436,7 +443,7 @@ export function TasksImportDialog({
                     ) : (
                       <Download className='size-4' />
                     )}
-                    Configured package
+                    Download account EA
                   </Button>
                 </div>
               </div>
@@ -459,7 +466,7 @@ export function TasksImportDialog({
                 {newApiToken && (
                   <div className='rounded-md border bg-muted/30 p-2'>
                     <div className='mb-1 text-xs font-medium text-foreground'>
-                      Configured package generated. The key is shown once.
+                      Account EA package generated. The key is shown once.
                     </div>
                     <div className='flex items-center gap-2'>
                       <code className='min-w-0 flex-1 truncate rounded bg-background px-2 py-1 text-xs'>
