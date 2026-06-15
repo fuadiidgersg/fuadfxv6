@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import accountsRouter from './routes/accounts'
 import analyticsRouter from './routes/analytics'
+import apiKeysRouter from './routes/api-keys'
 import journalsRouter from './routes/journals'
 import newsRouter from './routes/news'
 import profileRouter from './routes/profile'
@@ -102,6 +103,7 @@ app.use('/journals', journalsRouter)
 app.use('/analytics', analyticsRouter)
 app.use('/profile', profileRouter)
 app.use('/news', newsRouter)
+app.use('/api-keys', apiKeysRouter)
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' })

@@ -54,12 +54,18 @@ The current journal API stores the normal journal fields and keeps MT5 metadata 
    https://fuadfx-api.onrender.com
    ```
 
-6. Attach the EA to any chart.
+6. In FUADFX, open Trades > Connect MT5 > EA sync.
+
+7. Generate an EA API key for the selected account.
+
+8. Paste the API endpoint, account ID and EA API key into the EA inputs.
+
+9. Attach the EA to any chart.
 
 ## Inputs
 
 - `InpApiUrl`: API endpoint. Use `https://fuadfx-api.onrender.com/trades/bulk` for the current API.
-- `InpBearerToken`: Supabase access token or future FUADFX API token.
+- `InpBearerToken`: FUADFX EA API key generated from the Connect MT5 dialog.
 - `InpAccountId`: FUADFX account UUID to receive the trades.
 - `InpLookbackDays`: How far back to scan on first run.
 - `InpSyncEverySeconds`: Timer interval.

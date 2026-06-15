@@ -7,7 +7,7 @@
 #property strict
 
 input string InpApiUrl = "https://fuadfx-api.onrender.com/trades/bulk";
-input string InpBearerToken = "";      // Supabase access token or future API token
+input string InpBearerToken = "";      // FUADFX EA API key
 input string InpAccountId = "";        // FUADFX account UUID
 input int    InpLookbackDays = 30;
 input int    InpSyncEverySeconds = 60;

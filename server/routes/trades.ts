@@ -1,9 +1,12 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/supabase-admin'
-import { requireAuth, type AuthRequest } from '../middleware/auth'
+import {
+  requireAuth,
+  requireAuthOrApiKey,
+  type AuthRequest,
+} from '../middleware/auth'
 
 const router = Router()
-router.use(requireAuth)
 
 const EXTENDED_TRADE_COLUMNS = [
   'direction',
@@ -148,7 +151,7 @@ function toRow(trade: any, userId: string) {
   }
 }
 
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     let query = supabaseAdmin
       .from('trades')
@@ -168,11 +171,22 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 })
 
-router.post('/bulk', async (req: AuthRequest, res) => {
+router.post('/bulk', requireAuthOrApiKey, async (req: AuthRequest, res) => {
   try {
-    const { trades, accountId } = req.body as { trades: any[]; accountId: string }
+    const { trades, accountId: requestedAccountId } = req.body as {
+      trades: any[]
+      accountId?: string
+    }
+    const accountId = req.apiKey?.accountId ?? requestedAccountId
+
     if (!Array.isArray(trades) || !accountId) {
       return res.status(400).json({ error: 'trades array and accountId required' })
+    }
+
+    if (req.apiKey && requestedAccountId && requestedAccountId !== req.apiKey.accountId) {
+      return res
+        .status(403)
+        .json({ error: 'This EA key is not allowed to write to that account.' })
     }
 
     const { data: existing } = await supabaseAdmin
@@ -216,7 +230,7 @@ router.post('/bulk', async (req: AuthRequest, res) => {
   }
 })
 
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const row = toRow(req.body, req.user!.id)
     const { data, error } = await supabaseAdmin
@@ -242,7 +256,7 @@ router.post('/', async (req: AuthRequest, res) => {
   }
 })
 
-router.delete('/bulk', async (req: AuthRequest, res) => {
+router.delete('/bulk', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { ids } = req.body as { ids: string[] }
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -260,7 +274,7 @@ router.delete('/bulk', async (req: AuthRequest, res) => {
   }
 })
 
-router.put('/:id', async (req: AuthRequest, res) => {
+router.put('/:id', requireAuth, async (req: AuthRequest, res) => {
   try {
     const row = toRow(req.body, req.user!.id)
     const { data, error } = await supabaseAdmin
@@ -277,7 +291,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
   }
 })
 
-router.delete('/:id', async (req: AuthRequest, res) => {
+router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { error } = await supabaseAdmin
       .from('trades')

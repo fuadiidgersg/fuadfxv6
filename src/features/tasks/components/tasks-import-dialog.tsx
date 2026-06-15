@@ -13,10 +13,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAccountsStore } from '@/stores/accounts-store'
-import { useAuthStore } from '@/stores/auth-store'
 import { useTradingSettings } from '@/stores/trading-settings-store'
 import { getApiErrorMessage } from '@/lib/api'
 import { parseMT5Html } from '@/lib/mt5-import'
+import {
+  useApiKeysQuery,
+  useCreateApiKey,
+  useRevokeApiKey,
+} from '@/hooks/use-api-keys-query'
 import {
   useAccountsQuery,
   useActiveAccount,
@@ -57,9 +61,13 @@ export function TasksImportDialog({
 }: TaskImportDialogProps) {
   const activeAccountId = useAccountsStore((s) => s.activeAccountId)
   const setActiveAccount = useAccountsStore((s) => s.setActive)
-  const accessToken = useAuthStore((s) => s.auth.accessToken)
   const activeAccount = useActiveAccount()
   const { data: accounts = [] } = useAccountsQuery()
+  const { data: apiKeys = [], isLoading: apiKeysLoading } = useApiKeysQuery(
+    activeAccount?.id
+  )
+  const createApiKey = useCreateApiKey()
+  const revokeApiKey = useRevokeApiKey()
   const autoAssignImportedStrategy = useTradingSettings(
     (s) => s.autoAssignImportedStrategy
   )
@@ -80,6 +88,7 @@ export function TasksImportDialog({
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [syncMethod, setSyncMethod] = useState<'ea' | 'manual'>('ea')
+  const [newApiToken, setNewApiToken] = useState('')
 
   const apiEndpoint =
     import.meta.env.VITE_API_URL?.replace(/\/$/, '') ??
@@ -104,6 +113,35 @@ export function TasksImportDialog({
       toast.success(`${label} copied.`)
     } catch {
       toast.error(`Could not copy ${label.toLowerCase()}.`)
+    }
+  }
+
+  const handleCreateEaKey = async () => {
+    if (!activeAccount?.id) {
+      toast.error('Create or select an account before generating an EA key.')
+      return
+    }
+
+    try {
+      const key = await createApiKey.mutateAsync({
+        accountId: activeAccount.id,
+        name: `${activeAccount.name} MT5 EA`,
+      })
+      setNewApiToken(key.token)
+      await copyText('EA API key', key.token)
+      toast.success('EA API key generated. Paste it into MT5.')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Could not generate EA API key.'))
+    }
+  }
+
+  const handleRevokeEaKey = async (key: (typeof apiKeys)[number]) => {
+    try {
+      await revokeApiKey.mutateAsync(key)
+      if (newApiToken.endsWith(key.last4)) setNewApiToken('')
+      toast.success('EA API key revoked.')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Could not revoke EA API key.'))
     }
   }
 
@@ -319,27 +357,95 @@ export function TasksImportDialog({
                 </Button>
               </div>
 
-              <div className='flex items-center justify-between gap-3 border-t pt-3'>
-                <div>
-                  <div className='flex items-center gap-2 font-medium'>
-                    <KeyRound className='size-4' />
-                    Auth token
+              <div className='grid gap-3 border-t pt-3'>
+                <div className='flex items-center justify-between gap-3'>
+                  <div>
+                    <div className='flex items-center gap-2 font-medium'>
+                      <KeyRound className='size-4' />
+                      EA API key
+                    </div>
+                    <div className='text-xs text-muted-foreground'>
+                      Generate a long-lived key for this MT5 account. FUADFX
+                      stores only a secure hash.
+                    </div>
                   </div>
-                  <div className='text-xs text-muted-foreground'>
-                    Temporary session token until permanent EA API keys are
-                    added.
-                  </div>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    disabled={!activeAccount?.id || createApiKey.isPending}
+                    onClick={handleCreateEaKey}
+                  >
+                    {createApiKey.isPending ? (
+                      <Loader2 className='size-4 animate-spin' />
+                    ) : (
+                      <KeyRound className='size-4' />
+                    )}
+                    Generate key
+                  </Button>
                 </div>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  disabled={!accessToken}
-                  onClick={() => copyText('Auth token', accessToken)}
-                >
-                  <Clipboard className='size-4' />
-                  Copy token
-                </Button>
+
+                {newApiToken && (
+                  <div className='rounded-md border bg-muted/30 p-2'>
+                    <div className='mb-1 text-xs font-medium text-foreground'>
+                      Copy this key now. It will only be shown once.
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <code className='min-w-0 flex-1 truncate rounded bg-background px-2 py-1 text-xs'>
+                        {newApiToken}
+                      </code>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => copyText('EA API key', newApiToken)}
+                      >
+                        <Clipboard className='size-4' />
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className='grid gap-2'>
+                  {apiKeysLoading && (
+                    <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                      <Loader2 className='size-3 animate-spin' />
+                      Loading active EA keys...
+                    </div>
+                  )}
+                  {!apiKeysLoading && apiKeys.length === 0 && (
+                    <div className='text-xs text-muted-foreground'>
+                      No active EA key for this account yet.
+                    </div>
+                  )}
+                  {apiKeys.map((key) => (
+                    <div
+                      key={key.id}
+                      className='flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-xs'
+                    >
+                      <div className='min-w-0'>
+                        <div className='truncate font-medium'>{key.name}</div>
+                        <div className='text-muted-foreground'>
+                          Ends {key.last4}
+                          {key.lastUsedAt
+                            ? ` - last used ${new Date(key.lastUsedAt).toLocaleDateString()}`
+                            : ' - never used'}
+                        </div>
+                      </div>
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        disabled={revokeApiKey.isPending}
+                        onClick={() => handleRevokeEaKey(key)}
+                        className='text-muted-foreground hover:text-destructive'
+                      >
+                        Revoke
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -356,7 +462,7 @@ export function TasksImportDialog({
                 .
               </div>
               <div>
-                3. Paste the endpoint, auth token and account ID into the EA
+                3. Paste the endpoint, EA API key and account ID into the EA
                 inputs, then attach it to any chart.
               </div>
               <div>

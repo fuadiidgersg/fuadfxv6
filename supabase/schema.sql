@@ -92,6 +92,21 @@ CREATE TABLE IF NOT EXISTS public.journals (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Long-lived API keys for MT5 Expert Advisors.
+-- Raw tokens are shown once in the app; only token_hash is stored.
+CREATE TABLE IF NOT EXISTS public.api_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  account_id UUID NOT NULL REFERENCES public.accounts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL DEFAULT 'MT5 Expert Advisor',
+  token_hash TEXT NOT NULL UNIQUE,
+  last4 TEXT NOT NULL,
+  last_used_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON public.trades(user_id);
 CREATE INDEX IF NOT EXISTS idx_trades_account_id ON public.trades(account_id);
@@ -102,6 +117,11 @@ CREATE INDEX IF NOT EXISTS idx_trades_trade_outcome ON public.trades(trade_outco
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON public.accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_is_archived ON public.accounts(is_archived);
 CREATE INDEX IF NOT EXISTS idx_journals_user_id ON public.journals(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON public.api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_account_id ON public.api_keys(account_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_active_lookup
+  ON public.api_keys(token_hash)
+  WHERE revoked_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_onboarding_complete ON public.profiles(onboarding_complete);
 CREATE INDEX IF NOT EXISTS idx_profiles_trading_settings ON public.profiles USING GIN (trading_settings);
 
