@@ -33,6 +33,7 @@ import { Route as AuthenticatedPortfolioIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedNewsIndexRouteImport } from './routes/_authenticated/news/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
+import { Route as AuthenticatedChartsIndexRouteImport } from './routes/_authenticated/charts/index'
 import { Route as AuthenticatedCalendarIndexRouteImport } from './routes/_authenticated/calendar/index'
 import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
 import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authenticated/analytics/index'
@@ -166,6 +167,12 @@ const AuthenticatedChatsIndexRoute = AuthenticatedChatsIndexRouteImport.update({
   path: '/chats/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChartsIndexRoute =
+  AuthenticatedChartsIndexRouteImport.update({
+    id: '/charts/',
+    path: '/charts/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCalendarIndexRoute =
   AuthenticatedCalendarIndexRouteImport.update({
     id: '/calendar/',
@@ -245,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/apps/': typeof AuthenticatedAppsIndexRoute
   '/calendar/': typeof AuthenticatedCalendarIndexRoute
+  '/charts/': typeof AuthenticatedChartsIndexRoute
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/news/': typeof AuthenticatedNewsIndexRoute
@@ -278,6 +286,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsIndexRoute
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/calendar': typeof AuthenticatedCalendarIndexRoute
+  '/charts': typeof AuthenticatedChartsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/news': typeof AuthenticatedNewsIndexRoute
@@ -314,6 +323,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
   '/_authenticated/calendar/': typeof AuthenticatedCalendarIndexRoute
+  '/_authenticated/charts/': typeof AuthenticatedChartsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/news/': typeof AuthenticatedNewsIndexRoute
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/analytics/'
     | '/apps/'
     | '/calendar/'
+    | '/charts/'
     | '/chats/'
     | '/help-center/'
     | '/news/'
@@ -383,6 +394,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/apps'
     | '/calendar'
+    | '/charts'
     | '/chats'
     | '/help-center'
     | '/news'
@@ -418,6 +430,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/'
     | '/_authenticated/apps/'
     | '/_authenticated/calendar/'
+    | '/_authenticated/charts/'
     | '/_authenticated/chats/'
     | '/_authenticated/help-center/'
     | '/_authenticated/news/'
@@ -616,6 +629,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/charts/': {
+      id: '/_authenticated/charts/'
+      path: '/charts'
+      fullPath: '/charts/'
+      preLoaderRoute: typeof AuthenticatedChartsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/calendar/': {
       id: '/_authenticated/calendar/'
       path: '/calendar'
@@ -715,6 +735,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedCalendarIndexRoute: typeof AuthenticatedCalendarIndexRoute
+  AuthenticatedChartsIndexRoute: typeof AuthenticatedChartsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedNewsIndexRoute: typeof AuthenticatedNewsIndexRoute
@@ -730,6 +751,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedCalendarIndexRoute: AuthenticatedCalendarIndexRoute,
+  AuthenticatedChartsIndexRoute: AuthenticatedChartsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedNewsIndexRoute: AuthenticatedNewsIndexRoute,

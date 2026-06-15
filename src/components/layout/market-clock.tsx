@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 
 export function MarketClock() {
   const timezone = useTradingSettings((s) => s.timezone)
+  const platformCountry = useTradingSettings((s) => s.platformCountry)
   const platformDateOverride = useTradingSettings((s) => s.platformDateOverride)
   const [now, setNow] = useState(() => getPlatformNow(platformDateOverride))
 
@@ -43,7 +44,7 @@ export function MarketClock() {
           {time}
         </span>
         <span className='hidden lg:inline'>{dateLabel}</span>
-        <span className='hidden xl:inline'>{zoneLabel}</span>
+        <span className='hidden xl:inline'>{platformCountry || zoneLabel}</span>
       </div>
       <div className='flex h-full items-center border-e px-3 font-medium text-foreground'>
         {session} Session

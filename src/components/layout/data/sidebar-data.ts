@@ -3,6 +3,7 @@ import {
   Settings,
   Palette,
   Bell,
+  BarChart2,
   UserCog,
   Wrench,
   HelpCircle,
@@ -58,6 +59,11 @@ export const sidebarData: SidebarData = {
           title: 'Analytics',
           url: '/analytics',
           icon: LineChart,
+        },
+        {
+          title: 'Charts',
+          url: '/charts',
+          icon: BarChart2,
         },
         {
           title: 'Portfolio',
@@ -117,6 +123,11 @@ export const sidebarData: SidebarData = {
               title: 'Notifications',
               url: '/settings/notifications',
               icon: Bell,
+            },
+            {
+              title: 'Trading',
+              url: '/settings/trading',
+              icon: BarChart2,
             },
           ],
         },

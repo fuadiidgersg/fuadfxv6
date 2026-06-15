@@ -23,6 +23,7 @@ export type ServerProfile = {
 }
 
 const defaultPersistentTradingSettings: Partial<TradingSettingsState> = {
+  platformCountry: '',
   ftmoMode: false,
   propFirmTemplate: 'ftmo',
   ftmoAccountSize: 10000,
@@ -49,6 +50,7 @@ export function serializeTradingSettings(
 ): Partial<TradingSettingsState> {
   const keys = [
     'timezone',
+    'platformCountry',
     'platformDateOverride',
     'currencySymbol',
     'defaultRiskPct',

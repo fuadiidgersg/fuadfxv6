@@ -5,7 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { fonts } from '@/config/fonts'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { cn } from '@/lib/utils'
+import { useDirection } from '@/context/direction-provider'
 import { useFont } from '@/context/font-provider'
+import { useLayout } from '@/context/layout-provider'
 import { useTheme } from '@/context/theme-provider'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -18,10 +20,14 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { useSidebar } from '@/components/ui/sidebar'
 
 const appearanceFormSchema = z.object({
-  theme: z.enum(['light', 'dark']),
+  theme: z.enum(['light', 'dark', 'system']),
   font: z.enum(fonts),
+  sidebarStyle: z.enum(['inset', 'floating', 'sidebar']),
+  layoutMode: z.enum(['default', 'icon', 'offcanvas']),
+  direction: z.enum(['ltr', 'rtl']),
 })
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
@@ -29,11 +35,21 @@ type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 export function AppearanceForm() {
   const { font, setFont } = useFont()
   const { theme, setTheme } = useTheme()
+  const { dir, setDir } = useDirection()
+  const { variant, setVariant, collapsible, setCollapsible } = useLayout()
+  const { open, setOpen } = useSidebar()
+  const layoutMode = open
+    ? 'default'
+    : collapsible === 'none'
+      ? 'offcanvas'
+      : collapsible
 
-  // This can come from your database or API.
-  const defaultValues: Partial<AppearanceFormValues> = {
-    theme: theme as 'light' | 'dark',
+  const defaultValues: AppearanceFormValues = {
+    theme,
     font,
+    sidebarStyle: variant,
+    layoutMode,
+    direction: dir,
   }
 
   const form = useForm<AppearanceFormValues>({
@@ -44,6 +60,14 @@ export function AppearanceForm() {
   function onSubmit(data: AppearanceFormValues) {
     if (data.font != font) setFont(data.font)
     if (data.theme != theme) setTheme(data.theme)
+    if (data.sidebarStyle != variant) setVariant(data.sidebarStyle)
+    if (data.direction != dir) setDir(data.direction)
+    if (data.layoutMode === 'default') {
+      setOpen(true)
+    } else {
+      setOpen(false)
+      setCollapsible(data.layoutMode)
+    }
 
     showSubmittedData(data)
   }
@@ -83,6 +107,7 @@ export function AppearanceForm() {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name='theme'
@@ -96,8 +121,21 @@ export function AppearanceForm() {
               <RadioGroup
                 onValueChange={field.onChange}
                 defaultValue={field.value}
-                className='grid max-w-md grid-cols-2 gap-8 pt-2'
+                className='grid max-w-xl gap-3 pt-2 sm:grid-cols-3'
               >
+                <FormItem>
+                  <FormLabel className='[&:has([data-state=checked])>div]:border-primary'>
+                    <FormControl>
+                      <RadioGroupItem value='system' className='sr-only' />
+                    </FormControl>
+                    <div className='rounded-md border-2 border-muted p-4 text-center hover:border-accent'>
+                      <div className='text-sm font-medium'>System</div>
+                      <p className='mt-1 text-xs text-muted-foreground'>
+                        Match device
+                      </p>
+                    </div>
+                  </FormLabel>
+                </FormItem>
                 <FormItem>
                   <FormLabel className='[&:has([data-state=checked])>div]:border-primary'>
                     <FormControl>
@@ -154,6 +192,88 @@ export function AppearanceForm() {
             </FormItem>
           )}
         />
+
+        <div className='grid gap-4 sm:grid-cols-3'>
+          <FormField
+            control={form.control}
+            name='sidebarStyle'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Sidebar style</FormLabel>
+                <FormControl>
+                  <select
+                    className={cn(
+                      buttonVariants({ variant: 'outline' }),
+                      'w-full appearance-none justify-start font-normal'
+                    )}
+                    {...field}
+                  >
+                    <option value='inset'>Inset</option>
+                    <option value='floating'>Floating</option>
+                    <option value='sidebar'>Standard</option>
+                  </select>
+                </FormControl>
+                <FormDescription>
+                  Matches the sidebar option in the top settings drawer.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='layoutMode'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Layout</FormLabel>
+                <FormControl>
+                  <select
+                    className={cn(
+                      buttonVariants({ variant: 'outline' }),
+                      'w-full appearance-none justify-start font-normal'
+                    )}
+                    {...field}
+                  >
+                    <option value='default'>Expanded</option>
+                    <option value='icon'>Compact</option>
+                    <option value='offcanvas'>Offcanvas</option>
+                  </select>
+                </FormControl>
+                <FormDescription>
+                  Controls whether the sidebar starts open or compact.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='direction'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Direction</FormLabel>
+                <FormControl>
+                  <select
+                    className={cn(
+                      buttonVariants({ variant: 'outline' }),
+                      'w-full appearance-none justify-start font-normal'
+                    )}
+                    {...field}
+                  >
+                    <option value='ltr'>Left to right</option>
+                    <option value='rtl'>Right to left</option>
+                  </select>
+                </FormControl>
+                <FormDescription>
+                  Useful for traders working in RTL languages.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type='submit'>Update preferences</Button>
       </form>

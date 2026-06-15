@@ -40,6 +40,7 @@ import { ContentSection } from '../components/content-section'
 
 const schema = z.object({
   timezone: z.string().min(1),
+  platformCountry: z.string(),
   platformDateOverride: z.string(),
   currencySymbol: z.enum(['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']),
   defaultRiskPct: z.coerce.number().min(0.1).max(100),
@@ -82,6 +83,18 @@ const NEWS_IMPACTS: {
     label: 'Low',
     description: 'Low-volatility releases and minor survey data.',
   },
+]
+
+const DEFAULT_COUNTRIES = [
+  'Australia',
+  'Canada',
+  'Germany',
+  'Japan',
+  'Kenya',
+  'South Africa',
+  'United Arab Emirates',
+  'United Kingdom',
+  'United States',
 ]
 
 const PROP_FIRMS: Record<
@@ -129,7 +142,10 @@ export function SettingsTrading() {
   )
 
   const countries = useMemo(
-    () => Array.from(new Set(news.map((event) => event.country))).sort(),
+    () =>
+      Array.from(
+        new Set([...DEFAULT_COUNTRIES, ...news.map((event) => event.country)])
+      ).sort(),
     []
   )
 
@@ -137,6 +153,7 @@ export function SettingsTrading() {
     resolver: zodResolver(schema) as any,
     defaultValues: {
       timezone: settings.timezone,
+      platformCountry: settings.platformCountry,
       platformDateOverride: settings.platformDateOverride,
       currencySymbol: settings.currencySymbol,
       defaultRiskPct: settings.defaultRiskPct,
@@ -164,6 +181,8 @@ export function SettingsTrading() {
   const newsNotificationsEnabled = form.watch('newsNotificationsEnabled')
 
   async function onSubmit(values: FormValues) {
+    if (values.platformCountry === 'unset') values.platformCountry = ''
+
     if (
       values.newsNotificationsEnabled &&
       typeof Notification !== 'undefined' &&
@@ -179,6 +198,7 @@ export function SettingsTrading() {
     }
 
     settings.setTimezone(values.timezone)
+    settings.setPlatformCountry(values.platformCountry)
     settings.setPlatformDateOverride(values.platformDateOverride)
     settings.setCurrencySymbol(values.currencySymbol as CurrencySymbol)
     settings.setDefaultRiskPct(values.defaultRiskPct)
@@ -239,6 +259,39 @@ export function SettingsTrading() {
                     {TIMEZONES.map((tz) => (
                       <SelectItem key={tz.value} value={tz.value}>
                         {tz.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='platformCountry'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Platform Country / Region</FormLabel>
+                <FormDescription>
+                  Used for global defaults, calendar filtering, and clock
+                  context. Leave unset if you want the app to stay neutral.
+                </FormDescription>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || 'unset'}
+                >
+                  <FormControl>
+                    <SelectTrigger className='w-full max-w-sm'>
+                      <SelectValue placeholder='Select country' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className='max-h-64'>
+                    <SelectItem value='unset'>Not set</SelectItem>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
                       </SelectItem>
                     ))}
                   </SelectContent>

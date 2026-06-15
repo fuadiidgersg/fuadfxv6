@@ -20,6 +20,7 @@ export type PropFirmTemplate =
 
 export type TradingSettingsState = {
   timezone: string
+  platformCountry: string
   platformDateOverride: string
   currencySymbol: CurrencySymbol
   defaultRiskPct: number
@@ -40,6 +41,7 @@ export type TradingSettingsState = {
   newsFilterCountries: string[]
   newsFilterImpacts: NewsImpactFilter[]
   setTimezone: (tz: string) => void
+  setPlatformCountry: (country: string) => void
   setPlatformDateOverride: (date: string) => void
   setCurrencySymbol: (c: CurrencySymbol) => void
   setDefaultRiskPct: (v: number) => void
@@ -66,6 +68,7 @@ export const useTradingSettings = create<TradingSettingsState>()(
   persist(
     (set) => ({
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      platformCountry: '',
       platformDateOverride: '',
       currencySymbol: 'USD',
       defaultRiskPct: 1,
@@ -87,6 +90,7 @@ export const useTradingSettings = create<TradingSettingsState>()(
       newsFilterImpacts: ['high'],
 
       setTimezone: (tz) => set({ timezone: tz }),
+      setPlatformCountry: (country) => set({ platformCountry: country }),
       setPlatformDateOverride: (date) => set({ platformDateOverride: date }),
       setCurrencySymbol: (c) => set({ currencySymbol: c }),
       setDefaultRiskPct: (v) => set({ defaultRiskPct: v }),
@@ -120,6 +124,7 @@ export const useTradingSettings = create<TradingSettingsState>()(
       version: 2,
       migrate: (state: any) => ({
         ...state,
+        platformCountry: state?.platformCountry ?? '',
         platformDateOverride: state?.platformDateOverride ?? '',
         newsNotificationsEnabled: state?.newsNotificationsEnabled ?? false,
         newsNotificationLeadMinutes: state?.newsNotificationLeadMinutes ?? 15,
