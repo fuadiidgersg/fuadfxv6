@@ -2,13 +2,6 @@ import axios from 'axios'
 import { supabase } from './supabase/client'
 
 function getApiBaseUrl() {
-  if (
-    typeof window !== 'undefined' &&
-    /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)
-  ) {
-    return '/api'
-  }
-
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
