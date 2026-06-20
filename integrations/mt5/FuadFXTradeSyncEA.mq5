@@ -485,9 +485,18 @@ bool PostJson(const string json, string &response)
    char data[];
    char result[];
    string result_headers = "";
-   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
-   if(ArraySize(data) > 0)
-      ArrayResize(data, ArraySize(data) - 1);
+   const int data_size = StringToCharArray(
+      json,
+      data,
+      0,
+      StringLen(json),
+      CP_UTF8
+   );
+   if(data_size <= 0)
+   {
+      Print("[FUADFX Sync] Could not encode the request body. MT5 error=", GetLastError());
+      return false;
+   }
 
    const string headers =
       "Content-Type: application/json\r\n" +
@@ -504,7 +513,7 @@ bool PostJson(const string json, string &response)
       result_headers
    );
 
-   response = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+   response = CharArrayToString(result, 0, ArraySize(result), CP_UTF8);
 
    if(status < 200 || status >= 300)
    {
