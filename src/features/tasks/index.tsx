@@ -3,9 +3,13 @@ import { useNavigate } from '@tanstack/react-router'
 import { Route as TasksRoute } from '@/routes/_authenticated/tasks/index'
 import {
   AlertTriangle,
+  ArrowRight,
   CheckCircle2,
   ClipboardCheck,
   Download,
+  NotebookPen,
+  SearchCheck,
+  Tags,
 } from 'lucide-react'
 import { useTrades } from '@/stores/trades-store'
 import { Badge } from '@/components/ui/badge'
@@ -68,15 +72,16 @@ export function Tasks() {
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Trade Journal</h2>
             <p className='text-muted-foreground'>
-              All recorded trades. Filter, review and learn from your edge.
+              Your working desk for MT5 history, trade review, mistakes,
+              setups and lessons.
             </p>
           </div>
           <TasksPrimaryButtons />
         </div>
 
-        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+        <div className='grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4'>
           <MiniStat
-            label='Net P&L'
+            label='Journal P&L'
             value={`${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toFixed(2)}`}
             tone={stats.totalPnl >= 0 ? 'positive' : 'negative'}
           />
@@ -89,7 +94,7 @@ export function Tasks() {
           <MiniStat label='Total Trades' value={`${stats.total}`} />
         </div>
 
-        <ReviewWorkflowPanel trades={trades} />
+        <JournalWorkflowPanel trades={trades} />
 
         <TasksTable data={trades} />
       </Main>
@@ -119,7 +124,7 @@ function needsReview(trade: Trade) {
   )
 }
 
-function ReviewWorkflowPanel({ trades }: { trades: Trade[] }) {
+function JournalWorkflowPanel({ trades }: { trades: Trade[] }) {
   const { setOpen, setCurrentRow } = useTasks()
   const reviewQueue = useMemo(() => trades.filter(needsReview), [trades])
   const importedTrades = trades.filter((trade) => trade.tags?.includes('mt5'))
@@ -139,16 +144,16 @@ function ReviewWorkflowPanel({ trades }: { trades: Trade[] }) {
   }
 
   return (
-    <Card>
+    <Card className='overflow-hidden'>
       <CardHeader className='flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between'>
         <div>
           <CardTitle className='flex items-center gap-2 text-base'>
-            <ClipboardCheck className='size-4' />
-            Review Workflow
+            <NotebookPen className='size-4' />
+            Daily Journal Flow
           </CardTitle>
           <p className='mt-1 text-sm text-muted-foreground'>
-            Connect the account, then review setup, execution, mistakes and
-            lessons before trusting the analytics.
+            Import or sync trades, review the execution, tag your setup, then
+            use analytics only after the journal is clean.
           </p>
         </div>
         <div className='flex flex-wrap gap-2'>
@@ -162,51 +167,68 @@ function ReviewWorkflowPanel({ trades }: { trades: Trade[] }) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className='grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4'>
-        <WorkflowMetric
-          label='Review complete'
-          value={`${reviewRate}%`}
-          detail={`${reviewedCount}/${trades.length} trades reviewed`}
-          tone={reviewRate >= 80 ? 'good' : 'neutral'}
-        />
-        <WorkflowMetric
-          label='Needs review'
-          value={String(reviewQueue.length)}
-          detail='Missing notes, setup, plan or strategy'
-          tone={reviewQueue.length > 0 ? 'warn' : 'good'}
-        />
-        <WorkflowMetric
-          label='MT5 imports'
-          value={String(importedTrades.length)}
-          detail='Connected from trading account history'
+      <CardContent className='grid gap-0 p-0 lg:grid-cols-4'>
+        <WorkflowStep
+          step='1'
+          label='Sync account'
+          value={`${importedTrades.length} MT5 trade${importedTrades.length === 1 ? '' : 's'}`}
+          detail='EA sync or manual statement upload'
+          icon={Download}
           tone={importedTrades.length > 0 ? 'good' : 'neutral'}
         />
-        <WorkflowMetric
-          label='Rule breaks'
-          value={String(ruleBreaks.length)}
-          detail='Broken plan or recorded mistakes'
+        <WorkflowStep
+          step='2'
+          label='Review trades'
+          value={`${reviewQueue.length} open review${reviewQueue.length === 1 ? '' : 's'}`}
+          detail={`${reviewedCount}/${trades.length} trades complete (${reviewRate}%)`}
+          icon={ClipboardCheck}
+          tone={reviewQueue.length > 0 ? 'warn' : 'good'}
+        />
+        <WorkflowStep
+          step='3'
+          label='Tag behavior'
+          value={`${ruleBreaks.length} rule break${ruleBreaks.length === 1 ? '' : 's'}`}
+          detail='Plan, mistakes, management and lessons'
+          icon={Tags}
           tone={ruleBreaks.length > 0 ? 'warn' : 'good'}
+        />
+        <WorkflowStep
+          step='4'
+          label='Study edge'
+          value={trades.length > 0 ? 'Ready to analyze' : 'Waiting for data'}
+          detail='Use analytics after review quality is high'
+          icon={SearchCheck}
+          tone={reviewRate >= 80 ? 'good' : 'neutral'}
         />
       </CardContent>
     </Card>
   )
 }
 
-function WorkflowMetric({
+function WorkflowStep({
+  step,
   label,
   value,
   detail,
+  icon: Icon,
   tone,
 }: {
+  step: string
   label: string
   value: string
   detail: string
+  icon: React.ElementType
   tone: 'good' | 'warn' | 'neutral'
 }) {
   return (
-    <div className='rounded-md border bg-muted/20 p-3'>
-      <div className='mb-2 flex items-center justify-between gap-2'>
-        <p className='text-xs font-medium text-muted-foreground'>{label}</p>
+    <div className='border-b p-4 last:border-b-0 lg:border-r lg:border-b-0 lg:last:border-r-0'>
+      <div className='mb-3 flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-2'>
+          <span className='flex size-6 items-center justify-center rounded-full border text-xs font-semibold'>
+            {step}
+          </span>
+          <p className='text-sm font-medium'>{label}</p>
+        </div>
         <Badge
           variant={tone === 'warn' ? 'destructive' : 'secondary'}
           className='h-5 gap-1 px-1.5 text-[10px] font-normal'
@@ -219,8 +241,16 @@ function WorkflowMetric({
           {tone === 'warn' ? 'Action' : tone === 'good' ? 'Good' : 'Track'}
         </Badge>
       </div>
-      <div className='text-2xl font-bold tabular-nums'>{value}</div>
-      <p className='mt-1 text-xs leading-5 text-muted-foreground'>{detail}</p>
+      <div className='flex items-start justify-between gap-3'>
+        <div>
+          <div className='text-base font-semibold tabular-nums'>{value}</div>
+          <p className='mt-1 text-xs leading-5 text-muted-foreground'>
+            {detail}
+          </p>
+        </div>
+        <Icon className='size-4 shrink-0 text-muted-foreground' />
+      </div>
+      <ArrowRight className='mt-3 hidden size-4 text-muted-foreground lg:block' />
     </div>
   )
 }
@@ -235,26 +265,20 @@ function MiniStat({
   tone?: 'positive' | 'negative' | 'neutral'
 }) {
   return (
-    <Card>
-      <CardHeader className='pb-2'>
-        <CardTitle className='text-xs font-medium text-muted-foreground'>
-          {label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={
-            'text-xl font-bold tabular-nums ' +
-            (tone === 'positive'
-              ? 'text-emerald-600'
-              : tone === 'negative'
-                ? 'text-red-600'
-                : '')
-          }
-        >
-          {value}
-        </div>
-      </CardContent>
-    </Card>
+    <div className='border-b px-1 py-2 last:border-b-0 sm:border-r sm:border-b-0 sm:px-3 sm:last:border-r-0'>
+      <div className='text-xs font-medium text-muted-foreground'>{label}</div>
+      <div
+        className={
+          'mt-1 text-xl font-bold tabular-nums ' +
+          (tone === 'positive'
+            ? 'text-emerald-600'
+            : tone === 'negative'
+              ? 'text-red-600'
+              : '')
+        }
+      >
+        {value}
+      </div>
+    </div>
   )
 }

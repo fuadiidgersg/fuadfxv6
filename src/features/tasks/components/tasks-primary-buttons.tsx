@@ -11,10 +11,10 @@ export function TasksPrimaryButtons() {
         className='space-x-1'
         onClick={() => setOpen('import')}
       >
-        <span>Connect MT5</span> <Bot size={18} />
+        <span>Sync MT5</span> <Bot size={18} />
       </Button>
       <Button className='space-x-1' onClick={() => setOpen('create')}>
-        <span>Log Trade</span> <Plus size={18} />
+        <span>New journal entry</span> <Plus size={18} />
       </Button>
     </div>
   )

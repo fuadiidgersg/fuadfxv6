@@ -1,5 +1,5 @@
 import { type ColumnDef } from '@tanstack/react-table'
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, CheckCircle2, CircleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -49,13 +49,49 @@ export const tasksColumns: ColumnDef<Trade>[] = [
   {
     accessorKey: 'id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Trade' />
+      <DataTableColumnHeader column={column} title='Ticket' />
     ),
-    cell: ({ row }) => (
-      <div className='w-20 font-mono text-xs'>{row.getValue('id')}</div>
-    ),
+    cell: ({ row }) => {
+      const id = String(row.getValue('id'))
+      const shortId = id.length > 14 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id
+      return (
+        <div className='max-w-36 truncate font-mono text-xs text-muted-foreground' title={id}>
+          {shortId}
+        </div>
+      )
+    },
     enableSorting: false,
-    enableHiding: false,
+  },
+  {
+    id: 'review',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Review' />
+    ),
+    cell: ({ row }) => {
+      const trade = row.original
+      const hasReview =
+        trade.strategy !== 'Unassigned' &&
+        Boolean(trade.notes?.trim()) &&
+        Boolean(
+          tagValue(trade.tags, 'entry') ||
+            tagValue(trade.tags, 'exit') ||
+            tagValue(trade.tags, 'plan') ||
+            tagValue(trade.tags, 'manage')
+        )
+
+      return hasReview ? (
+        <Badge variant='secondary' className='gap-1 font-normal'>
+          <CheckCircle2 className='size-3' />
+          Done
+        </Badge>
+      ) : (
+        <Badge variant='outline' className='gap-1 font-normal text-amber-600'>
+          <CircleAlert className='size-3' />
+          Review
+        </Badge>
+      )
+    },
+    enableSorting: false,
   },
   {
     accessorKey: 'pair',

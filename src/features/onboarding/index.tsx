@@ -158,12 +158,12 @@ export default function Onboarding() {
           <h1 className='text-2xl font-semibold tracking-tight'>
             {step === 'profile'
               ? 'Set up your trader profile'
-              : 'Connect your first trading account'}
+              : 'Start your first journal'}
           </h1>
           <p className='mx-auto max-w-xl text-sm text-muted-foreground'>
             {step === 'profile'
-              ? 'Tell FUADFX how you trade so the journal can organize your reviews around your account and preferred market.'
-              : 'Create your account, then choose EA sync for ongoing closed trades or manual upload for bulk history.'}
+              ? 'Tell FUADFX how you trade so reviews, sessions and risk rules match your real workflow.'
+              : 'Connect MT5 first if you want real trade history immediately, or create an empty journal and log trades later.'}
           </p>
         </div>
 
@@ -253,16 +253,16 @@ export default function Onboarding() {
               <div className='space-y-1'>
                 <div className='flex items-center gap-2 font-medium'>
                   <Bot className='size-4' />
-                  Choose your MT5 sync method
+                  Connect MT5 and fill the journal
                 </div>
                 <p className='text-sm text-muted-foreground'>
-                  Use the Expert Advisor for ongoing closed-trade sync, or bulk
-                  upload an MT5 detailed report to import trading history now.
+                  Install the FUADFX EA for ongoing closed-trade sync, or upload
+                  an MT5 detailed report to bring in history now.
                 </p>
               </div>
               <Button onClick={() => setImportOpen(true)}>
                 <Upload className='size-4' />
-                Connect or upload
+                Sync or upload
               </Button>
             </div>
 
@@ -277,8 +277,8 @@ export default function Onboarding() {
                   Create account manually
                 </div>
                 <p className='text-sm text-muted-foreground'>
-                  Use this if you want to add the account now and upload or log
-                  trades later.
+                  Use this when you want a blank journal for screenshots,
+                  manual notes, backtesting or trades you will sync later.
                 </p>
               </div>
 

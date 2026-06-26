@@ -123,8 +123,8 @@ export function TasksTable({ data }: DataTableProps) {
           { columnId: 'direction', title: 'Side', options: directions },
         ]}
       />
-      <div className='overflow-hidden rounded-md border'>
-        <Table className='min-w-xl'>
+      <div className='overflow-x-auto rounded-md border'>
+        <Table className='min-w-[1120px]'>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

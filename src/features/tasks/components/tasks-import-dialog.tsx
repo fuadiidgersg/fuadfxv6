@@ -578,10 +578,10 @@ if errorlevel 1 (
     >
       <DialogContent className='gap-3 sm:max-w-lg'>
         <DialogHeader className='text-start'>
-          <DialogTitle>Connect MT5 Account</DialogTitle>
+          <DialogTitle>Fill Journal From MT5</DialogTitle>
           <DialogDescription>
-            Choose automatic EA sync for ongoing closed trades, or upload an
-            MT5 HTML report for a one-time bulk import.
+            Sync closed trades with the FUADFX EA, or upload an MT5 detailed
+            report when you want a quick historical import.
           </DialogDescription>
         </DialogHeader>
 
@@ -604,11 +604,11 @@ if errorlevel 1 (
           <TabsContent value='ea' className='space-y-3'>
             <div className='grid gap-2 rounded-md border p-3 text-sm'>
               <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                <div>
-                  <div className='font-medium'>Account-specific MT5 EA</div>
+                  <div>
+                  <div className='font-medium'>Account-specific MT5 sync</div>
                   <div className='text-xs text-muted-foreground'>
                     {activeAccount
-                      ? `Bound to: ${activeAccount.name}`
+                      ? `Journal: ${activeAccount.name}`
                       : 'Select or create an account first.'}
                   </div>
                 </div>
@@ -642,10 +642,10 @@ if errorlevel 1 (
                   <div>
                     <div className='flex items-center gap-2 font-medium'>
                       <KeyRound className='size-4' />
-                      Active EA keys
+                      Active sync keys
                     </div>
                     <div className='text-xs text-muted-foreground'>
-                      Each downloaded EA is bound to this account.
+                      Each installer is bound to this journal account.
                     </div>
                   </div>
                 </div>
@@ -708,7 +708,7 @@ if errorlevel 1 (
           <div className='rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground'>
             In MT5, open <strong>Toolbox - History</strong>, right-click and
             choose <strong>Report - HTML (Detailed)</strong>. Upload the saved
-            .htm or .html file below to connect the account immediately.
+            .htm or .html file to fill the journal immediately.
           </div>
 
           <div className='grid gap-2'>
