@@ -192,53 +192,173 @@ if (-not $terminals) {
   throw "No MT5 terminal folders were found. Open MT5 once, then run this installer again."
 }
 
+function Get-TerminalInstallInfo($Terminal) {
+  $originPath = Join-Path $Terminal.FullName 'origin.txt'
+  $installPath = ''
+  if (Test-Path $originPath) {
+    $installPath = (Get-Content $originPath -ErrorAction SilentlyContinue | Select-Object -First 1)
+  }
+  if ([string]::IsNullOrWhiteSpace($installPath)) {
+    $installPath = $Terminal.FullName
+  }
+
+  $exePath = ''
+  foreach ($candidate in @(
+    (Join-Path $installPath 'terminal64.exe'),
+    (Join-Path $installPath 'terminal.exe')
+  )) {
+    if (Test-Path $candidate) {
+      $exePath = $candidate
+      break
+    }
+  }
+
+  $displayName = Split-Path $installPath -Leaf
+  if ([string]::IsNullOrWhiteSpace($displayName)) {
+    $displayName = 'MetaTrader 5'
+  }
+
+  [pscustomobject]@{
+    Terminal = $Terminal
+    Name = $displayName
+    InstallPath = $installPath
+    DataPath = $Terminal.FullName
+    ExePath = $exePath
+    LastUsed = $Terminal.LastWriteTime
+  }
+}
+
+function Show-TerminalPicker($Items) {
+  Add-Type -AssemblyName System.Windows.Forms
+  Add-Type -AssemblyName System.Drawing
+  [System.Windows.Forms.Application]::EnableVisualStyles()
+
+  $form = New-Object System.Windows.Forms.Form
+  $form.Text = 'Choose MetaTrader 5 installation'
+  $form.StartPosition = 'CenterScreen'
+  $form.Width = 780
+  $form.Height = 460
+  $form.FormBorderStyle = 'FixedDialog'
+  $form.MaximizeBox = $false
+  $form.MinimizeBox = $false
+
+  $label = New-Object System.Windows.Forms.Label
+  $label.Text = 'Select where FUADFX should install the MT5 sync EA.'
+  $label.AutoSize = $true
+  $label.Left = 16
+  $label.Top = 16
+  $label.Font = New-Object System.Drawing.Font($label.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
+  $form.Controls.Add($label)
+
+  $hint = New-Object System.Windows.Forms.Label
+  $hint.Text = 'You can select one or more MT5 installations.'
+  $hint.AutoSize = $true
+  $hint.Left = 16
+  $hint.Top = 42
+  $hint.ForeColor = [System.Drawing.Color]::DimGray
+  $form.Controls.Add($hint)
+
+  $imageList = New-Object System.Windows.Forms.ImageList
+  $imageList.ImageSize = New-Object System.Drawing.Size(24, 24)
+  $imageList.ColorDepth = [System.Windows.Forms.ColorDepth]::Depth32Bit
+
+  $list = New-Object System.Windows.Forms.ListView
+  $list.Left = 16
+  $list.Top = 72
+  $list.Width = 730
+  $list.Height = 280
+  $list.View = [System.Windows.Forms.View]::Details
+  $list.CheckBoxes = $true
+  $list.FullRowSelect = $true
+  $list.HideSelection = $false
+  $list.SmallImageList = $imageList
+  [void]$list.Columns.Add('MT5', 190)
+  [void]$list.Columns.Add('Install folder', 265)
+  [void]$list.Columns.Add('Last used', 120)
+  [void]$list.Columns.Add('Data folder', 520)
+
+  for ($i = 0; $i -lt @($Items).Count; $i++) {
+    $info = $Items[$i]
+    if (-not [string]::IsNullOrWhiteSpace($info.ExePath)) {
+      try {
+        $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($info.ExePath)
+        if ($icon) {
+          [void]$imageList.Images.Add($icon)
+        } else {
+          [void]$imageList.Images.Add([System.Drawing.SystemIcons]::Application)
+        }
+      } catch {
+        [void]$imageList.Images.Add([System.Drawing.SystemIcons]::Application)
+      }
+    } else {
+      [void]$imageList.Images.Add([System.Drawing.SystemIcons]::Application)
+    }
+
+    $row = New-Object System.Windows.Forms.ListViewItem($info.Name, $i)
+    $row.Tag = $info
+    [void]$row.SubItems.Add($info.InstallPath)
+    [void]$row.SubItems.Add($info.LastUsed.ToString('yyyy-MM-dd HH:mm'))
+    [void]$row.SubItems.Add($info.DataPath)
+    [void]$list.Items.Add($row)
+  }
+
+  if ($list.Items.Count -gt 0) {
+    $list.Items[0].Checked = $true
+  }
+  $form.Controls.Add($list)
+
+  $selectAll = New-Object System.Windows.Forms.Button
+  $selectAll.Text = 'Select all'
+  $selectAll.Left = 16
+  $selectAll.Top = 366
+  $selectAll.Width = 90
+  $selectAll.Add_Click({
+    foreach ($item in $list.Items) {
+      $item.Checked = $true
+    }
+  })
+  $form.Controls.Add($selectAll)
+
+  $install = New-Object System.Windows.Forms.Button
+  $install.Text = 'Install'
+  $install.Left = 556
+  $install.Top = 366
+  $install.Width = 90
+  $install.DialogResult = [System.Windows.Forms.DialogResult]::OK
+  $form.AcceptButton = $install
+  $form.Controls.Add($install)
+
+  $cancel = New-Object System.Windows.Forms.Button
+  $cancel.Text = 'Cancel'
+  $cancel.Left = 656
+  $cancel.Top = 366
+  $cancel.Width = 90
+  $cancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+  $form.CancelButton = $cancel
+  $form.Controls.Add($cancel)
+
+  $result = $form.ShowDialog()
+  if ($result -ne [System.Windows.Forms.DialogResult]::OK) {
+    return @()
+  }
+
+  $selected = @()
+  foreach ($item in $list.CheckedItems) {
+    $selected += $item.Tag.Terminal
+  }
+  return $selected
+}
+
+$terminalInfos = @($terminals | ForEach-Object { Get-TerminalInstallInfo $_ })
 $selectedTerminals = @()
 if (@($terminals).Count -eq 1) {
-  $selectedTerminals = @($terminals[0])
-  Write-Step "Found one MT5 terminal: $($terminals[0].FullName)"
+  $selectedTerminals = @($terminalInfos[0].Terminal)
+  Write-Step "Found one MT5 terminal: $($terminalInfos[0].InstallPath)"
 } else {
-  Write-Host ''
-  Write-Host 'Multiple MT5 terminals were found. Choose where to install FUADFX Sync:' -ForegroundColor Yellow
-  for ($i = 0; $i -lt @($terminals).Count; $i++) {
-    $terminal = $terminals[$i]
-    $originPath = Join-Path $terminal.FullName 'origin.txt'
-    $origin = ''
-    if (Test-Path $originPath) {
-      $origin = (Get-Content $originPath -ErrorAction SilentlyContinue | Select-Object -First 1)
-    }
-    if ([string]::IsNullOrWhiteSpace($origin)) {
-      $origin = $terminal.FullName
-    }
-    $lastUsed = $terminal.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
-    Write-Host ("[{0}] {1}" -f ($i + 1), $origin)
-    Write-Host ("    Data: {0}" -f $terminal.FullName) -ForegroundColor DarkGray
-    Write-Host ("    Last used: {0}" -f $lastUsed) -ForegroundColor DarkGray
-  }
-
-  Write-Host ''
-  $choice = Read-Host 'Enter number(s), comma-separated, or A for all'
-  if ([string]::IsNullOrWhiteSpace($choice)) {
-    throw 'No MT5 terminal selected.'
-  }
-
-  if ($choice.Trim().ToUpperInvariant() -eq 'A') {
-    $selectedTerminals = @($terminals)
-  } else {
-    $indexes = $choice -split ',' |
-      ForEach-Object { $_.Trim() } |
-      Where-Object { $_ -match '^\\d+$' } |
-      ForEach-Object { [int]$_ - 1 } |
-      Sort-Object -Unique
-
-    foreach ($index in $indexes) {
-      if ($index -ge 0 -and $index -lt @($terminals).Count) {
-        $selectedTerminals += $terminals[$index]
-      }
-    }
-  }
+  $selectedTerminals = @(Show-TerminalPicker $terminalInfos)
 
   if (-not $selectedTerminals) {
-    throw 'No valid MT5 terminal selected.'
+    throw 'No MT5 terminal selected.'
   }
 }
 
