@@ -81,7 +81,7 @@ export const sidebarData: SidebarData = {
       title: 'Workspace',
       items: [
         {
-          title: 'Strategies',
+          title: 'Playbooks',
           url: '/apps',
           icon: BookOpen,
         },

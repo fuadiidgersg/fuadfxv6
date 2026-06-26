@@ -24,7 +24,7 @@ const route = getRouteApi('/_authenticated/apps/')
 type AppType = 'all' | 'connected' | 'notConnected'
 
 const appText = new Map<AppType, string>([
-  ['all', 'All Strategies'],
+  ['all', 'All Playbooks'],
   ['connected', 'Active'],
   ['notConnected', 'Inactive'],
 ])
@@ -95,17 +95,17 @@ export function Apps() {
       <Main fixed>
         <div>
           <h1 className='text-2xl font-bold tracking-tight'>
-            Strategy Playbook
+            Trading Playbooks
           </h1>
           <p className='text-muted-foreground'>
-            The trading systems and setups you actively use. Toggle to mark
-            strategies as part of your current playbook.
+            Your repeatable setups, rules, avoid conditions, and active models.
+            Use this as the checklist behind every reviewed trade.
           </p>
         </div>
         <div className='my-4 flex items-end justify-between sm:my-0 sm:items-center'>
           <div className='flex flex-col gap-4 sm:my-4 sm:flex-row'>
             <Input
-              placeholder='Filter strategies...'
+              placeholder='Filter playbooks...'
               className='h-9 w-40 lg:w-62.5'
               value={searchTerm}
               onChange={handleSearch}
@@ -115,7 +115,7 @@ export function Apps() {
                 <SelectValue>{appText.get(appType)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Strategies</SelectItem>
+                <SelectItem value='all'>All Playbooks</SelectItem>
                 <SelectItem value='connected'>Active</SelectItem>
                 <SelectItem value='notConnected'>Inactive</SelectItem>
               </SelectContent>
@@ -149,9 +149,9 @@ export function Apps() {
           {filteredApps.map((app) => (
             <li
               key={app.name}
-              className='rounded-lg border p-4 hover:shadow-md'
+              className='rounded-lg border p-4 transition-colors hover:bg-muted/30'
             >
-              <div className='mb-8 flex items-center justify-between'>
+              <div className='mb-4 flex items-center justify-between'>
                 <div
                   className={`flex size-10 items-center justify-center rounded-lg bg-muted p-2`}
                 >
@@ -167,7 +167,36 @@ export function Apps() {
               </div>
               <div>
                 <h2 className='mb-1 font-semibold'>{app.name}</h2>
-                <p className='line-clamp-2 text-gray-500'>{app.desc}</p>
+                <p className='line-clamp-2 text-sm text-muted-foreground'>
+                  {app.desc}
+                </p>
+                <dl className='mt-4 grid gap-3 text-sm'>
+                  <div>
+                    <dt className='text-xs font-medium text-muted-foreground uppercase'>
+                      Best for
+                    </dt>
+                    <dd className='mt-1'>{app.bestFor}</dd>
+                  </div>
+                  <div>
+                    <dt className='text-xs font-medium text-muted-foreground uppercase'>
+                      Avoid when
+                    </dt>
+                    <dd className='mt-1'>{app.avoidWhen}</dd>
+                  </div>
+                </dl>
+                <div className='mt-4 border-t pt-3'>
+                  <div className='mb-2 text-xs font-medium text-muted-foreground uppercase'>
+                    Rules
+                  </div>
+                  <ul className='grid gap-1.5 text-sm'>
+                    {app.rules.map((rule) => (
+                      <li key={rule} className='flex gap-2'>
+                        <span className='mt-2 size-1.5 rounded-full bg-primary' />
+                        <span>{rule}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </li>
           ))}
