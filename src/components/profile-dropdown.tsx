@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { Bot, ClipboardPlus, Settings, UserCog } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useProfileStore } from '@/stores/profile-store'
 import useDialogState from '@/hooks/use-dialog-state'
@@ -11,13 +12,27 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SignOutDialog } from '@/components/sign-out-dialog'
+import { TasksDialogs } from '@/features/tasks/components/tasks-dialogs'
+import {
+  TasksProvider,
+  useTasks,
+} from '@/features/tasks/components/tasks-provider'
 
 export function ProfileDropdown() {
+  return (
+    <TasksProvider>
+      <ProfileDropdownInner />
+      <TasksDialogs />
+    </TasksProvider>
+  )
+}
+
+function ProfileDropdownInner() {
   const [open, setOpen] = useDialogState()
+  const { setOpen: setTaskDialogOpen } = useTasks()
   const user = useAuthStore((s) => s.auth.user)
   const profile = useProfileStore((s) => s.profile)
 
@@ -46,7 +61,7 @@ export function ProfileDropdown() {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className='w-56' align='end' forceMount>
+        <DropdownMenuContent className='w-64' align='end' forceMount>
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col gap-1.5'>
               <p className='text-sm leading-none font-medium'>{displayName}</p>
@@ -57,32 +72,31 @@ export function ProfileDropdown() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
+            <DropdownMenuItem onSelect={() => setTaskDialogOpen('import')}>
+              <Bot className='me-2 size-4' />
+              Sync MT5
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setTaskDialogOpen('create')}>
+              <ClipboardPlus className='me-2 size-4' />
+              New journal entry
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to='/settings'>
+                <UserCog className='me-2 size-4' />
                 Profile
-                <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to='/settings'>
-                Billing
-                <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+                <Settings className='me-2 size-4' />
+                Journal settings
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to='/settings'>
-                Settings
-                <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>New Team</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant='destructive' onClick={() => setOpen(true)}>
             Sign out
-            <DropdownMenuShortcut className='text-current'>
-              ⇧⌘Q
-            </DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
