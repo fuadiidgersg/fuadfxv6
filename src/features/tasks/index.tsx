@@ -7,14 +7,24 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Download,
+  KeyRound,
   NotebookPen,
   SearchCheck,
   Tags,
+  Wifi,
 } from 'lucide-react'
 import { useTrades } from '@/stores/trades-store'
+import { useApiKeysQuery } from '@/hooks/use-api-keys-query'
+import { useActiveAccount } from '@/hooks/use-accounts-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -55,6 +65,8 @@ function TradeDialogIntent() {
 
 export function Tasks() {
   const trades = useTrades()
+  const activeAccount = useActiveAccount()
+  const { data: apiKeys = [] } = useApiKeysQuery(activeAccount?.id)
   const stats = useMemo(() => computeStats(trades), [trades])
 
   return (
@@ -94,13 +106,88 @@ export function Tasks() {
           <MiniStat label='Total Trades' value={`${stats.total}`} />
         </div>
 
-        <JournalWorkflowPanel trades={trades} />
+        <div className='grid gap-4 xl:grid-cols-[1fr_360px]'>
+          <JournalWorkflowPanel trades={trades} />
+          <Mt5SyncStatusCard
+            activeAccountName={activeAccount?.name}
+            activeAccountNumber={activeAccount?.number}
+            syncKeys={apiKeys}
+            mt5TradeCount={trades.filter((trade) => trade.tags?.includes('mt5')).length}
+          />
+        </div>
 
         <TasksTable data={trades} />
       </Main>
 
       <TasksDialogs />
     </TasksProvider>
+  )
+}
+
+function Mt5SyncStatusCard({
+  activeAccountName,
+  activeAccountNumber,
+  syncKeys,
+  mt5TradeCount,
+}: {
+  activeAccountName?: string
+  activeAccountNumber?: string
+  syncKeys: { last4: string; lastUsedAt: string | null }[]
+  mt5TradeCount: number
+}) {
+  const { setOpen } = useTasks()
+  const activeKey = syncKeys[0]
+  const lastSync = activeKey?.lastUsedAt
+    ? new Date(activeKey.lastUsedAt).toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
+
+  return (
+    <Card>
+      <CardHeader className='pb-3'>
+        <CardTitle className='flex items-center gap-2 text-base'>
+          <Wifi className='size-4' />
+          MT5 Sync Status
+        </CardTitle>
+        <CardDescription>
+          Check whether the journal is receiving trades from your account.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='space-y-3 text-sm'>
+        <div className='grid gap-2'>
+          <StatusLine label='Journal' value={activeAccountName ?? 'No account'} />
+          <StatusLine label='Account' value={activeAccountNumber ?? 'Not set'} />
+          <StatusLine
+            label='Sync key'
+            value={activeKey ? `Active - ends ${activeKey.last4}` : 'Not installed'}
+          />
+          <StatusLine label='Last sync' value={lastSync ?? 'Waiting for EA'} />
+          <StatusLine label='MT5 trades' value={`${mt5TradeCount}`} />
+        </div>
+        <Button
+          type='button'
+          variant={activeKey ? 'outline' : 'default'}
+          className='w-full'
+          onClick={() => setOpen('import')}
+        >
+          <KeyRound className='size-4' />
+          {activeKey ? 'Manage MT5 sync' : 'Install MT5 sync'}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function StatusLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className='flex items-center justify-between gap-3 border-b py-2 last:border-b-0'>
+      <span className='text-muted-foreground'>{label}</span>
+      <span className='text-end font-medium'>{value}</span>
+    </div>
   )
 }
 

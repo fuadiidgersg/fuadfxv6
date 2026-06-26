@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
+  AlertTriangle,
   Calendar as CalendarIcon,
+  Clock,
   ExternalLink,
   Filter,
   Newspaper,
   RefreshCw,
+  ShieldAlert,
 } from 'lucide-react'
 import { useTradingSettings } from '@/stores/trading-settings-store'
 import apiClient from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAllTradesQuery } from '@/hooks/use-trades-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -100,7 +104,24 @@ function articleMatchesSearch(article: ForexNewsArticle, search: string) {
     .includes(needle)
 }
 
+function currenciesFromPair(pair: string) {
+  const clean = pair.replace('/', '').toUpperCase()
+  if (clean.length < 6) return []
+  return [clean.slice(0, 3), clean.slice(3, 6)]
+}
+
+function formatEventTime(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function News() {
+  const { data: trades = [] } = useAllTradesQuery()
   const newsFilterCountries = useTradingSettings((s) => s.newsFilterCountries)
   const newsFilterImpacts = useTradingSettings((s) => s.newsFilterImpacts)
   const newsNotificationsEnabled = useTradingSettings(
@@ -191,6 +212,23 @@ export function News() {
     newsFilterCountries.length === 1 ? newsFilterCountries[0] : 'all'
 
   const todayKey = formatGroupKey(new Date())
+  const tradedCurrencies = useMemo(
+    () =>
+      Array.from(
+        new Set(trades.flatMap((trade) => currenciesFromPair(trade.pair)))
+      ).sort(),
+    [trades]
+  )
+  const now = Date.now()
+  const upcomingEvents = filtered
+    .filter((event) => new Date(event.time).getTime() >= now)
+    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+  const nextHighImpact =
+    upcomingEvents.find((event) => event.impact === 'high') ?? upcomingEvents[0]
+  const matchingTradedEvents = upcomingEvents.filter((event) =>
+    tradedCurrencies.includes(event.currency)
+  )
+  const nextTradedEvent = matchingTradedEvents[0]
 
   return (
     <>
@@ -229,6 +267,48 @@ export function News() {
             />
             Refresh news
           </Button>
+        </div>
+
+        <div className='grid gap-3 lg:grid-cols-3'>
+          <MarketAlertCard
+            title='Next high-impact event'
+            icon={AlertTriangle}
+            value={nextHighImpact?.title ?? 'No matching event'}
+            detail={
+              nextHighImpact
+                ? `${nextHighImpact.currency} - ${formatEventTime(nextHighImpact.time)}`
+                : 'Change filters to see more calendar events.'
+            }
+            tone={nextHighImpact?.impact === 'high' ? 'warn' : 'neutral'}
+          />
+          <MarketAlertCard
+            title='Affects your traded pairs'
+            icon={ShieldAlert}
+            value={nextTradedEvent?.title ?? 'No direct currency match'}
+            detail={
+              nextTradedEvent
+                ? `${nextTradedEvent.currency} event from your traded symbols: ${tradedCurrencies.join(', ')}`
+                : tradedCurrencies.length
+                  ? `Watching ${tradedCurrencies.join(', ')}`
+                  : 'Sync or log trades to personalize this.'
+            }
+            tone={nextTradedEvent?.impact === 'high' ? 'warn' : 'neutral'}
+          />
+          <MarketAlertCard
+            title='Alert window'
+            icon={Clock}
+            value={
+              newsNotificationsEnabled
+                ? `${newsNotificationLeadMinutes} min before news`
+                : 'Notifications off'
+            }
+            detail={
+              newsNotificationsEnabled
+                ? 'Matching calendar events can trigger browser alerts.'
+                : 'Enable alerts in Trading Settings before volatile sessions.'
+            }
+            tone={newsNotificationsEnabled ? 'good' : 'neutral'}
+          />
         </div>
 
         <Card>
@@ -517,5 +597,41 @@ export function News() {
         ))}
       </Main>
     </>
+  )
+}
+
+function MarketAlertCard({
+  title,
+  value,
+  detail,
+  icon: Icon,
+  tone,
+}: {
+  title: string
+  value: string
+  detail: string
+  icon: React.ElementType
+  tone: 'good' | 'warn' | 'neutral'
+}) {
+  return (
+    <Card
+      className={cn(
+        tone === 'warn' && 'border-amber-500/40 bg-amber-500/5',
+        tone === 'good' && 'border-emerald-500/40 bg-emerald-500/5'
+      )}
+    >
+      <CardHeader className='pb-2'>
+        <CardTitle className='flex items-center gap-2 text-sm'>
+          <Icon className='size-4' />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className='text-base font-semibold'>{value}</div>
+        <p className='mt-1 text-xs leading-5 text-muted-foreground'>
+          {detail}
+        </p>
+      </CardContent>
+    </Card>
   )
 }

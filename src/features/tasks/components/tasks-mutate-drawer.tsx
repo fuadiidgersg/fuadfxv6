@@ -229,11 +229,13 @@ export function TasksMutateDrawer({
     >
       <SheetContent className='flex flex-col sm:max-w-xl'>
         <SheetHeader className='text-start'>
-          <SheetTitle>{isUpdate ? 'Update' : 'Log'} Trade</SheetTitle>
+          <SheetTitle>
+            {isUpdate ? 'Review journal entry' : 'New journal entry'}
+          </SheetTitle>
           <SheetDescription>
             {isUpdate
-              ? 'Update this trade with the latest details, screenshots and learnings.'
-              : 'Record a new trade with full execution details, screenshot and post-trade review.'}
+              ? 'Review the setup, execution, mistake pattern, screenshot and lesson before trusting this trade in analytics.'
+              : 'Record the trade, then capture the reason, behavior and lesson while the setup is still fresh.'}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -472,8 +474,8 @@ export function TasksMutateDrawer({
             </div>
 
             <FormSection
-              title='Review'
-              description='What happened, what you felt, and what to improve.'
+              title='Journal review'
+              description='What happened, what you felt, what rule you followed or broke, and what to improve.'
             />
             <div className='grid grid-cols-2 gap-3'>
               <FormField
@@ -692,11 +694,11 @@ export function TasksMutateDrawer({
               name='notes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Trade thesis / setup</FormLabel>
+                  <FormLabel>Setup and entry reason</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={3}
-                      placeholder='What was the setup? Why did you take this trade?'
+                      placeholder='What was the setup? Why did you take this trade? What was invalidation?'
                       {...field}
                     />
                   </FormControl>
@@ -709,7 +711,7 @@ export function TasksMutateDrawer({
               name='mistakes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mistakes</FormLabel>
+                  <FormLabel>Mistakes / rule breaks</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={2}
@@ -726,7 +728,7 @@ export function TasksMutateDrawer({
               name='lessons'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lessons learned</FormLabel>
+                  <FormLabel>Lesson for next trade</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={2}
