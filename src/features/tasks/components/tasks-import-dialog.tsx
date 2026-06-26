@@ -109,24 +109,158 @@ export function TasksImportDialog({
     URL.revokeObjectURL(url)
   }
 
-  const accountEaFileName = (token: string) =>
-    `FuadFXTradeSyncEA__${activeAccount?.id ?? 'account'}__${token}.ex5`
+  const psString = (value: string | number | undefined | null) =>
+    `'${String(value ?? '').replace(/'/g, "''")}'`
 
-  const handleDownloadConfiguredPackage = async () => {
+  const installerFileName = () => {
+    const number = activeAccount?.number?.replace(/[^a-zA-Z0-9_-]/g, '')
+    return `FUADFX-MT5-Installer${number ? `-${number}` : ''}.cmd`
+  }
+
+  const toPowerShellEncodedCommand = (script: string) => {
+    let binary = ''
+    for (let i = 0; i < script.length; i++) {
+      const code = script.charCodeAt(i)
+      binary += String.fromCharCode(code & 0xff, code >> 8)
+    }
+    return btoa(binary)
+  }
+
+  const buildPowerShellInstaller = (token: string) => {
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://fuadfx.vercel.app'
+    const eaUrl = `${origin.replace(/\/$/, '')}${eaDownloadUrl}`
+    const apiUrl = `${apiEndpoint}/trades/bulk`
+
+    return `$ErrorActionPreference = 'Stop'
+
+$ApiUrl = ${psString(apiUrl)}
+$BearerToken = ${psString(token)}
+$AccountId = ${psString(activeAccount?.id)}
+$AccountNumber = ${psString(activeAccount?.number)}
+$BrokerServer = ${psString(activeAccount?.broker)}
+$EaUrl = ${psString(eaUrl)}
+$EaName = 'FuadFXTradeSyncEA.ex5'
+$WebRequestUrl = ${psString(apiEndpoint)}
+
+function Write-Step($Message) {
+  Write-Host "[FUADFX] $Message" -ForegroundColor Cyan
+}
+
+function Get-SafeName($Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
+  return ($Value -replace '[\\\\/:*?"<>|\\s]+', '_')
+}
+
+$terminalRoot = Join-Path $env:APPDATA 'MetaQuotes\\Terminal'
+$commonFiles = Join-Path $terminalRoot 'Common\\Files'
+New-Item -ItemType Directory -Force -Path $commonFiles | Out-Null
+
+$config = @"
+api_url=$ApiUrl
+bearer_token=$BearerToken
+account_id=$AccountId
+lookback_days=365
+sync_every_seconds=60
+batch_size=50
+sync_on_init=true
+debug_logs=true
+sync_open_positions_later=false
+"@
+
+$defaultConfigPath = Join-Path $commonFiles 'FUADFX_MT5_Sync_Config.ini'
+Set-Content -Path $defaultConfigPath -Value $config -Encoding ASCII
+Write-Step "Wrote account sync config."
+
+$safeServer = Get-SafeName $BrokerServer
+if (-not [string]::IsNullOrWhiteSpace($AccountNumber) -and -not [string]::IsNullOrWhiteSpace($safeServer)) {
+  $accountConfigPath = Join-Path $commonFiles ('FUADFX_MT5_Sync_' + $AccountNumber + '_' + $safeServer + '.ini')
+  Set-Content -Path $accountConfigPath -Value $config -Encoding ASCII
+}
+
+if (-not (Test-Path $terminalRoot)) {
+  throw "MetaTrader data folder was not found at $terminalRoot. Open MT5 once, then run this installer again."
+}
+
+$terminals = Get-ChildItem -Path $terminalRoot -Directory |
+  Where-Object { Test-Path (Join-Path $_.FullName 'MQL5') }
+
+if (-not $terminals) {
+  throw "No MT5 terminal folders were found. Open MT5 once, then run this installer again."
+}
+
+$tempEa = Join-Path $env:TEMP $EaName
+Write-Step "Downloading the FUADFX MT5 Expert Advisor."
+Invoke-WebRequest -Uri $EaUrl -OutFile $tempEa -UseBasicParsing
+
+foreach ($terminal in $terminals) {
+  $experts = Join-Path $terminal.FullName 'MQL5\\Experts\\FUADFX'
+  New-Item -ItemType Directory -Force -Path $experts | Out-Null
+  Copy-Item -Path $tempEa -Destination (Join-Path $experts $EaName) -Force
+  Write-Step "Installed EA into $experts"
+}
+
+$readme = @"
+FUADFX MT5 Sync installed.
+
+Required MT5 security step:
+1. Open MT5.
+2. Go to Tools > Options > Expert Advisors.
+3. Enable "Allow WebRequest for listed URL".
+4. Add this URL exactly:
+   $WebRequestUrl
+5. Restart MT5 if it was open, then attach FUADFX\\FuadFXTradeSyncEA to any chart.
+
+The EA is already bound to this FUADFX account:
+$AccountId
+"@
+
+$readmePath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'FUADFX MT5 Sync Setup.txt'
+Set-Content -Path $readmePath -Value $readme -Encoding UTF8
+Set-Clipboard -Value $WebRequestUrl
+
+Write-Host ''
+Write-Host 'FUADFX MT5 Sync is installed.' -ForegroundColor Green
+Write-Host "The WebRequest URL has been copied to your clipboard: $WebRequestUrl" -ForegroundColor Yellow
+Write-Host "Setup notes saved to: $readmePath"
+Write-Host ''
+Read-Host 'Press Enter to close'
+`
+  }
+
+  const buildWindowsInstaller = (token: string) => {
+    const encoded = toPowerShellEncodedCommand(buildPowerShellInstaller(token))
+    return `@echo off
+title FUADFX MT5 Sync Installer
+powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}
+if errorlevel 1 (
+  echo.
+  echo FUADFX installer failed. Please send the error above to support.
+  pause
+)
+`
+  }
+
+  const handleDownloadInstaller = async () => {
     if (!activeAccount?.id) {
-      toast.error('Create or select an account before downloading the package.')
+      toast.error('Create or select an account before downloading the installer.')
       return
     }
 
     try {
       const key = await createApiKey.mutateAsync({
         accountId: activeAccount.id,
-        name: `${activeAccount.name} MT5 EA`,
+        name: `${activeAccount.name} MT5 installer`,
       })
-      const eaResponse = await fetch(eaDownloadUrl)
-      if (!eaResponse.ok) throw new Error('Could not download the EA file.')
-      downloadBlob(accountEaFileName(key.token), await eaResponse.blob())
-      toast.success('Account-specific EA downloaded.')
+      downloadBlob(
+        installerFileName(),
+        new Blob([buildWindowsInstaller(key.token)], {
+          type: 'application/x-msdownload;charset=utf-8',
+        })
+      )
+      toast.success('Account-specific Windows installer downloaded.')
     } catch (err) {
       toast.error(keyErrorMessage(err))
     }
@@ -311,21 +445,21 @@ export function TasksImportDialog({
                   <Button asChild size='sm' variant='outline'>
                     <a href={eaDownloadUrl} download>
                       <Download className='size-4' />
-                      Download EA
+                      Raw EA
                     </a>
                   </Button>
                   <Button
                     type='button'
                     size='sm'
                     disabled={!activeAccount?.id || createApiKey.isPending}
-                    onClick={handleDownloadConfiguredPackage}
+                    onClick={handleDownloadInstaller}
                   >
                     {createApiKey.isPending ? (
                       <Loader2 className='size-4 animate-spin' />
                     ) : (
                       <Download className='size-4' />
                     )}
-                    Download account EA
+                    Windows installer
                   </Button>
                 </div>
               </div>
@@ -393,9 +527,9 @@ export function TasksImportDialog({
             </div>
 
             <div className='grid gap-1.5 rounded-md border bg-card p-3 text-xs text-muted-foreground'>
-              <div>1. Copy the EA to MQL5/Experts/FUADFX.</div>
-              <div>2. Allow WebRequest for {apiEndpoint}.</div>
-              <div>3. Attach it to any MT5 chart.</div>
+              <div>1. Download and run the Windows installer.</div>
+              <div>2. Allow WebRequest for {apiEndpoint} in MT5.</div>
+              <div>3. Attach FUADFX/FuadFXTradeSyncEA to any chart.</div>
             </div>
           </TabsContent>
 

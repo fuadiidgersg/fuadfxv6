@@ -16,6 +16,15 @@ input bool   InpSyncOnInit = true;
 input bool   InpDebugLogs = true;
 input bool   InpSyncOpenPositionsLater = false; // Reserved for phase 2
 
+string g_api_url = "";
+string g_bearer_token = "";
+string g_account_id = "";
+int g_lookback_days = 30;
+int g_sync_every_seconds = 60;
+int g_batch_size = 50;
+bool g_sync_on_init = true;
+bool g_debug_logs = true;
+bool g_sync_open_positions_later = false;
 string STATE_FILE = "";
 datetime g_last_sync = 0;
 datetime g_last_scan = 0;
@@ -52,8 +61,25 @@ struct ClosedTradePayload
 //+------------------------------------------------------------------+
 void Log(const string message)
 {
-   if(InpDebugLogs)
+   if(g_debug_logs)
       Print("[FUADFX Sync] ", message);
+}
+
+string TrimString(string value)
+{
+   StringTrimLeft(value);
+   StringTrimRight(value);
+   return value;
+}
+
+string SanitizedAccountServer()
+{
+   string value = AccountInfoString(ACCOUNT_SERVER);
+   StringReplace(value, " ", "_");
+   StringReplace(value, ":", "_");
+   StringReplace(value, "\\", "_");
+   StringReplace(value, "/", "_");
+   return value;
 }
 
 string JsonEscape(string value)
@@ -77,6 +103,97 @@ string IsoTime(datetime value)
                        parts.hour,
                        parts.min,
                        parts.sec);
+}
+
+void ResolveRuntimeConfig()
+{
+   g_api_url = InpApiUrl;
+   g_bearer_token = InpBearerToken;
+   g_account_id = InpAccountId;
+   g_lookback_days = InpLookbackDays;
+   g_sync_every_seconds = InpSyncEverySeconds;
+   g_batch_size = InpBatchSize;
+   g_sync_on_init = InpSyncOnInit;
+   g_debug_logs = InpDebugLogs;
+   g_sync_open_positions_later = InpSyncOpenPositionsLater;
+
+   LoadRuntimeConfigFile("FUADFX_MT5_Sync_Config.ini");
+   LoadRuntimeConfigFile(StringFormat("FUADFX_MT5_Sync_%I64d_%s.ini",
+                                      AccountInfoInteger(ACCOUNT_LOGIN),
+                                      SanitizedAccountServer()));
+
+   if(g_bearer_token != "" && g_account_id != "")
+      return;
+
+   // Account-specific downloads are named:
+   // FuadFXTradeSyncEA__<account_id>__<ea_api_key>.ex5
+   string program_name = MQLInfoString(MQL_PROGRAM_NAME);
+   StringReplace(program_name, ".ex5", "");
+   StringReplace(program_name, ".EX5", "");
+
+   const int first_sep = StringFind(program_name, "__");
+   if(first_sep < 0)
+      return;
+
+   const int second_sep = StringFind(program_name, "__", first_sep + 2);
+   if(second_sep < 0)
+      return;
+
+   if(g_account_id == "")
+      g_account_id = StringSubstr(program_name, first_sep + 2, second_sep - first_sep - 2);
+
+   if(g_bearer_token == "")
+      g_bearer_token = StringSubstr(program_name, second_sep + 2);
+}
+
+void ApplyRuntimeConfigValue(const string key, const string value)
+{
+   if(value == "")
+      return;
+
+   if(key == "api_url")
+      g_api_url = value;
+   else if(key == "bearer_token")
+      g_bearer_token = value;
+   else if(key == "account_id")
+      g_account_id = value;
+   else if(key == "lookback_days")
+      g_lookback_days = (int)MathMax(1, StringToInteger(value));
+   else if(key == "sync_every_seconds")
+      g_sync_every_seconds = (int)MathMax(10, StringToInteger(value));
+   else if(key == "batch_size")
+      g_batch_size = (int)MathMax(1, StringToInteger(value));
+   else if(key == "sync_on_init")
+      g_sync_on_init = (StringToInteger(value) != 0 || value == "true");
+   else if(key == "debug_logs")
+      g_debug_logs = (StringToInteger(value) != 0 || value == "true");
+   else if(key == "sync_open_positions_later")
+      g_sync_open_positions_later = (StringToInteger(value) != 0 || value == "true");
+}
+
+bool LoadRuntimeConfigFile(const string filename)
+{
+   const int handle = FileOpen(filename, FILE_READ | FILE_TXT | FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+      return false;
+
+   while(!FileIsEnding(handle))
+   {
+      string line = TrimString(FileReadString(handle));
+      if(line == "" || StringSubstr(line, 0, 1) == "#")
+         continue;
+
+      const int sep = StringFind(line, "=");
+      if(sep <= 0)
+         continue;
+
+      const string key = TrimString(StringSubstr(line, 0, sep));
+      const string value = TrimString(StringSubstr(line, sep + 1));
+      ApplyRuntimeConfigValue(key, value);
+   }
+
+   FileClose(handle);
+   return true;
 }
 
 void ResetTrade(ClosedTradePayload &trade)
@@ -158,7 +275,7 @@ void LoadState()
    const int handle = FileOpen(StatePath(), FILE_READ | FILE_CSV | FILE_COMMON, ';');
    if(handle == INVALID_HANDLE)
    {
-      g_last_sync = TimeCurrent() - InpLookbackDays * 86400;
+      g_last_sync = TimeCurrent() - g_lookback_days * 86400;
       Log("No prior sync state. Starting from lookback window.");
       return;
    }
@@ -189,7 +306,7 @@ void LoadState()
 
    FileClose(handle);
    if(g_last_sync <= 0)
-      g_last_sync = TimeCurrent() - InpLookbackDays * 86400;
+      g_last_sync = TimeCurrent() - g_lookback_days * 86400;
 
    Log(StringFormat("Loaded state: %d positions, %d deals, %d orders. Last sync %s.",
                     ArraySize(g_synced_position_ids),
@@ -323,7 +440,7 @@ int CollectClosedTrades(ClosedTradePayload &trades[])
    ArrayResize(trades, 0);
 
    datetime from = g_last_sync - 86400;
-   const datetime lookback_from = TimeCurrent() - InpLookbackDays * 86400;
+   const datetime lookback_from = TimeCurrent() - g_lookback_days * 86400;
    if(from < lookback_from)
       from = lookback_from;
    const datetime to = TimeCurrent();
@@ -425,11 +542,11 @@ string TradeToJson(const ClosedTradePayload &trade)
 string BuildRequestJson(ClosedTradePayload &trades[], const int start, const int count)
 {
    string json = "{";
-   json += "\"accountId\":\"" + JsonEscape(InpAccountId) + "\",";
+   json += "\"accountId\":\"" + JsonEscape(g_account_id) + "\",";
    json += "\"source\":\"mt5-ea\",";
    json += "\"accountNumber\":" + (string)AccountInfoInteger(ACCOUNT_LOGIN) + ",";
    json += "\"brokerServer\":\"" + JsonEscape(AccountInfoString(ACCOUNT_SERVER)) + "\",";
-   json += "\"syncOpenPositions\":" + (InpSyncOpenPositionsLater ? "true" : "false") + ",";
+   json += "\"syncOpenPositions\":" + (g_sync_open_positions_later ? "true" : "false") + ",";
    json += "\"trades\":[";
    for(int i = 0; i < count; i++)
    {
@@ -443,27 +560,36 @@ string BuildRequestJson(ClosedTradePayload &trades[], const int start, const int
 
 bool PostJson(const string json, string &response)
 {
-   if(InpApiUrl == "" || InpBearerToken == "" || InpAccountId == "")
+   if(g_api_url == "" || g_bearer_token == "" || g_account_id == "")
    {
-      Print("[FUADFX Sync] Missing InpApiUrl, InpBearerToken, or InpAccountId.");
+      Print("[FUADFX Sync] Missing API URL, EA API key, or FUADFX account ID.");
       return false;
    }
 
    char data[];
    char result[];
    string result_headers = "";
-   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
-   if(ArraySize(data) > 0)
-      ArrayResize(data, ArraySize(data) - 1);
+   const int data_size = StringToCharArray(
+      json,
+      data,
+      0,
+      StringLen(json),
+      CP_UTF8
+   );
+   if(data_size <= 0)
+   {
+      Print("[FUADFX Sync] Could not encode the request body. MT5 error=", GetLastError());
+      return false;
+   }
 
    const string headers =
       "Content-Type: application/json\r\n" +
-      "Authorization: Bearer " + InpBearerToken + "\r\n";
+      "Authorization: Bearer " + g_bearer_token + "\r\n";
 
    ResetLastError();
    const int status = WebRequest(
       "POST",
-      InpApiUrl,
+      g_api_url,
       headers,
       30000,
       data,
@@ -471,7 +597,7 @@ bool PostJson(const string json, string &response)
       result_headers
    );
 
-   response = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+   response = CharArrayToString(result, 0, ArraySize(result), CP_UTF8);
 
    if(status < 200 || status >= 300)
    {
@@ -495,7 +621,7 @@ void SyncClosedTrades()
 
    Log(StringFormat("Found %d new closed trade(s).", total));
 
-   const int batch_size = MathMax(1, InpBatchSize);
+   const int batch_size = MathMax(1, g_batch_size);
    for(int start = 0; start < total; start += batch_size)
    {
       const int count = (int)MathMin(batch_size, total - start);
@@ -522,10 +648,11 @@ void SyncClosedTrades()
 //+------------------------------------------------------------------+
 int OnInit()
 {
+   ResolveRuntimeConfig();
    LoadState();
-   EventSetTimer(MathMax(10, InpSyncEverySeconds));
+   EventSetTimer(MathMax(10, g_sync_every_seconds));
 
-   if(InpSyncOnInit)
+   if(g_sync_on_init)
       SyncClosedTrades();
 
    Log("Initialized. Add your API domain to MT5: Tools > Options > Expert Advisors > Allow WebRequest.");
@@ -541,7 +668,7 @@ void OnDeinit(const int reason)
 
 void OnTimer()
 {
-   if(TimeCurrent() - g_last_scan < MathMax(10, InpSyncEverySeconds - 1))
+   if(TimeCurrent() - g_last_scan < MathMax(10, g_sync_every_seconds - 1))
       return;
    g_last_scan = TimeCurrent();
    SyncClosedTrades();
