@@ -23,6 +23,10 @@ const formSchema = z.object({
   }),
 })
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function ForgotPasswordForm({
   className,
   ...props
@@ -42,8 +46,10 @@ export function ForgotPasswordForm({
       setSent(true)
       toast.success(`Password reset email sent to ${data.email}`)
       form.reset()
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to send reset email. Please try again.')
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(err, 'Failed to send reset email. Please try again.')
+      )
     } finally {
       setIsLoading(false)
     }
@@ -52,7 +58,7 @@ export function ForgotPasswordForm({
   if (sent) {
     return (
       <div className='rounded-md border border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground'>
-        Check your inbox — a password reset link has been sent.
+        Check your inbox - a password reset link has been sent.
       </div>
     )
   }

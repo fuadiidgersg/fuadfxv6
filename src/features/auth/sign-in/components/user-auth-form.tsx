@@ -68,7 +68,7 @@ export function UserAuthForm({
       toast.success(`Welcome back, ${data.email}!`)
       const targetPath = redirectTo || '/dashboard'
       navigate({ to: targetPath, replace: true })
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(getSignInErrorMessage(err))
     } finally {
       setIsLoading(false)
@@ -137,8 +137,10 @@ export function UserAuthForm({
           onClick={async () => {
             try {
               await signInWithGoogle()
-            } catch (err: any) {
-              toast.error(err?.message ?? 'Google sign in failed.')
+            } catch (err: unknown) {
+              toast.error(
+                err instanceof Error ? err.message : 'Google sign in failed.'
+              )
             }
           }}
         >

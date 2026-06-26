@@ -7,7 +7,7 @@ import { useAccountsQuery } from './use-accounts-query'
 
 export const TRADES_KEY = ['trades'] as const
 
-function parseTrade(t: any): Trade {
+function parseTrade(t: Trade): Trade {
   return {
     ...t,
     openedAt: new Date(t.openedAt),
@@ -20,7 +20,7 @@ export function useAllTradesQuery() {
     queryKey: TRADES_KEY,
     queryFn: async () => {
       const { data } = await apiClient.get('/trades')
-      return (data as any[]).map(parseTrade)
+      return (data as Trade[]).map(parseTrade)
     },
     staleTime: 20 * 1000,
   })

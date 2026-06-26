@@ -37,6 +37,10 @@ const formSchema = z
     path: ['confirmPassword'],
   })
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function SignUpForm({
   className,
   ...props
@@ -58,14 +62,16 @@ export function SignUpForm({
     try {
       const result = await signUp(data.email, data.password)
       if (result.user && !result.session) {
-        toast.success('Account created! Please check your email to confirm your account.')
+        toast.success(
+          'Account created! Please check your email to confirm your account.'
+        )
         navigate({ to: '/sign-in', replace: true })
       } else {
         toast.success(`Account created for ${data.email}.`)
         navigate({ to: '/onboarding', replace: true })
       }
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Sign up failed. Please try again.')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Sign up failed. Please try again.'))
     } finally {
       setIsLoading(false)
     }
@@ -141,8 +147,8 @@ export function SignUpForm({
           onClick={async () => {
             try {
               await signInWithGoogle()
-            } catch (err: any) {
-              toast.error(err?.message ?? 'Google sign up failed.')
+            } catch (err: unknown) {
+              toast.error(getErrorMessage(err, 'Google sign up failed.'))
             }
           }}
         >

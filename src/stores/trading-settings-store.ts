@@ -122,16 +122,23 @@ export const useTradingSettings = create<TradingSettingsState>()(
     {
       name: 'fuadfx-trading-settings',
       version: 2,
-      migrate: (state: any) => ({
-        ...state,
-        platformCountry: state?.platformCountry ?? '',
-        platformDateOverride: state?.platformDateOverride ?? '',
-        newsNotificationsEnabled: state?.newsNotificationsEnabled ?? false,
-        newsNotificationLeadMinutes: state?.newsNotificationLeadMinutes ?? 15,
-        newsFilterCountries: state?.newsFilterCountries ?? [],
-        newsFilterImpacts: state?.newsFilterImpacts ?? ['high'],
-        propFirmTemplate: state?.propFirmTemplate ?? 'ftmo',
-      }),
+      migrate: (state: unknown) => {
+        const saved =
+          state && typeof state === 'object'
+            ? (state as Partial<TradingSettingsState>)
+            : {}
+
+        return {
+          ...saved,
+          platformCountry: saved.platformCountry ?? '',
+          platformDateOverride: saved.platformDateOverride ?? '',
+          newsNotificationsEnabled: saved.newsNotificationsEnabled ?? false,
+          newsNotificationLeadMinutes: saved.newsNotificationLeadMinutes ?? 15,
+          newsFilterCountries: saved.newsFilterCountries ?? [],
+          newsFilterImpacts: saved.newsFilterImpacts ?? ['high'],
+          propFirmTemplate: saved.propFirmTemplate ?? 'ftmo',
+        }
+      },
     }
   )
 )

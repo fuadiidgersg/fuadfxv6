@@ -10,13 +10,44 @@ const FORM_MESSAGES = {
   passwordMismatch: "Passwords don't match.",
 } as const
 
-const toastPromise = vi.hoisted(() =>
-  vi.fn((p: Promise<unknown>, opts: { success?: () => unknown }) => {
-    p.then(() => opts.success?.())
-  })
+const navigateMock = vi.hoisted(() => vi.fn())
+const signUpMock = vi.hoisted(() =>
+  vi.fn(
+    () =>
+      new Promise<{ user: { id: string }; session: { access_token: string } }>(
+        (resolve) => {
+          window.setTimeout(
+            () =>
+              resolve({
+                user: { id: 'user-1' },
+                session: { access_token: 'token' },
+              }),
+            2000
+          )
+        }
+      )
+  )
 )
+const signInWithGoogleMock = vi.hoisted(() => vi.fn())
+const toastSuccessMock = vi.hoisted(() => vi.fn())
+const toastErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('sonner', () => ({ toast: { promise: toastPromise } }))
+vi.mock('@tanstack/react-router', async (orig) => {
+  const actual = await orig<typeof import('@tanstack/react-router')>()
+  return { ...actual, useNavigate: () => navigateMock }
+})
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: toastSuccessMock,
+    error: toastErrorMock,
+  },
+}))
+
+vi.mock('@/lib/supabase/auth', () => ({
+  signUp: signUpMock,
+  signInWithGoogle: signInWithGoogleMock,
+}))
 
 describe('SignUpForm', () => {
   let screen: RenderResult
@@ -83,6 +114,13 @@ describe('SignUpForm', () => {
 
     await vi.advanceTimersByTimeAsync(2000)
     await expect.element(submitButton).toBeEnabled()
-    expect(toastPromise).toHaveBeenCalledOnce()
+    expect(signUpMock).toHaveBeenCalledOnce()
+    expect(toastSuccessMock).toHaveBeenCalledWith(
+      'Account created for a@b.com.'
+    )
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/onboarding',
+      replace: true,
+    })
   })
 })

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import {
@@ -150,7 +150,7 @@ export function SettingsTrading() {
   )
 
   const form = useForm<FormValues, unknown, FormValues>({
-    resolver: zodResolver(schema) as any,
+    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
     defaultValues: {
       timezone: settings.timezone,
       platformCountry: settings.platformCountry,
@@ -176,9 +176,18 @@ export function SettingsTrading() {
     },
   })
 
-  const ftmoMode = form.watch('ftmoMode')
-  const autoAssignImportedStrategy = form.watch('autoAssignImportedStrategy')
-  const newsNotificationsEnabled = form.watch('newsNotificationsEnabled')
+  const ftmoMode = useWatch({
+    control: form.control,
+    name: 'ftmoMode',
+  })
+  const autoAssignImportedStrategy = useWatch({
+    control: form.control,
+    name: 'autoAssignImportedStrategy',
+  })
+  const newsNotificationsEnabled = useWatch({
+    control: form.control,
+    name: 'newsNotificationsEnabled',
+  })
 
   async function onSubmit(values: FormValues) {
     if (values.platformCountry === 'unset') values.platformCountry = ''

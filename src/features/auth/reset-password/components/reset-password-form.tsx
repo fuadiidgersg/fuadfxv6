@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, ShieldCheck } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
+import { Loader2, ShieldCheck } from 'lucide-react'
+import { toast } from 'sonner'
 import { updatePassword } from '@/lib/supabase/auth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,10 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function ResetPasswordForm({
   className,
   ...props
@@ -48,8 +52,10 @@ export function ResetPasswordForm({
       await updatePassword(data.password)
       toast.success('Password updated! Please sign in with your new password.')
       navigate({ to: '/sign-in' })
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to update password. Please try again.')
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(err, 'Failed to update password. Please try again.')
+      )
     } finally {
       setIsLoading(false)
     }

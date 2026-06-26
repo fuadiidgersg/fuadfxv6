@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Bot, Loader2, Upload, Wallet } from 'lucide-react'
@@ -45,6 +45,10 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export default function Onboarding() {
   const navigate = useNavigate()
   const setProfile = useProfileStore((s) => s.setProfile)
@@ -66,7 +70,7 @@ export default function Onboarding() {
   const [startingBalance, setStartingBalance] = useState('10000')
 
   const form = useForm<FormData>({
-    resolver: zodResolver(schema) as any,
+    resolver: zodResolver(schema) as unknown as Resolver<FormData>,
     defaultValues: {
       displayName:
         user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? '',
@@ -89,7 +93,8 @@ export default function Onboarding() {
         '',
       experience: profile?.experience ?? 'beginner',
       preferredPair: profile?.preferredPair ?? 'EUR/USD',
-      startingCapital: profile?.startingCapital ?? Number(startingBalance) ?? 0,
+      startingCapital:
+        profile?.startingCapital ?? (Number(startingBalance) || 0),
       onboardingComplete: true,
       onboardedAt,
     }
@@ -119,8 +124,10 @@ export default function Onboarding() {
       setStartingBalance(String(data.startingCapital))
       if (!accountName) setAccountName(`${data.displayName}'s MT5`)
       setStep('account')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Something went wrong. Please try again.')
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(err, 'Something went wrong. Please try again.')
+      )
     } finally {
       setIsLoading(false)
     }
@@ -277,8 +284,8 @@ export default function Onboarding() {
                   Create account manually
                 </div>
                 <p className='text-sm text-muted-foreground'>
-                  Use this when you want a blank journal for screenshots,
-                  manual notes, backtesting or trades you will sync later.
+                  Use this when you want a blank journal for screenshots, manual
+                  notes, backtesting or trades you will sync later.
                 </p>
               </div>
 

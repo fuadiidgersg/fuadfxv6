@@ -147,7 +147,10 @@ export function News() {
     staleTime: 3 * 60 * 1000,
   })
 
-  const articles = forexNewsQuery.data?.articles ?? []
+  const articles = useMemo(
+    () => forexNewsQuery.data?.articles ?? [],
+    [forexNewsQuery.data?.articles]
+  )
   const articleCategories = Array.from(
     new Set(articles.map((article) => article.category))
   ).sort()
@@ -219,9 +222,9 @@ export function News() {
       ).sort(),
     [trades]
   )
-  const now = Date.now()
+  const [referenceNow] = useState(() => Date.now())
   const upcomingEvents = filtered
-    .filter((event) => new Date(event.time).getTime() >= now)
+    .filter((event) => new Date(event.time).getTime() >= referenceNow)
     .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
   const nextHighImpact =
     upcomingEvents.find((event) => event.impact === 'high') ?? upcomingEvents[0]
@@ -628,9 +631,7 @@ function MarketAlertCard({
       </CardHeader>
       <CardContent>
         <div className='text-base font-semibold'>{value}</div>
-        <p className='mt-1 text-xs leading-5 text-muted-foreground'>
-          {detail}
-        </p>
+        <p className='mt-1 text-xs leading-5 text-muted-foreground'>{detail}</p>
       </CardContent>
     </Card>
   )

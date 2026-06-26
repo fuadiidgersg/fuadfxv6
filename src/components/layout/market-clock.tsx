@@ -13,16 +13,17 @@ export function MarketClock() {
   const timezone = useTradingSettings((s) => s.timezone)
   const platformCountry = useTradingSettings((s) => s.platformCountry)
   const platformDateOverride = useTradingSettings((s) => s.platformDateOverride)
-  const [now, setNow] = useState(() => getPlatformNow(platformDateOverride))
+  const [_clockTick, setClockTick] = useState(0)
 
   useEffect(() => {
-    setNow(getPlatformNow(platformDateOverride))
     const timer = window.setInterval(
-      () => setNow(getPlatformNow(platformDateOverride)),
+      () => setClockTick((tick) => tick + 1),
       30_000
     )
     return () => window.clearInterval(timer)
-  }, [platformDateOverride])
+  }, [])
+
+  const now = getPlatformNow(platformDateOverride)
 
   const session = useMemo(
     () => getMarketSession(now, timezone),

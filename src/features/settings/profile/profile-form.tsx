@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Camera, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
@@ -61,7 +61,9 @@ export function ProfileForm() {
   )
 
   const form = useForm<ProfileFormValues, unknown, ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema) as any,
+    resolver: zodResolver(
+      profileFormSchema
+    ) as unknown as Resolver<ProfileFormValues>,
     defaultValues,
     values: defaultValues,
   })
@@ -105,7 +107,10 @@ export function ProfileForm() {
     }
   }
 
-  const avatarUrl = form.watch('avatarUrl')
+  const avatarUrl = useWatch({
+    control: form.control,
+    name: 'avatarUrl',
+  })
 
   return (
     <Form {...form}>

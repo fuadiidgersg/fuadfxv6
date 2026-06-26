@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAccountsStore } from '@/stores/accounts-store'
-import type { TradingAccount } from '@/stores/accounts-store'
+import { useAccountsStore, type TradingAccount } from '@/stores/accounts-store'
 import apiClient from '@/lib/api'
 
 export const ACCOUNTS_KEY = ['accounts'] as const

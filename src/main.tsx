@@ -1,5 +1,4 @@
-import { StrictMode, Component } from 'react'
-import type { ReactNode } from 'react'
+import { StrictMode, Component, type ReactNode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { AxiosError } from 'axios'
 import {
@@ -10,8 +9,8 @@ import {
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { isMisconfigured } from '@/lib/supabase/client'
 import { handleServerError } from '@/lib/handle-server-error'
+import { isMisconfigured } from '@/lib/supabase/client'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
@@ -149,9 +148,8 @@ async function bootstrap() {
         </h1>
         <p style={{ fontSize: '14px', color: '#888', maxWidth: '420px' }}>
           Supabase environment variables are missing. Please set{' '}
-          <code>VITE_SUPABASE_URL</code> and{' '}
-          <code>VITE_SUPABASE_ANON_KEY</code> in your Vercel project settings,
-          then redeploy.
+          <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>{' '}
+          in your Vercel project settings, then redeploy.
         </p>
       </div>
     )

@@ -13,6 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { Download, Plus } from 'lucide-react'
+import { useTrades } from '@/stores/trades-store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,21 +24,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  DataTablePagination,
-  DataTableToolbar,
-} from '@/components/data-table'
+import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 import { tasksColumns } from '@/features/tasks/components/tasks-columns'
 import { TasksDialogs } from '@/features/tasks/components/tasks-dialogs'
-import { TasksProvider } from '@/features/tasks/components/tasks-provider'
-import { useTasks } from '@/features/tasks/components/tasks-provider'
+import {
+  TasksProvider,
+  useTasks,
+} from '@/features/tasks/components/tasks-provider'
 import {
   directions,
   pairs,
   statuses,
   strategies,
 } from '@/features/tasks/data/data'
-import { useTrades } from '@/stores/trades-store'
 
 function TradesTableInner() {
   const trades = useTrades()

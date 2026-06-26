@@ -7,7 +7,17 @@ import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig(
-  { ignores: ['dist', 'src/components/ui'] },
+  {
+    ignores: [
+      'dist',
+      'src/components/ui',
+      'App.tsx',
+      'index.tsx',
+      'constants.tsx',
+      'types.ts',
+      'services',
+    ],
+  },
   {
     extends: [
       js.configs.recommended,
@@ -54,6 +64,24 @@ export default defineConfig(
       ],
       // Prevent duplicate imports from the same module
       'no-duplicate-imports': 'error',
+    },
+  },
+  {
+    files: ['server/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'none',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   }
 )

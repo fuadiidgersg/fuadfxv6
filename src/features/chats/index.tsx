@@ -123,13 +123,15 @@ export function Chats() {
 
   const selected = filtered.find((n) => n.id === effectiveSelectedId) ?? null
 
-  // Keep draft in sync when the selected note changes (from server refresh)
+  // Keep draft in sync when the selected note changes (from server refresh).
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (selected) {
       setDraftTitle(selected.title)
       setDraftBody(selected.body)
     }
   }, [selected?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const scheduleSave = useCallback(
     (patch: { title?: string; body?: string }) => {
