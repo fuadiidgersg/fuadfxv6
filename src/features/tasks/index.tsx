@@ -11,6 +11,7 @@ import {
   NotebookPen,
   SearchCheck,
   Tags,
+  Target,
   Wifi,
 } from 'lucide-react'
 import { useTrades } from '@/stores/trades-store'
@@ -112,15 +113,157 @@ export function Tasks() {
             activeAccountName={activeAccount?.name}
             activeAccountNumber={activeAccount?.number}
             syncKeys={apiKeys}
-            mt5TradeCount={trades.filter((trade) => trade.tags?.includes('mt5')).length}
+            mt5TradeCount={
+              trades.filter((trade) => trade.tags?.includes('mt5')).length
+            }
           />
         </div>
+
+        <TodayReviewPanel trades={trades} />
 
         <TasksTable data={trades} />
       </Main>
 
       <TasksDialogs />
     </TasksProvider>
+  )
+}
+
+function TodayReviewPanel({ trades }: { trades: Trade[] }) {
+  const { setOpen, setCurrentRow } = useTasks()
+  const today = new Date()
+  const todayTrades = trades.filter((trade) => isSameDay(trade.closedAt, today))
+  const reviewQueue = trades.filter(needsReview)
+  const ruleBreaks = trades.filter(
+    (trade) => tagValue(trade.tags, 'plan') === 'broken' || trade.mistakes
+  )
+  const worstMistake = computeWorstMistake(ruleBreaks)
+  const bestTrade = todayTrades
+    .filter((trade) => trade.pnl > 0)
+    .sort((a, b) => b.pnl - a.pnl)[0]
+  const worstTrade = todayTrades
+    .filter((trade) => trade.pnl < 0)
+    .sort((a, b) => a.pnl - b.pnl)[0]
+
+  const openTrade = (trade?: Trade) => {
+    if (!trade) return
+    setCurrentRow(trade)
+    setOpen('update')
+  }
+
+  return (
+    <Card>
+      <CardHeader className='pb-3'>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <div>
+            <CardTitle className='flex items-center gap-2 text-base'>
+              <Target className='size-4' />
+              Today's Review
+            </CardTitle>
+            <CardDescription>
+              A trader-first checklist before you trust the analytics.
+            </CardDescription>
+          </div>
+          <Button
+            type='button'
+            variant='outline'
+            disabled={!reviewQueue[0]}
+            onClick={() => openTrade(reviewQueue[0])}
+          >
+            <ClipboardCheck className='size-4' />
+            Review next
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className='grid gap-0 p-0 md:grid-cols-4'>
+        <ReviewCell
+          label='Closed today'
+          value={`${todayTrades.length}`}
+          detail={
+            todayTrades.length
+              ? `${formatMoney(todayTrades.reduce((sum, trade) => sum + trade.pnl, 0))} net today`
+              : 'No closed trades yet today'
+          }
+        />
+        <ReviewCell
+          label='Needs review'
+          value={`${reviewQueue.length}`}
+          detail='Missing setup, strategy, notes or execution tags'
+          tone={reviewQueue.length > 0 ? 'warn' : 'good'}
+        />
+        <ReviewCell
+          label='Costliest mistake'
+          value={worstMistake?.label ?? 'None logged'}
+          detail={
+            worstMistake
+              ? `${formatMoney(worstMistake.pnl)} across ${worstMistake.count} trade${worstMistake.count === 1 ? '' : 's'}`
+              : 'Tag mistakes to see what is costing money'
+          }
+          tone={worstMistake ? 'warn' : 'good'}
+        />
+        <div className='border-t p-4 md:border-t-0 md:border-l'>
+          <div className='text-xs font-medium text-muted-foreground'>
+            Best / worst today
+          </div>
+          <div className='mt-2 grid gap-2 text-sm'>
+            <button
+              type='button'
+              disabled={!bestTrade}
+              onClick={() => openTrade(bestTrade)}
+              className='flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-start disabled:cursor-default disabled:opacity-60'
+            >
+              <span>{bestTrade ? bestTrade.pair : 'Best trade'}</span>
+              <span className='font-semibold text-emerald-600'>
+                {bestTrade ? formatMoney(bestTrade.pnl) : '-'}
+              </span>
+            </button>
+            <button
+              type='button'
+              disabled={!worstTrade}
+              onClick={() => openTrade(worstTrade)}
+              className='flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-start disabled:cursor-default disabled:opacity-60'
+            >
+              <span>{worstTrade ? worstTrade.pair : 'Worst trade'}</span>
+              <span className='font-semibold text-red-500'>
+                {worstTrade ? formatMoney(worstTrade.pnl) : '-'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ReviewCell({
+  label,
+  value,
+  detail,
+  tone = 'neutral',
+}: {
+  label: string
+  value: string
+  detail: string
+  tone?: 'good' | 'warn' | 'neutral'
+}) {
+  return (
+    <div className='border-t p-4 first:border-t-0 md:border-t-0 md:border-r md:first:border-t-0 md:last:border-r-0'>
+      <div className='flex items-center justify-between gap-2'>
+        <div className='text-xs font-medium text-muted-foreground'>
+          {label}
+        </div>
+        {tone !== 'neutral' && (
+          <Badge
+            variant={tone === 'warn' ? 'destructive' : 'secondary'}
+            className='h-5 px-1.5 text-[10px] font-normal'
+          >
+            {tone === 'warn' ? 'Action' : 'Good'}
+          </Badge>
+        )}
+      </div>
+      <div className='mt-2 truncate text-lg font-semibold'>{value}</div>
+      <p className='mt-1 text-xs leading-5 text-muted-foreground'>{detail}</p>
+    </div>
   )
 }
 
@@ -195,6 +338,40 @@ function tagValue(tags: string[] = [], key: string) {
   return (
     tags.find((tag) => tag.startsWith(`${key}:`))?.slice(key.length + 1) ?? ''
   )
+}
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+function formatMoney(value: number) {
+  return `${value >= 0 ? '+' : '-'}$${Math.abs(value).toFixed(2)}`
+}
+
+function computeWorstMistake(trades: Trade[]) {
+  const mistakes = new Map<string, { label: string; pnl: number; count: number }>()
+  for (const trade of trades) {
+    const labels = [
+      tagValue(trade.tags, 'plan') === 'broken' ? 'Broke plan' : '',
+      ...(trade.mistakes ?? '')
+        .split(/[,.;\n]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ].filter(Boolean)
+
+    for (const label of labels.length ? labels : ['Unclassified mistake']) {
+      const current = mistakes.get(label) ?? { label, pnl: 0, count: 0 }
+      current.pnl += trade.pnl
+      current.count += 1
+      mistakes.set(label, current)
+    }
+  }
+
+  return Array.from(mistakes.values()).sort((a, b) => a.pnl - b.pnl)[0]
 }
 
 function needsReview(trade: Trade) {
