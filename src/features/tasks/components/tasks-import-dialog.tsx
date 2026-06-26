@@ -184,18 +184,69 @@ if (-not (Test-Path $terminalRoot)) {
   throw "MetaTrader data folder was not found at $terminalRoot. Open MT5 once, then run this installer again."
 }
 
-$terminals = Get-ChildItem -Path $terminalRoot -Directory |
-  Where-Object { Test-Path (Join-Path $_.FullName 'MQL5') }
+$terminals = @(Get-ChildItem -Path $terminalRoot -Directory |
+  Where-Object { Test-Path (Join-Path $_.FullName 'MQL5') } |
+  Sort-Object LastWriteTime -Descending)
 
 if (-not $terminals) {
   throw "No MT5 terminal folders were found. Open MT5 once, then run this installer again."
+}
+
+$selectedTerminals = @()
+if (@($terminals).Count -eq 1) {
+  $selectedTerminals = @($terminals[0])
+  Write-Step "Found one MT5 terminal: $($terminals[0].FullName)"
+} else {
+  Write-Host ''
+  Write-Host 'Multiple MT5 terminals were found. Choose where to install FUADFX Sync:' -ForegroundColor Yellow
+  for ($i = 0; $i -lt @($terminals).Count; $i++) {
+    $terminal = $terminals[$i]
+    $originPath = Join-Path $terminal.FullName 'origin.txt'
+    $origin = ''
+    if (Test-Path $originPath) {
+      $origin = (Get-Content $originPath -ErrorAction SilentlyContinue | Select-Object -First 1)
+    }
+    if ([string]::IsNullOrWhiteSpace($origin)) {
+      $origin = $terminal.FullName
+    }
+    $lastUsed = $terminal.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
+    Write-Host ("[{0}] {1}" -f ($i + 1), $origin)
+    Write-Host ("    Data: {0}" -f $terminal.FullName) -ForegroundColor DarkGray
+    Write-Host ("    Last used: {0}" -f $lastUsed) -ForegroundColor DarkGray
+  }
+
+  Write-Host ''
+  $choice = Read-Host 'Enter number(s), comma-separated, or A for all'
+  if ([string]::IsNullOrWhiteSpace($choice)) {
+    throw 'No MT5 terminal selected.'
+  }
+
+  if ($choice.Trim().ToUpperInvariant() -eq 'A') {
+    $selectedTerminals = @($terminals)
+  } else {
+    $indexes = $choice -split ',' |
+      ForEach-Object { $_.Trim() } |
+      Where-Object { $_ -match '^\\d+$' } |
+      ForEach-Object { [int]$_ - 1 } |
+      Sort-Object -Unique
+
+    foreach ($index in $indexes) {
+      if ($index -ge 0 -and $index -lt @($terminals).Count) {
+        $selectedTerminals += $terminals[$index]
+      }
+    }
+  }
+
+  if (-not $selectedTerminals) {
+    throw 'No valid MT5 terminal selected.'
+  }
 }
 
 $tempEa = Join-Path $env:TEMP $EaName
 Write-Step "Downloading the FUADFX MT5 Expert Advisor."
 Invoke-WebRequest -Uri $EaUrl -OutFile $tempEa -UseBasicParsing
 
-foreach ($terminal in $terminals) {
+foreach ($terminal in $selectedTerminals) {
   $experts = Join-Path $terminal.FullName 'MQL5\\Experts\\FUADFX'
   New-Item -ItemType Directory -Force -Path $experts | Out-Null
   Copy-Item -Path $tempEa -Destination (Join-Path $experts $EaName) -Force
